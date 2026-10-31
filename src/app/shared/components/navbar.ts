@@ -45,11 +45,13 @@ import { SpriteView } from './sprite-view';
           }
         </div>
 
-        <div class="lang" role="group" [attr.aria-label]="'nav.language' | t">
-          @for (l of locales; track l) {
-            <button type="button" class="btn" [attr.aria-pressed]="i18n.locale() === l" [class.primary]="i18n.locale() === l" (click)="i18n.setLocale(l)">{{ l.toUpperCase() }}</button>
-          }
-        </div>
+        @if (i18n.choiceEnabled) {
+          <div class="lang" role="group" [attr.aria-label]="'nav.language' | t">
+            @for (l of locales; track l) {
+              <button type="button" class="btn" [attr.aria-pressed]="i18n.locale() === l" [class.primary]="i18n.locale() === l" (click)="i18n.setLocale(l)">{{ l.toUpperCase() }}</button>
+            }
+          </div>
+        }
 
         <button type="button" class="btn privacy" aria-haspopup="dialog" [attr.aria-label]="'nav.privacyAria' | t" (click)="openPrivacy()">{{ 'nav.privacy' | t }}</button>
         </div>
