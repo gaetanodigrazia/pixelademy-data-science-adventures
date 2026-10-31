@@ -66,3 +66,4 @@
 | E09 | US-09.1 Immagine di anteprima della Dashboard | #63 | #148 | `docs/issues/US-09.1.md` | fatto |
 | E09 | US-09.2 Modale di condivisione su LinkedIn | #64 | #149 | `docs/issues/US-09.2.md` | fatto |
 | E09 | US-09.3 Pagine di anteprima Open Graph per i percorsi | #65 | #150 | `docs/issues/US-09.3.md` | fatto |
+| E09 | US-09.4 Condivisione del profilo (livello ed XP) | #66 | #151 | `docs/issues/US-09.4.md` | fatto |
