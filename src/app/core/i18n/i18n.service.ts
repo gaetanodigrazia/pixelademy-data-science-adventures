@@ -1,7 +1,14 @@
-import { Injectable, inject, signal } from '@angular/core';
+import { Injectable, InjectionToken, inject, signal } from '@angular/core';
 import { GameStateService } from '../services/game-state.service';
 import { EN } from './en';
 import { I18nKey, IT } from './it';
+
+/**
+ * Interruttore della scelta della lingua (rilevazione dal browser e selettore IT/EN). È **spento**: tradotti ci sono solo navbar,
+ * consenso, privacy e home, quindi con l'inglese l'interfaccia sarebbe mista. Si riaccende quando le traduzioni sono complete
+ * (vedi la issue #82): in un test o in `app.config.ts` basta fornire `{ provide: LANGUAGE_CHOICE_ENABLED, useValue: true }`.
+ */
+export const LANGUAGE_CHOICE_ENABLED = new InjectionToken<boolean>('LANGUAGE_CHOICE_ENABLED', { providedIn: 'root', factory: () => false });
 
 export type Locale = 'it' | 'en';
 export const LOCALES: Locale[] = ['it', 'en'];
@@ -21,8 +28,14 @@ export function pickLocale(languages: readonly string[] | undefined): Locale {
 export class I18nService {
   private readonly game = inject(GameStateService);
   readonly locale = signal<Locale>('it');
+  /** La scelta della lingua è disponibile (selettore e rilevazione dal browser)? */
+  readonly choiceEnabled = inject(LANGUAGE_CHOICE_ENABLED);
 
   detect(): void {
+    if (!this.choiceEnabled) {
+      this.apply('it'); // scelta disattivata: sempre italiano, anche con browser in inglese o una lingua salvata
+      return;
+    }
     const saved = this.game.state().locale;
     this.apply(saved ?? pickLocale(typeof navigator !== 'undefined' ? navigator.languages : undefined));
   }

@@ -80,3 +80,4 @@
 | E11 | US-11.8 Contributor di un percorso | #165 | #166 | `docs/issues/US-11.8.md` | fatto |
 | E05 | BUG-05.1 Mappa troppo piccola su telefono: le missioni non si toccano | #167 | #168 | `docs/issues/BUG-05.1.md` | fatto |
 | E05 | BUG-05.2 Mappa enorme su telefono e cataloghi che non scorrono | #169 | #170 | `docs/issues/BUG-05.2.md` | fatto |
+| E12 | US-12.5 Disattivare la scelta della lingua finché la traduzione non è completa | #171 | #172 | `docs/issues/US-12.5.md` | fatto |
