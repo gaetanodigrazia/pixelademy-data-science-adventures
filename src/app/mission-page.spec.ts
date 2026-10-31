@@ -1,4 +1,5 @@
 import { TestBed } from '@angular/core/testing';
+import { unlockPaths } from './testing/mission-harness';
 import { Router, provideRouter } from '@angular/router';
 import { App } from './app';
 import { routes } from './app.routes';
@@ -28,6 +29,7 @@ describe('pagina missione: teoria a slide', () => {
     sessionStorage.clear();
     TestBed.resetTestingModule();
     TestBed.configureTestingModule({ providers: [provideRouter(routes)] });
+    unlockPaths();
   });
 
   it('parte dalla teoria: titolo, difficoltà, XP, argomento e la prima slide', async () => {

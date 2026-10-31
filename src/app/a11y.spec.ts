@@ -7,7 +7,7 @@ import { routes } from './app.routes';
 import { PACKS } from './core/data/packs.generated';
 import { GameStateService } from './core/services/game-state.service';
 import { PythonRunnerService } from './core/services/python-runner.service';
-import { btn, dialogBtn } from './testing/mission-harness';
+import { btn, dialogBtn, unlockPaths } from './testing/mission-harness';
 
 // Monaco non gira in jsdom: l'editor ripiega sulla textarea (anch'essa da verificare).
 vi.mock('monaco-editor/esm/vs/editor/editor.api.js', () => {
@@ -31,6 +31,7 @@ describe('accessibilità (axe)', () => {
     sessionStorage.clear();
     TestBed.resetTestingModule();
     TestBed.configureTestingModule({ providers: [provideRouter(routes)] });
+    unlockPaths();
     const python = TestBed.inject(PythonRunnerService);
     vi.spyOn(python, 'loadRuntime').mockResolvedValue(undefined);
   });

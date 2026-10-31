@@ -7,6 +7,7 @@ import { LikeService } from '../../core/services/like.service';
 import { GameStateService } from '../../core/services/game-state.service';
 import { MissionService } from '../../core/services/mission.service';
 import { MissionCard } from '../../shared/components/mission-card';
+import { I18nService } from '../../core/i18n/i18n.service';
 import { TranslatePipe } from '../../core/i18n/translate.pipe';
 import { ContributorLine } from '../../shared/components/contributor';
 import { Leaderboard } from '../../shared/components/leaderboard';
@@ -110,11 +111,12 @@ type CatalogKind = 'paths' | 'heroes';
           <div class="results">
             @if (kind === 'paths') {
               @for (p of foundPaths(); track p.id) {
-                <button type="button" class="result" [class.active]="p.id === path()!.id" (click)="choosePath(p)">
+                <button type="button" class="result" [class.active]="p.id === path()!.id" [class.locked]="!missions.pathUnlocked(p)" [disabled]="!missions.pathUnlocked(p)" (click)="choosePath(p)">
                   <span class="r-icon" aria-hidden="true">{{ p.icon }}</span>
                   <span class="r-txt">
                     <strong>{{ p.title }}</strong>
                     <span>{{ p.description }}</span>
+                    @if (lockNote(p); as note) { <span class="lock-note">🔒 {{ note }}</span> }
                     <span class="muted">{{ missions.completedCount(p) }}/{{ p.missions.length }} missioni · {{ p.tags.join(', ') }}</span>
                     @if (p.contributor; as c) { <span class="muted contributor"><app-contributor [contributor]="c" [link]="false" /></span> }
                   </span>
@@ -181,6 +183,7 @@ type CatalogKind = 'paths' | 'heroes';
       font: inherit; text-align: left; cursor: pointer; }
     .result:hover:not(:disabled) { border-color: var(--accent-2); }
     .result.active { border-color: var(--good); }
+    .lock-note { color: var(--accent-2); }
     .result:disabled { opacity: .45; cursor: not-allowed; }
     .r-icon { font-size: 1.8rem; }
     .r-txt { display: flex; flex-direction: column; gap: 4px; font-size: .55rem; line-height: 1.6; min-width: 0; overflow-wrap: anywhere; }
@@ -211,6 +214,7 @@ export class Dashboard {
   protected readonly game = inject(GameStateService);
   protected readonly likes = inject(LikeService);
   protected readonly missions = inject(MissionService);
+  private readonly i18n = inject(I18nService);
   private readonly router = inject(Router);
 
   protected readonly path = computed(() => this.game.selectedPath() ?? this.registry.paths()[0]);
@@ -278,7 +282,13 @@ export class Dashboard {
   protected onBackdrop(e: MouseEvent): void {
     if (e.target === e.currentTarget) this.closeCatalog();
   }
+  /** «Completa «X» per sbloccarlo» se il percorso è bloccato, altrimenti niente. */
+  protected lockNote(p: LearningPath): string {
+    const missing = this.missions.missingFor(p);
+    return missing.length ? this.i18n.t('home.pathLocked', { names: missing.map((m) => m.title).join(', ') }) : '';
+  }
   protected choosePath(p: LearningPath): void {
+    if (!this.missions.pathUnlocked(p)) return;
     this.game.selectPath(p.id);
     this.picked.set(null);
     this.closeCatalog();

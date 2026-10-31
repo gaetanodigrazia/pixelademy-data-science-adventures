@@ -67,6 +67,7 @@ export const EN: Record<I18nKey, string> = {
   'home.searchHeroesLabel': 'Search heroes',
   'home.noPath': 'No path found.',
   'home.noHero': 'No hero found.',
+  'home.pathLocked': 'Complete “{names}” to unlock it',
   'home.contributor': 'Contributor:',
   'home.leaderboard': '🏆 Leaderboard',
   'home.like': '👍 Like',

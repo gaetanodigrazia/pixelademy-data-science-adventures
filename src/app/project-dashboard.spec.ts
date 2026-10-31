@@ -1,4 +1,5 @@
 import { TestBed } from '@angular/core/testing';
+import { unlockPaths } from './testing/mission-harness';
 import { Router, provideRouter } from '@angular/router';
 import { App } from './app';
 import { routes } from './app.routes';
@@ -11,6 +12,7 @@ describe('dashboard del progetto', () => {
   async function open(completed: number) {
     localStorage.clear();
     TestBed.configureTestingModule({ providers: [provideRouter(routes)] });
+    unlockPaths();
     const game = TestBed.inject(GameStateService);
     path.missions.slice(0, completed).forEach((m) => game.completeMission(m));
     const fixture = TestBed.createComponent(App);

@@ -22,6 +22,8 @@ export interface LearningPath {
   dashboard?: boolean;
   defaultCharacterId?: string;
   contributor?: Contributor;
+  /** Id dei percorsi da completare prima di questo: finché non lo sono, il percorso è bloccato (vedi `path-lock.ts`). */
+  requires?: string[];
 }
 
 export interface ContentPack {

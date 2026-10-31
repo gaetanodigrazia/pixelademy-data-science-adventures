@@ -1,8 +1,10 @@
 import { TestBed } from '@angular/core/testing';
+import { unlockPaths } from './testing/mission-harness';
 import { Router, provideRouter } from '@angular/router';
 import { App } from './app';
 import { routes } from './app.routes';
 import { PACKS } from './core/data/packs.generated';
+import { GameStateService } from './core/services/game-state.service';
 import { ContentRegistryService } from './core/services/content-registry.service';
 
 const path = PACKS[0].paths[0];
@@ -22,6 +24,7 @@ describe('presentazione del progetto e della Dashboard', () => {
     localStorage.clear();
     sessionStorage.clear();
     TestBed.configureTestingModule({ providers: [provideRouter(routes)] });
+    unlockPaths();
   });
 
   it('sulla prima missione presenta progetto, Dashboard e cosa succede alla fine', async () => {
@@ -73,6 +76,7 @@ describe('percorso senza Dashboard (dashboard: false)', () => {
     localStorage.clear();
     sessionStorage.clear();
     TestBed.configureTestingModule({ providers: [provideRouter(routes)] });
+    unlockPaths();
   });
 
   it('il percorso del pack ha la Dashboard attiva di default', () => {
@@ -109,6 +113,7 @@ describe('percorso senza Dashboard (dashboard: false)', () => {
   });
 
   it('con la Dashboard attiva il pulsante nella mappa c\'è', async () => {
+    TestBed.inject(GameStateService).selectPath(path.id); // la home parte da Centro Mobilità (senza Dashboard)
     const { fixture, el } = await open('/');
     expect(Array.from(el.querySelectorAll('a')).some((a) => a.textContent?.includes('Dashboard'))).toBe(true);
     fixture.destroy();

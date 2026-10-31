@@ -9,6 +9,7 @@ import { ContentRegistryService } from '../../core/services/content-registry.ser
 import { GameStateService } from '../../core/services/game-state.service';
 import { MissionService } from '../../core/services/mission.service';
 import { TelemetryService } from '../../core/services/telemetry.service';
+import { newlyUnlocked } from '../../core/utils/path-lock';
 import { PythonRunnerService } from '../../core/services/python-runner.service';
 import { baseLineCount, composeProject, editorSection, neededContext, shiftErrorLines } from '../../core/utils/project-context';
 import { projectCode } from '../../core/utils/project-code';
@@ -164,6 +165,7 @@ type Phase = 'teoria' | 'battaglia' | 'task';
               }
               @if (w.gainedXp > 0) { <p>🧩 Sezione del bollettino aggiunta: {{ projectProgress() }}</p>
                 @if (!nextMission()) { <p class="ok">🏆 Progetto completato!{{ dashboardOn() ? ' Apri la dashboard per vedere i risultati che hai prodotto.' : ' Il tuo programma stampa il bollettino completo.' }}</p> } }
+              @if (unlockedPaths().length) { <p class="ok">🔓 Percorso sbloccato: {{ unlockedPaths().join(', ') }}</p> }
               @if (newRecord(); as r) { <p class="ok">🏆 {{ r.xp }} XP in {{ r.seconds }} s: nuovo record!</p> }
               @if (w.newLevel) { <p>⬆ Sei salito al livello {{ w.newLevel }}!</p> }
               <div class="row">
@@ -300,6 +302,8 @@ export class MissionDetail {
   /** Caratteri incollati nell'editor in questa missione (anti-incolla). */
   protected readonly pastedChars = signal(0);
   /** Sfida: il risultato di questa esecuzione se batte il record (altrimenti `null`). */
+  /** Percorsi che si sbloccano con questa missione (se è l'ultima di un percorso richiesto). */
+  protected readonly unlockedPaths = signal<string[]>([]);
   protected readonly newRecord = signal<{ xp: number; seconds: number } | null>(null);
   protected readonly score = signal<ScoreBreakdown | null>(null);
   protected readonly clock = computed(() => `${String(Math.floor(this.seconds() / 60)).padStart(2, '0')}:${String(this.seconds() % 60).padStart(2, '0')}`);
@@ -393,6 +397,7 @@ export class MissionDetail {
         this.solutionViewed.set(false);
         this.pastedChars.set(0);
         this.newRecord.set(null);
+        this.unlockedPaths.set([]);
         if (m && this.missions.status(m) === 'locked') this.router.navigateByUrl('/');
       });
     });
@@ -513,6 +518,7 @@ export class MissionDetail {
         }
         this.reward.set(this.game.completeMission(m, { xp: score.xp, code: full }));
         this.telemetry.record('completed', m.id);
+        if (this.reward()!.gainedXp > 0) this.unlockedPaths.set(newlyUnlocked(this.registry.paths(), new Set(this.game.state().completedMissionIds), m.id).map((p) => p.title));
         this.rewardOpen.set(true);
       } else {
         this.errors.update((e) => e + 1);

@@ -7,7 +7,7 @@ import { routes } from './app.routes';
 import { ContentRegistryService } from './core/services/content-registry.service';
 import { GameStateService } from './core/services/game-state.service';
 import { PythonRunnerService } from './core/services/python-runner.service';
-import { btn, goToTask, openMission, path, runCode, setup } from './testing/mission-harness';
+import { btn, goToTask, openMission, path, runCode, setup, unlockPaths } from './testing/mission-harness';
 
 const [m1, m2] = path.missions;
 const section = (el: HTMLElement, label: string) => el.querySelector(`section[aria-label="${label}"]`);
@@ -19,6 +19,7 @@ async function reload(id: string) {
   const python = TestBed.inject(PythonRunnerService);
   vi.spyOn(python, 'loadRuntime').mockResolvedValue(undefined);
   vi.spyOn(python, 'run').mockResolvedValue({ output: '' });
+  unlockPaths(); // dopo il «ricaricamento» lo stato è nuovo: l'Osservatorio richiede Centro Mobilità
   const f = TestBed.createComponent(App);
   await TestBed.inject(Router).navigateByUrl(`/missione/${id}`);
   f.detectChanges();

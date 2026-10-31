@@ -1,6 +1,7 @@
 import { Injectable, computed, inject, signal } from '@angular/core';
 import { ChallengeRecord, ConsentStatus, PlayerState, RewardSummary } from '../models/player-state.model';
 import { Mission } from '../models/mission.model';
+import { firstUnlocked, isPathUnlocked } from '../utils/path-lock';
 import { levelFromXp, xpForLevel } from '../utils/progress';
 import { STATE_VERSION, exportState, migrateState, parseExport } from '../utils/state-migrations';
 import { ContentRegistryService } from './content-registry.service';
@@ -121,7 +122,7 @@ export class GameStateService {
 
   selectPath(pathId: string): void {
     const path = this.registry.path(pathId);
-    if (!path) return;
+    if (!path || !isPathUnlocked(path, this.registry.paths(), new Set(this.state().completedMissionIds))) return;
     const char = path.defaultCharacterId ?? this.state().selectedCharacterId;
     this.update({ selectedPathId: pathId, selectedCharacterId: char });
   }
@@ -158,7 +159,7 @@ export class GameStateService {
   }
 
   private initialState(): PlayerState {
-    const path = this.registry.paths()[0];
+    const path = firstUnlocked(this.registry.paths(), new Set());
     return {
       schemaVersion: STATE_VERSION,
       xp: 0,
@@ -179,13 +180,16 @@ export class GameStateService {
     const raw = migrateState(stored);
     if (!raw) return base;
     const xp = Math.max(0, Number(raw.xp) || 0);
-    const path = this.registry.path(raw.selectedPathId ?? '') ?? this.registry.path(base.selectedPathId);
     const ids = new Set(this.registry.missions().map((m) => m.id));
+    const completed = (raw.completedMissionIds ?? []).filter((id) => ids.has(id));
+    // un percorso salvato come scelto ma ancora bloccato (o sparito) lascia il posto al primo sbloccato
+    const saved = this.registry.path(raw.selectedPathId ?? '');
+    const path = saved && isPathUnlocked(saved, this.registry.paths(), new Set(completed)) ? saved : firstUnlocked(this.registry.paths(), new Set(completed));
     return {
       schemaVersion: STATE_VERSION,
       xp,
       level: levelFromXp(xp),
-      completedMissionIds: (raw.completedMissionIds ?? []).filter((id) => ids.has(id)),
+      completedMissionIds: completed,
       solvedCode: Object.fromEntries(
         Object.entries(raw.solvedCode ?? {}).filter(([id, code]) => ids.has(id) && typeof code === 'string'),
       ),
