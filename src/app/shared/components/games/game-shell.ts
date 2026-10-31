@@ -17,7 +17,7 @@ import { Feedback } from './base-game';
       <header class="top">
         @if (character(); as c) { <app-sprite-view class="av" [sprite]="c.sprite" [scale]="3" [label]="c.name" /> }
         <div class="meta">
-          <h3>{{ title() }}</h3>
+          <h2>{{ title() }}</h2>
         </div>
         <div class="stats">
           <span class="pips" role="img" [attr.aria-label]="'Passo ' + (round() + 1 > rounds() ? rounds() : round() + 1) + ' di ' + rounds()">
@@ -49,8 +49,8 @@ import { Feedback } from './base-game';
         <div class="board"><ng-content /></div>
       </div>
 
-      <footer class="msg" [class.ok]="message()?.kind === 'ok'" [class.err]="message()?.kind === 'err'" role="status" aria-live="polite">
-        {{ message()?.text || 'Controlli: ' + controls() }}
+      <footer class="msg" [class.ok]="message()?.kind === 'ok'" [class.err]="message()?.kind === 'err'">
+        <span role="status" aria-live="polite">{{ message()?.text || 'Controlli: ' + controls() }}</span>
       </footer>
     </section>
 
@@ -68,7 +68,7 @@ import { Feedback } from './base-game';
       background: var(--panel); border: 4px solid var(--line); }
     .top { flex: none; display: flex; align-items: center; gap: 10px; min-width: 0; }
     .meta { flex: 1; min-width: 0; }
-    .meta h3 { margin: 0; font-size: .7rem; }
+    .meta h2 { margin: 0; font-size: .7rem; }
     /* Obiettivo: riquadro a tutta larghezza, ben leggibile (è la cosa più importante da capire in ogni gioco). */
     .goal { flex: none; margin: 0; padding: 6px 10px; font-size: .65rem; line-height: 1.6; color: var(--text); background: #0b0b24; border-left: 4px solid var(--accent); }
     .goal strong { color: var(--accent-2); font-weight: normal; }
