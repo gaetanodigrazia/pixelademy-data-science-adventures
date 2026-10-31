@@ -1,3 +1,12 @@
+/** Il miglior risultato su una sfida: XP guadagnati, secondi impiegati ed errori. */
+export interface ChallengeRecord {
+  xp: number;
+  seconds: number;
+  errors: number;
+  /** Quando è stato ottenuto (ms dal 1970). */
+  at: number;
+}
+
 export interface PlayerState {
   /** Versione dello schema salvato: permette di migrare i progressi senza perderli (vedi `state-migrations.ts`). */
   schemaVersion: number;
@@ -14,6 +23,8 @@ export interface PlayerState {
   telemetry: boolean;
   /** Lingua dell'interfaccia scelta dall'utente (se manca si usa quella del browser). */
   locale?: 'it' | 'en';
+  /** Classifica locale: il miglior risultato di ogni sfida, per id di missione. */
+  records: Record<string, ChallengeRecord>;
 }
 
 export type ConsentStatus = 'unknown' | 'granted' | 'denied';

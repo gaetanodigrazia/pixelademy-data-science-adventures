@@ -162,6 +162,7 @@ type Phase = 'teoria' | 'battaglia' | 'task';
               }
               @if (w.gainedXp > 0) { <p>🧩 Sezione del bollettino aggiunta: {{ projectProgress() }}</p>
                 @if (!nextMission()) { <p class="ok">🏆 Progetto completato!{{ dashboardOn() ? ' Apri la dashboard per vedere i risultati che hai prodotto.' : ' Il tuo programma stampa il bollettino completo.' }}</p> } }
+              @if (newRecord(); as r) { <p class="ok">🏆 {{ r.xp }} XP in {{ r.seconds }} s: nuovo record!</p> }
               @if (w.newLevel) { <p>⬆ Sei salito al livello {{ w.newLevel }}!</p> }
               <div class="row">
                 @if (!nextMission() && dashboardOn() && mission()?.pathId; as pid) {
@@ -291,6 +292,8 @@ export class MissionDetail {
   protected readonly solutionViewed = signal(false);
   /** Caratteri incollati nell'editor in questa missione (anti-incolla). */
   protected readonly pastedChars = signal(0);
+  /** Sfida: il risultato di questa esecuzione se batte il record (altrimenti `null`). */
+  protected readonly newRecord = signal<{ xp: number; seconds: number } | null>(null);
   protected readonly score = signal<ScoreBreakdown | null>(null);
   protected readonly clock = computed(() => `${String(Math.floor(this.seconds() / 60)).padStart(2, '0')}:${String(this.seconds() % 60).padStart(2, '0')}`);
   protected readonly par = computed(() => parSeconds(this.mission()?.difficulty ?? 1));
@@ -380,6 +383,7 @@ export class MissionDetail {
         this.errors.set(0);
         this.solutionViewed.set(false);
         this.pastedChars.set(0);
+        this.newRecord.set(null);
         if (m && this.missions.status(m) === 'locked') this.router.navigateByUrl('/');
       });
     });
@@ -470,6 +474,10 @@ export class MissionDetail {
           pastedChars: this.pastedChars(),
         });
         this.score.set(score);
+        if (m.challenge) {
+          const rec = { xp: score.xp, seconds: this.seconds(), errors: this.errors(), at: Date.now() };
+          this.newRecord.set(this.game.recordResult(m.id, rec) ? rec : null);
+        }
         this.reward.set(this.game.completeMission(m, { xp: score.xp, code: full }));
         this.telemetry.record('completed', m.id);
         this.rewardOpen.set(true);

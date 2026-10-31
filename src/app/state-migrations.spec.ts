@@ -9,23 +9,23 @@ const KEY = 'pixelademy.player.v1';
 describe('migrazioni dello stato salvato', () => {
   it('uno stato v1 (senza schemaVersion) è portato alla versione corrente senza perdere dati', () => {
     const v1 = { xp: 120, level: 2, completedMissionIds: ['a'], solvedCode: { a: 'x = 1' }, selectedCharacterId: 'c', selectedPathId: 'p' };
-    expect(migrateState(v1)).toEqual({ ...v1, liked: false, telemetry: false, schemaVersion: STATE_VERSION });
+    expect(migrateState(v1)).toEqual({ ...v1, liked: false, telemetry: false, records: {}, schemaVersion: STATE_VERSION });
   });
 
   it('uno stato già corrente resta uguale; quello di una versione futura o non valido non si interpreta', () => {
-    const cur = { schemaVersion: STATE_VERSION, xp: 5, liked: true, telemetry: true, solvedCode: {} };
+    const cur = { schemaVersion: STATE_VERSION, xp: 5, liked: true, telemetry: true, records: {}, solvedCode: {} };
     expect(migrateState(cur)).toEqual(cur);
     expect(migrateState({ schemaVersion: STATE_VERSION + 1, xp: 5 })).toBeNull();
     for (const bad of [null, 'boh', 7, [], undefined]) expect(migrateState(bad)).toBeNull();
   });
 
   it('esportazione: intestazione riconoscibile; l\'importazione accetta anche file di versioni precedenti', () => {
-    const state = { schemaVersion: STATE_VERSION, xp: 9, level: 1, completedMissionIds: [], solvedCode: {}, selectedCharacterId: '', selectedPathId: '', liked: false, telemetry: false };
+    const state = { schemaVersion: STATE_VERSION, xp: 9, level: 1, completedMissionIds: [], solvedCode: {}, selectedCharacterId: '', selectedPathId: '', liked: false, telemetry: false, records: {} };
     const text = exportState(state);
     expect(JSON.parse(text)).toMatchObject({ app: 'pixelademy', schemaVersion: STATE_VERSION });
     expect(parseExport(text)).toMatchObject({ xp: 9 });
     const old = JSON.stringify({ app: 'pixelademy', schemaVersion: 1, state: { xp: 40, completedMissionIds: [] } });
-    expect(parseExport(old)).toMatchObject({ xp: 40, schemaVersion: STATE_VERSION, liked: false, telemetry: false });
+    expect(parseExport(old)).toMatchObject({ xp: 40, schemaVersion: STATE_VERSION, liked: false, telemetry: false, records: {} });
     for (const bad of ['', 'non json', '{"app":"altro","state":{}}', '{"app":"pixelademy"}']) expect(parseExport(bad)).toBeNull();
   });
 });
@@ -82,13 +82,13 @@ describe('GameStateService: persistenza versionata', () => {
 
 describe('migrazione v2 → v3 (statistiche anonime)', () => {
   it('uno stato v2 si porta a v3 con le statistiche spente, senza toccare il resto', () => {
-    expect(migrateState({ schemaVersion: 2, xp: 30, liked: true, solvedCode: {} })).toEqual({ schemaVersion: STATE_VERSION, xp: 30, liked: true, solvedCode: {}, telemetry: false });
+    expect(migrateState({ schemaVersion: 2, xp: 30, liked: true, solvedCode: {} })).toEqual({ schemaVersion: STATE_VERSION, xp: 30, liked: true, solvedCode: {}, telemetry: false, records: {} });
   });
 });
 
 describe('migrazione v3 → v4 (lingua)', () => {
   it('uno stato v3 si porta a v4 senza lingua scelta; la lingua salvata si conserva', () => {
-    expect(migrateState({ schemaVersion: 3, xp: 1, telemetry: true })).toEqual({ schemaVersion: STATE_VERSION, xp: 1, telemetry: true });
-    expect(migrateState({ schemaVersion: 4, locale: 'en' })).toEqual({ schemaVersion: 4, locale: 'en' });
+    expect(migrateState({ schemaVersion: 3, xp: 1, telemetry: true })).toEqual({ schemaVersion: STATE_VERSION, xp: 1, telemetry: true, records: {} });
+    expect(migrateState({ schemaVersion: 4, locale: 'en' })).toEqual({ schemaVersion: STATE_VERSION, locale: 'en', records: {} });
   });
 });

@@ -1,5 +1,5 @@
 import { TestBed } from '@angular/core/testing';
-import { PYTHON_WORKER_FACTORY, PythonRunnerService, PythonWorker, RUN_TIMEOUT_MS } from './core/services/python-runner.service';
+import { PREPARE_TIMEOUT_MS, PYTHON_WORKER_FACTORY, PythonRunnerService, PythonWorker, RUN_TIMEOUT_MS } from './core/services/python-runner.service';
 import type { WorkerReply, WorkerRequest } from './core/workers/python-worker-core';
 
 /** Un Worker finto: registra i messaggi della pagina e risponde come decide il test. */
@@ -21,7 +21,10 @@ class FakeWorker implements PythonWorker {
 /** Risponde `ready` all'init e al `run` stampando il codice (o non risponde mai, se `hang`). */
 const echo = (hang = false) => (m: WorkerRequest, reply: (r: WorkerReply) => void) => {
   if (m.type === 'init') reply({ type: 'ready' });
-  else if (!hang) reply({ type: 'result', id: m.id, output: `out:${m.code}\n` });
+  else {
+    reply({ type: 'started', id: m.id });
+    if (!hang) reply({ type: 'result', id: m.id, output: `out:${m.code}\n` });
+  }
 };
 
 function setup(behaviors: ((m: WorkerRequest, r: (x: WorkerReply) => void) => void)[]) {
@@ -39,7 +42,7 @@ describe('PythonRunnerService (Web Worker)', () => {
   it('esegue il codice nel worker e restituisce output ed eventuale errore', async () => {
     const { service, workers } = setup([(m, reply) => {
       if (m.type === 'init') reply({ type: 'ready' });
-      else reply({ type: 'result', id: m.id, output: 'a\n', error: m.code === 'boom' ? 'NameError: x' : undefined });
+      else { reply({ type: 'started', id: m.id }); reply({ type: 'result', id: m.id, output: 'a\n', error: m.code === 'boom' ? 'NameError: x' : undefined }); }
     }]);
     expect(await service.run('ok')).toEqual({ output: 'a\n', error: undefined });
     expect(await service.run('boom')).toEqual({ output: 'a\n', error: 'NameError: x' });
@@ -102,6 +105,30 @@ describe('PythonRunnerService (Web Worker)', () => {
     release();
     await vi.advanceTimersByTimeAsync(10);
     expect((await p).output).toBe('ok\n');
+  });
+
+  it('il download dei pacchetti (es. pandas) non conta nel timeout: conta dal messaggio «started»', async () => {
+    vi.useFakeTimers();
+    let go!: () => void;
+    const slowPackages = (m: WorkerRequest, reply: (r: WorkerReply) => void) => {
+      if (m.type === 'init') reply({ type: 'ready' });
+      else go = () => { reply({ type: 'started', id: m.id }); reply({ type: 'result', id: m.id, output: 'ok\n' }); };
+    };
+    const { service } = setup([slowPackages]);
+    const p = service.run('import pandas');
+    await vi.advanceTimersByTimeAsync(60_000); // 60 s di download: oltre i 5 s del timeout, ma non lo scatena
+    go();
+    await vi.advanceTimersByTimeAsync(10);
+    expect((await p).output).toBe('ok\n');
+  });
+
+  it('se la preparazione dei pacchetti dura più del tetto largo, si interrompe con un messaggio sulla connessione', async () => {
+    vi.useFakeTimers();
+    const { service, workers } = setup([(m, reply) => { if (m.type === 'init') reply({ type: 'ready' }); }]);
+    const p = service.run('import pandas');
+    await vi.advanceTimersByTimeAsync(PREPARE_TIMEOUT_MS + 100);
+    expect((await p).error).toContain('caricamento dei pacchetti');
+    expect(workers[0].terminated).toBe(true);
   });
 
   it('stop() interrompe subito l\'esecuzione in corso e non fa nulla se non ce n\'è', async () => {

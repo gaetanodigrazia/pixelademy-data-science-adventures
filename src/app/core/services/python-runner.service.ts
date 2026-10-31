@@ -4,6 +4,8 @@ import type { WorkerReply, WorkerRequest } from '../workers/python-worker-core';
 
 /** Dopo quanti ms un programma ancora in esecuzione viene interrotto (ciclo infinito o troppo lento). */
 export const RUN_TIMEOUT_MS = 5000;
+/** Tetto per la preparazione (download dei pacchetti, es. pandas) prima che il codice parta: oltre, si interrompe. */
+export const PREPARE_TIMEOUT_MS = 120_000;
 
 /** Il minimo del Worker che serve al servizio: così nei test si sostituisce con uno finto. */
 export interface PythonWorker {
@@ -34,6 +36,7 @@ export class PythonRunnerService {
   private ready?: Promise<void>;
   private nextId = 1;
   private pending = new Map<number, (r: PythonRunResult) => void>();
+  private started = new Map<number, () => void>();
   private abort?: (message: string) => void;
 
   /** Carica Pyodide al primo utilizzo (lazy) nel worker. */
@@ -58,6 +61,8 @@ export class PythonRunnerService {
           } else if (m.type === 'init-error') {
             this.dispose('error');
             reject(new Error(m.message));
+          } else if (m.type === 'started') {
+            this.started.get(m.id)?.();
           } else {
             this.pending.get(m.id)?.({ output: m.output, error: m.error });
             this.pending.delete(m.id);
@@ -84,10 +89,17 @@ export class PythonRunnerService {
     const worker = this.worker!;
     const id = this.nextId++;
     return new Promise<PythonRunResult>((resolve) => {
-      const timer = setTimeout(() => this.interrupt(`Il programma ha impiegato più di ${timeoutMs / 1000} secondi ed è stato interrotto (ciclo infinito?).`), timeoutMs);
+      const tooSlow = `Il programma ha impiegato più di ${timeoutMs / 1000} secondi ed è stato interrotto (ciclo infinito?).`;
+      // finché il worker prepara i pacchetti vale il tetto largo; quando il codice parte (`started`) comincia il timeout vero
+      let timer = setTimeout(() => this.interrupt('Il caricamento dei pacchetti Python è durato troppo ed è stato interrotto. Controlla la connessione e riprova.'), PREPARE_TIMEOUT_MS);
+      this.started.set(id, () => {
+        clearTimeout(timer);
+        timer = setTimeout(() => this.interrupt(tooSlow), timeoutMs);
+      });
       const finish = (r: PythonRunResult) => {
         clearTimeout(timer);
         this.pending.delete(id);
+        this.started.delete(id);
         this.abort = undefined;
         resolve(r);
       };
@@ -114,6 +126,7 @@ export class PythonRunnerService {
     this.worker = undefined;
     this.ready = undefined;
     this.pending.clear();
+    this.started.clear();
     this.status.set(status);
   }
 }

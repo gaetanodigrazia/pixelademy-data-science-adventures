@@ -22,3 +22,11 @@
 - **Given** completo, **When** guardo, **Then** guadagno XP e compaio in una classifica locale.
 
 Controlli eseguiti prima della PR: `npm test -- --watch=false` (passati) e `npm run build -- --configuration development` (riuscita).
+
+
+## Seconda parte (completamento)
+- **Classifica locale**: `PlayerState.records` (stato **v5**, migrazione 4 → 5), `GameStateService.recordResult` (record = più XP, a parità meno secondi; rigiocare può migliorarlo ma non dà altri XP), componente `Leaderboard` e pulsante «🏆 Classifica» nella home dei percorsi di sfide; la ricompensa dice «nuovo record!».
+- **pandas verificato nel browser** (Pyodide 0.27.7, pandas 2.2.3 dal rilascio ufficiale su GitHub, sha256 controllati): le 3 sfide danno 11.83 / giochi 170.0 / 4 e passano la validazione (`scripts/check-challenges.mjs`).
+- Il test reale ha trovato **due difetti** corretti in `python-worker-core`/`PythonRunnerService`: (1) Pyodide scriveva «Loading numpy, pandas…» nell'output del programma e falsava il confronto → messaggi silenziati; (2) il download di pandas consumava il timeout di 5 s → nuovo messaggio `started`: il timeout conta dal via del codice, con un tetto di 120 s per la preparazione dei pacchetti.
+- Controprova dell'anti-incolla (#84) in un browser vero: incollare la soluzione ha dato ×0,60 nella tabella XP.
+- Non fatto: una `ValidationSpec` specifica per DataFrame (le sfide stampano numeri/testo e la validazione a righe basta).
