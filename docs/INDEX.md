@@ -53,3 +53,4 @@
 | E06 | US-06.6 Ricompensa e avanzamento | #45 | #135 | `docs/issues/US-06.6.md` | fatto |
 | E12 | US-12.1 Test di contenuto: soluzioni contro Python reale | #76 | #136 | `docs/issues/US-12.1.md` | fatto |
 | E12 | US-12.2 Test unitari delle utility pure | #77 | #137 | `docs/issues/US-12.2.md` | fatto |
+| E11 | US-11.7 Focus data science nei testi | #75 | #138 | `docs/issues/US-11.7.md` | fatto |
