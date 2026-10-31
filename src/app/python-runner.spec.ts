@@ -1,93 +1,150 @@
 import { TestBed } from '@angular/core/testing';
-import { PythonRunnerService } from './core/services/python-runner.service';
+import { PYTHON_WORKER_FACTORY, PythonRunnerService, PythonWorker, RUN_TIMEOUT_MS } from './core/services/python-runner.service';
+import type { WorkerReply, WorkerRequest } from './core/workers/python-worker-core';
 
-/* eslint-disable @typescript-eslint/no-explicit-any */
-type W = Window & { loadPyodide?: unknown };
-
-/** Un Pyodide finto: l'esecuzione «stampa» ciò che il test decide e registra i namespace usati. */
-function fakePyodide(program: (code: string, out: (s: string) => void, err: (s: string) => void) => void | Promise<void>) {
-  let out: (s: string) => void = () => undefined;
-  let err: (s: string) => void = () => undefined;
-  const namespaces: object[] = [];
-  const destroyed: object[] = [];
-  return {
-    namespaces,
-    destroyed,
-    setStdout: (o: { batched: (s: string) => void }) => (out = o.batched),
-    setStderr: (o: { batched: (s: string) => void }) => (err = o.batched),
-    globals: { get: () => () => { const g = { destroy: () => destroyed.push(g) }; namespaces.push(g); return g; } },
-    loadPackagesFromImports: async () => undefined,
-    runPythonAsync: async (code: string, opts: { globals: object }) => {
-      expect(opts.globals).toBe(namespaces[namespaces.length - 1]);
-      await program(code, (s) => out(s), (s) => err(s));
-    },
-  };
+/** Un Worker finto: registra i messaggi della pagina e risponde come decide il test. */
+class FakeWorker implements PythonWorker {
+  onmessage: PythonWorker['onmessage'] = null;
+  onerror: PythonWorker['onerror'] = null;
+  sent: WorkerRequest[] = [];
+  terminated = false;
+  constructor(private readonly behave: (m: WorkerRequest, reply: (r: WorkerReply) => void) => void) {}
+  postMessage(m: WorkerRequest): void {
+    this.sent.push(m);
+    queueMicrotask(() => this.behave(m, (r) => this.onmessage?.({ data: r })));
+  }
+  terminate(): void {
+    this.terminated = true;
+  }
 }
 
-describe('PythonRunnerService', () => {
-  beforeEach(() => TestBed.resetTestingModule());
-  afterEach(() => delete (window as W).loadPyodide);
+/** Risponde `ready` all'init e al `run` stampando il codice (o non risponde mai, se `hang`). */
+const echo = (hang = false) => (m: WorkerRequest, reply: (r: WorkerReply) => void) => {
+  if (m.type === 'init') reply({ type: 'ready' });
+  else if (!hang) reply({ type: 'result', id: m.id, output: `out:${m.code}\n` });
+};
 
-  const install = (py: ReturnType<typeof fakePyodide>) => ((window as W).loadPyodide = vi.fn(async () => py));
+function setup(behaviors: ((m: WorkerRequest, r: (x: WorkerReply) => void) => void)[]) {
+  const workers: FakeWorker[] = [];
+  TestBed.resetTestingModule();
+  TestBed.configureTestingModule({
+    providers: [{ provide: PYTHON_WORKER_FACTORY, useValue: () => { const w = new FakeWorker(behaviors[Math.min(workers.length, behaviors.length - 1)]); workers.push(w); return w; } }],
+  });
+  return { workers, service: TestBed.inject(PythonRunnerService) };
+}
 
-  it('esegue il codice e restituisce l\'output delle print, una riga per volta', async () => {
-    const py = fakePyodide((code, out) => { for (const l of code.split(';')) out(l); });
-    install(py);
-    const r = await TestBed.inject(PythonRunnerService).run('a;b');
-    expect(r).toEqual({ output: 'a\nb\n', error: undefined });
+describe('PythonRunnerService (Web Worker)', () => {
+  afterEach(() => vi.useRealTimers());
+
+  it('esegue il codice nel worker e restituisce output ed eventuale errore', async () => {
+    const { service, workers } = setup([(m, reply) => {
+      if (m.type === 'init') reply({ type: 'ready' });
+      else reply({ type: 'result', id: m.id, output: 'a\n', error: m.code === 'boom' ? 'NameError: x' : undefined });
+    }]);
+    expect(await service.run('ok')).toEqual({ output: 'a\n', error: undefined });
+    expect(await service.run('boom')).toEqual({ output: 'a\n', error: 'NameError: x' });
+    expect(workers[0].sent.map((m) => m.type)).toEqual(['init', 'run', 'run']);
   });
 
-  it('un errore di Python torna come messaggio, limitato alle ultime righe', async () => {
-    install(fakePyodide(() => { throw new Error('riga1\nriga2\nriga3\nriga4\nriga5\nNameError: x'); }));
-    const r = await TestBed.inject(PythonRunnerService).run('x');
-    expect(r.error).toBe('riga3\nriga4\nriga5\nNameError: x');
+  it('crea un solo worker e lo inizializza una volta; lo stato va idle → loading → ready', async () => {
+    const { service, workers } = setup([echo()]);
+    expect(service.status()).toBe('idle');
+    const first = service.run('1');
+    expect(service.status()).toBe('loading');
+    await first;
+    await service.run('2');
+    expect(service.status()).toBe('ready');
+    expect(workers.length).toBe(1);
+    expect(workers[0].sent.filter((m) => m.type === 'init').length).toBe(1);
   });
 
-  it('se Python scrive solo su stderr senza eccezione, quello è l\'errore', async () => {
-    install(fakePyodide((_c, _o, err) => err('Warning: attenzione')));
-    expect((await TestBed.inject(PythonRunnerService).run('x')).error).toBe('Warning: attenzione');
+  it('più esecuzioni insieme non si confondono (ogni risposta torna alla sua richiesta)', async () => {
+    const { service } = setup([echo()]);
+    const results = await Promise.all([service.run('a'), service.run('b'), service.run('c')]);
+    expect(results.map((r) => r.output)).toEqual(['out:a\n', 'out:b\n', 'out:c\n']);
   });
 
-  it('ogni esecuzione ha il suo namespace, distrutto alla fine (le variabili non si trascinano)', async () => {
-    const py = fakePyodide(() => undefined);
-    install(py);
-    const s = TestBed.inject(PythonRunnerService);
-    await s.run('a = 1');
-    await s.run('print(a)');
-    expect(py.namespaces.length).toBe(2);
-    expect(py.namespaces[0]).not.toBe(py.namespaces[1]);
-    expect(py.destroyed).toEqual(py.namespaces);
+  it('un ciclo infinito è interrotto dopo il timeout: messaggio chiaro, worker terminato, pagina libera', async () => {
+    vi.useFakeTimers();
+    const { service, workers } = setup([echo(true)]);
+    const p = service.run('while True: pass');
+    await vi.advanceTimersByTimeAsync(10); // init
+    await vi.advanceTimersByTimeAsync(RUN_TIMEOUT_MS);
+    const r = await p;
+    expect(r.error).toContain('più di 5 secondi');
+    expect(r.error).toContain('interrotto');
+    expect(workers[0].terminated).toBe(true);
+    expect(service.status()).toBe('idle');
   });
 
-  it('carica Pyodide una sola volta e aggiorna lo stato: idle → loading → ready', async () => {
-    const load = install(fakePyodide(() => undefined));
-    const s = TestBed.inject(PythonRunnerService);
-    expect(s.status()).toBe('idle');
-    const p = s.run('1');
-    expect(s.status()).toBe('loading');
-    await p;
-    await s.run('2');
-    expect(s.status()).toBe('ready');
-    expect(load).toHaveBeenCalledTimes(1);
+  it('dopo un\'interruzione la prossima esecuzione riparte con un worker nuovo', async () => {
+    vi.useFakeTimers();
+    const { service, workers } = setup([echo(true), echo()]);
+    const hung = service.run('x');
+    await vi.advanceTimersByTimeAsync(RUN_TIMEOUT_MS + 10);
+    await hung;
+    const again = service.run('y');
+    await vi.advanceTimersByTimeAsync(10);
+    expect((await again).output).toBe('out:y\n');
+    expect(workers.length).toBe(2);
   });
 
-  it('se il download fallisce dà un messaggio sulla connessione, stato error, e consente un nuovo tentativo', async () => {
-    // lo script non viene davvero inserito nel documento (jsdom proverebbe a scaricarlo dalla CDN): lo si cattura e si simula l'errore
-    const scripts: HTMLScriptElement[] = [];
-    const append = vi.spyOn(document.head, 'appendChild').mockImplementation(((n: HTMLScriptElement) => { scripts.push(n); return n; }) as never);
-    const s = TestBed.inject(PythonRunnerService);
-    const first = s.run('1');
-    expect(scripts.length).toBe(1);
-    expect(scripts[0].src).toContain('/pyodide.js');
-    scripts[0].onerror!(new Event('error'));
-    const r = await first;
+  it('il timeout conta dall\'avvio dell\'esecuzione, non dal caricamento di Pyodide', async () => {
+    vi.useFakeTimers();
+    let release!: () => void;
+    const slowInit = (m: WorkerRequest, reply: (r: WorkerReply) => void) => {
+      if (m.type === 'init') release = () => reply({ type: 'ready' });
+      else reply({ type: 'result', id: m.id, output: 'ok\n' });
+    };
+    const { service } = setup([slowInit]);
+    const p = service.run('1');
+    await vi.advanceTimersByTimeAsync(60_000); // il download dura un minuto: nessun timeout
+    release();
+    await vi.advanceTimersByTimeAsync(10);
+    expect((await p).output).toBe('ok\n');
+  });
+
+  it('stop() interrompe subito l\'esecuzione in corso e non fa nulla se non ce n\'è', async () => {
+    const { service, workers } = setup([echo(true)]);
+    service.stop(); // nessuna esecuzione: nessun effetto
+    expect(service.status()).toBe('idle');
+    const p = service.run('while True: pass');
+    await new Promise((r) => setTimeout(r));
+    service.stop();
+    expect((await p).error).toBe('Esecuzione interrotta.');
+    expect(workers[0].terminated).toBe(true);
+  });
+
+  it('se Pyodide non si carica dà un messaggio sulla connessione, stato error, e consente un nuovo tentativo', async () => {
+    const { service, workers } = setup([
+      (m, reply) => { if (m.type === 'init') reply({ type: 'init-error', message: 'rete' }); },
+      echo(),
+    ]);
+    const r = await service.run('1');
     expect(r.output).toBe('');
     expect(r.error).toContain('Verifica la connessione');
-    expect(s.status()).toBe('error');
-    append.mockRestore();
+    expect(service.status()).toBe('error');
+    expect(workers[0].terminated).toBe(true);
+    expect((await service.run('2')).output).toBe('out:2\n');
+    expect(service.status()).toBe('ready');
+    expect(workers.length).toBe(2);
+  });
 
-    install(fakePyodide((_c, out) => out('ok')));
-    expect((await s.run('1')).output).toBe('ok\n');
-    expect(s.status()).toBe('ready');
+  it('un errore del worker (file non caricabile) è trattato come caricamento fallito', async () => {
+    const { service, workers } = setup([() => undefined]);
+    const p = service.run('1');
+    await new Promise((r) => setTimeout(r));
+    workers[0].onerror!(new Event('error'));
+    expect((await p).error).toContain('Verifica la connessione');
+    expect(service.status()).toBe('error');
+  });
+
+  it('senza supporto ai Web Worker il caricamento fallisce con lo stesso messaggio e non lancia eccezioni', async () => {
+    TestBed.resetTestingModule();
+    TestBed.configureTestingModule({ providers: [{ provide: PYTHON_WORKER_FACTORY, useValue: () => { throw new ReferenceError('Worker is not defined'); } }] });
+    const service = TestBed.inject(PythonRunnerService);
+    await expect(service.loadRuntime()).rejects.toThrow('Worker non disponibile');
+    expect((await service.run('1')).error).toContain('Verifica la connessione');
+    expect(service.status()).toBe('error');
   });
 });

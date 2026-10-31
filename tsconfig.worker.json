@@ -1,0 +1,10 @@
+/* TypeScript per i Web Worker (libreria `webworker`, senza i tipi del DOM). */
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "outDir": "./out-tsc/worker",
+    "lib": ["es2022", "webworker"],
+    "types": []
+  },
+  "include": ["src/**/*.worker.ts", "src/app/core/workers/python-worker-core.ts"]
+}

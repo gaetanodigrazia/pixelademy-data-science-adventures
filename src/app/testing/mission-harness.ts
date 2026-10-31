@@ -21,7 +21,7 @@ export function setup() {
   TestBed.resetTestingModule();
   TestBed.configureTestingModule({ providers: [provideRouter(routes)] });
   const python = TestBed.inject(PythonRunnerService);
-  vi.spyOn(python, 'loadRuntime').mockResolvedValue({});
+  vi.spyOn(python, 'loadRuntime').mockResolvedValue(undefined);
   const run = vi.spyOn(python, 'run').mockResolvedValue({ output: '' });
   return { run };
 }

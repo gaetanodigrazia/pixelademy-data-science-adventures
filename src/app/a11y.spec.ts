@@ -29,7 +29,7 @@ describe('accessibilità (axe)', () => {
     TestBed.resetTestingModule();
     TestBed.configureTestingModule({ providers: [provideRouter(routes)] });
     const python = TestBed.inject(PythonRunnerService);
-    vi.spyOn(python, 'loadRuntime').mockResolvedValue({});
+    vi.spyOn(python, 'loadRuntime').mockResolvedValue(undefined);
   });
 
   async function open(url: string) {

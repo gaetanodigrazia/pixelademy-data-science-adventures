@@ -16,6 +16,9 @@ import { AfterViewInit, ChangeDetectionStrategy, Component, ElementRef, OnDestro
       <button type="button" class="btn primary" [disabled]="running()" (click)="run()" aria-label="Esegui codice">
         {{ running() ? 'In esecuzione…' : '▶ Esegui codice' }}
       </button>
+      @if (running()) {
+        <button type="button" class="btn danger" (click)="stopCode.emit()" aria-label="Interrompi l'esecuzione">■ Interrompi</button>
+      }
       <button type="button" class="btn" [disabled]="running()" (click)="reset()" aria-label="Ripristina codice iniziale" title="Ripristina codice iniziale">↺<span class="lbl"> Ripristina</span></button>
       <!-- Solo su touch: apre/chiude la tastiera. Il pulsante non ruba il fuoco all'editor, altrimenti chiuderla la riaprirebbe. -->
       <button type="button" class="btn kb" [attr.aria-pressed]="typing()" aria-label="Mostra o nascondi la tastiera"
@@ -39,6 +42,8 @@ export class CodeEditor implements AfterViewInit, OnDestroy {
   readonly starterCode = input.required<string>();
   readonly running = input(false);
   readonly runCode = output<string>();
+  /** «Interrompi»: ferma un programma che non finisce. */
+  readonly stopCode = output<void>();
   /** Quanti caratteri sono stati incollati (anti-incolla: il punteggio ne tiene conto). */
   readonly pasted = output<number>();
 
