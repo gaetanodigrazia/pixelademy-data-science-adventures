@@ -18,3 +18,4 @@
 | E02 | US-02.6 Esercizi propri per percorso | #23 | #101 | `docs/issues/US-02.6.md` | fatto |
 | E02 | US-02.3 Percorsi come dati (PATH_SEEDS) | #20 | #102 | `docs/issues/US-02.3.md` | fatto |
 | E02 | US-02.5 Il programma «bollettino» cumulativo | #22 | #103 | `docs/issues/US-02.5.md` | fatto |
+| E05 | US-05.4 Rendering sprite e game loop | #39 | #104 | `docs/issues/US-05.4.md` | fatto |
