@@ -59,3 +59,4 @@
 | E11 | US-11.2 Percorso «Centro Mobilità (3 missioni, esercizi propri)» | #70 | #141 | `docs/issues/US-11.2.md` | fatto |
 | E11 | US-11.3 Percorso «Officina dell'Energia (3 missioni, esercizi propri)» | #71 | #142 | `docs/issues/US-11.3.md` | fatto |
 | E12 | US-12.3 Accessibilità di base | #78 | #143 | `docs/issues/US-12.3.md` | fatto |
+| E12 | US-12.4 Responsive e touch | #79 | #144 | `docs/issues/US-12.4.md` | fatto |

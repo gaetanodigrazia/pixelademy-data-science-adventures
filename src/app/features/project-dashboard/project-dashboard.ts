@@ -88,8 +88,11 @@ import { ProjectModal } from '../../shared/components/project-modal';
     .locked-chart { flex: 1; display: grid; place-items: center; margin: 0; text-align: center; font-size: .5rem; color: var(--muted); border: 2px dashed var(--line); }
     .empty { text-align: center; }
     @media (max-width: 800px) {
-      .grid { grid-template-columns: minmax(0, 1fr); grid-template-rows: repeat(var(--n, 4), minmax(0, 1fr)); gap: 5px; }
-      .card { padding: 4px 8px; gap: 2px; }
+      /* Telefono: una colonna che scorre dentro la pagina (la regola «niente scroll» schiaccerebbe grafici e indicatori a pochi pixel). */
+      .grid { grid-template-columns: minmax(0, 1fr); grid-template-rows: none; grid-auto-rows: auto; overflow-y: auto; gap: 8px; }
+      .card { min-height: auto; overflow: visible; padding: 6px 8px; gap: 4px; }
+      .chart { flex: none; height: 120px; min-height: 120px; }
+      .locked-chart { flex: none; min-height: 60px; }
       /* I pulsanti (Mappa, Codice) stanno su una riga e il titolo sotto, a tutta larghezza. */
       .top { gap: 6px; flex-wrap: wrap; }
       .title { flex: 1 1 100%; order: 3; }

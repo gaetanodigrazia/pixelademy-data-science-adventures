@@ -93,3 +93,9 @@ button.gm-cell:disabled { cursor: default; }
 @media (hover: none) and (pointer: coarse) {
   input:not([type='range']):not([type='checkbox']):not([type='radio']), textarea, .monaco-editor .inputarea { font-size: 16px !important; }
 }
+
+/* Touch: i bersagli toccabili sono almeno 44×44 px (WCAG 2.5.5); con il mouse restano compatti. */
+@media (pointer: coarse) {
+  .btn, .brand, .choice, .result, a.card, .gm-cell { min-height: 44px; min-width: 44px; }
+  .btn, .brand { display: inline-flex; align-items: center; justify-content: center; }
+}

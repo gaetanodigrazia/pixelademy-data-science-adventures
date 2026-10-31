@@ -31,3 +31,6 @@ e confronta l'output con il bollettino atteso. Per eseguire la suite in locale s
 
 ### Accessibilità
 `a11y.spec.ts` esegue [axe-core](https://github.com/dequelabs/axe-core) su home, catalogo, missione (presentazione, teoria, battaglia, task), Dashboard e modale privacy; `contrast.spec.ts` misura il contrasto (≥ 4,5:1) delle coppie di colori del tema in `src/styles.css`.
+
+### Layout mobile
+`npm run check:responsive` (con `npm start` attivo e Playwright installato) controlla a 360×640 con puntatore touch: nessuno scroll orizzontale, modali dentro lo schermo, bersagli toccabili ≥ 44 px. Non fa parte della CI.
