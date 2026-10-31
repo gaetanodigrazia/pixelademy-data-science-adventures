@@ -32,3 +32,4 @@
 | E07 | US-07.9 Minigioco «Duello degli estremi» | #55 | #115 | `docs/issues/US-07.9.md` | fatto |
 | E07 | US-07.10 Minigioco «Fucina delle funzioni» | #56 | #116 | `docs/issues/US-07.10.md` | fatto |
 | E07 | US-07.11 Minigioco «Linea di analisi» | #57 | #117 | `docs/issues/US-07.11.md` | fatto |
+| E02 | US-02.8 Pack «adventure-core» | #25 | #118 | `docs/issues/US-02.8.md` | fatto |
