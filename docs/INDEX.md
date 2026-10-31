@@ -47,4 +47,5 @@
 | E06 | US-06.7 Introduzione al progetto del percorso | #46 | #130 | `docs/issues/US-06.7.md` | fatto |
 | E06 | US-06.5 Scena di gioco guidata dal codice | #44 | #131 | `docs/issues/US-06.5.md` | fatto |
 | E06 | US-06.1 Teoria a slide | #40 | #132 | `docs/issues/US-06.1.md` | fatto |
-| E06 | US-06.2 Battaglia: minigioco che sblocca il task | #41 | #133 | `docs/issues/US-06.2.md` | fatto |
+| E06 | US-06.2 Battaglia: minigioco che sblocca il task | #41 | — (commit diretto su main) | `docs/issues/US-06.2.md` | fatto |
+| E06 | US-06.3 Task Python con codice precedente e console | #42 | #133 | `docs/issues/US-06.3.md` | fatto |
