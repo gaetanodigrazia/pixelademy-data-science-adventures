@@ -13,3 +13,7 @@ npm run build -- --configuration development
 npm start
 ```
 `.npmrc` abilita `legacy-peer-deps` (workaround a un bug di npm 10 con i peer di jsdom).
+
+## Content pack
+Un pack è una cartella `src/app/content/<id>/pack.ts` che esporta (default) un `ContentPack`. `npm run packs` li scopre e genera
+`src/app/core/data/packs.generated.ts` (non committato; lo lanciano in automatico `npm start`, `npm test` e `npm run build`).
