@@ -9,3 +9,4 @@
 | E01 | US-01.4 Build di produzione e deploy | #16 | #92 | `docs/issues/US-01.4.md` | fatto |
 | E01 | US-01.5 CI: test e build su ogni PR | #17 | #93 | `docs/issues/US-01.5.md` | fatto |
 | E04 | US-04.1 XP, livelli e curva di progressione | #31 | #94 | `docs/issues/US-04.1.md` | fatto |
+| E03 | US-03.4 Validazione deterministica dell'output | #29 | #95 | `docs/issues/US-03.4.md` | fatto |
