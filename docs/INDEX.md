@@ -68,3 +68,4 @@
 | E09 | US-09.3 Pagine di anteprima Open Graph per i percorsi | #65 | #150 | `docs/issues/US-09.3.md` | fatto |
 | E09 | US-09.4 Condivisione del profilo (livello ed XP) | #66 | #151 | `docs/issues/US-09.4.md` | fatto |
 | E10 | US-10.1 Mi piace anonimo | #67 | #152 | `docs/issues/US-10.1.md` | fatto |
+| E10 | US-10.2 Pagina «Il progetto» | #68 | #153 | `docs/issues/US-10.2.md` | fatto |
