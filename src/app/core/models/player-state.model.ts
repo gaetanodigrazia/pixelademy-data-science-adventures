@@ -12,6 +12,8 @@ export interface PlayerState {
   liked: boolean;
   /** Ha scelto di contribuire con statistiche anonime e aggregate (opt-in, spento di default). */
   telemetry: boolean;
+  /** Lingua dell'interfaccia scelta dall'utente (se manca si usa quella del browser). */
+  locale?: 'it' | 'en';
 }
 
 export type ConsentStatus = 'unknown' | 'granted' | 'denied';

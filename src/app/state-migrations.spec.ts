@@ -82,6 +82,13 @@ describe('GameStateService: persistenza versionata', () => {
 
 describe('migrazione v2 → v3 (statistiche anonime)', () => {
   it('uno stato v2 si porta a v3 con le statistiche spente, senza toccare il resto', () => {
-    expect(migrateState({ schemaVersion: 2, xp: 30, liked: true, solvedCode: {} })).toEqual({ schemaVersion: 3, xp: 30, liked: true, solvedCode: {}, telemetry: false });
+    expect(migrateState({ schemaVersion: 2, xp: 30, liked: true, solvedCode: {} })).toEqual({ schemaVersion: STATE_VERSION, xp: 30, liked: true, solvedCode: {}, telemetry: false });
+  });
+});
+
+describe('migrazione v3 → v4 (lingua)', () => {
+  it('uno stato v3 si porta a v4 senza lingua scelta; la lingua salvata si conserva', () => {
+    expect(migrateState({ schemaVersion: 3, xp: 1, telemetry: true })).toEqual({ schemaVersion: STATE_VERSION, xp: 1, telemetry: true });
+    expect(migrateState({ schemaVersion: 4, locale: 'en' })).toEqual({ schemaVersion: 4, locale: 'en' });
   });
 });

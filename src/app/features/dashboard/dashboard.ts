@@ -7,6 +7,7 @@ import { LikeService } from '../../core/services/like.service';
 import { GameStateService } from '../../core/services/game-state.service';
 import { MissionService } from '../../core/services/mission.service';
 import { MissionCard } from '../../shared/components/mission-card';
+import { TranslatePipe } from '../../core/i18n/translate.pipe';
 import { SpriteView } from '../../shared/components/sprite-view';
 import { WorldMap } from '../../shared/components/world-map';
 
@@ -14,30 +15,30 @@ type CatalogKind = 'paths' | 'heroes';
 
 @Component({
   selector: 'app-dashboard',
-  imports: [MissionCard, RouterLink, SpriteView, WorldMap],
+  imports: [MissionCard, RouterLink, SpriteView, WorldMap, TranslatePipe],
   changeDetection: ChangeDetectionStrategy.OnPush,
   host: { '(document:keydown.escape)': 'closeCatalog()' },
   template: `
     <main>
       @if (registry.isEmpty() || !path() || !hero()) {
-        <section class="panel"><h2>Nessun contenuto disponibile</h2>
-          <p>Non ci sono percorsi installati. Aggiungi un pack in <code>src/app/content/</code> ed esegui <code>npm run packs</code>.</p></section>
+        <section class="panel"><h2>{{ 'home.emptyTitle' | t }}</h2>
+          <p>{{ 'home.emptyText' | t }}</p></section>
       } @else {
         <header class="head">
           <div class="titlerow">
             <h1>{{ path()!.icon }} {{ path()!.title }}</h1>
             <button type="button" class="btn like" [attr.aria-pressed]="game.liked()" [disabled]="game.liked() || likes.sending()"
-              aria-label="Mi piace al progetto, in modo anonimo" (click)="likes.likeOnce()">{{ game.liked() ? '👍 Grazie!' : '👍 Mi piace' }}</button>
+              aria-label="Mi piace al progetto, in modo anonimo" (click)="likes.likeOnce()">{{ (game.liked() ? 'home.liked' : 'home.like') | t }}</button>
           </div>
-          <p class="hint">Frecce: muovi · Invio: entra nel blocco</p>
-          <section class="level" aria-label="Progressione del giocatore">
+          <p class="hint">{{ 'home.hint' | t }}</p>
+          <section class="level" [attr.aria-label]="'home.progress' | t">
             <div class="level-copy">
-              <strong>Livello {{ game.level() }} <span>/ ∞</span></strong>
-              <span>{{ game.xpInto() }} / {{ game.xpSpan() }} XP verso il livello {{ game.level() + 1 }}</span>
+              <strong>{{ 'home.levelOf' | t: { level: game.level() } }} <span>/ ∞</span></strong>
+              <span>{{ 'nav.xpToward' | t: { into: game.xpInto(), span: game.xpSpan(), next: game.level() + 1 } }}</span>
             </div>
             <div class="bar" role="progressbar" [attr.aria-valuenow]="game.xpInto()" aria-valuemin="0" [attr.aria-valuemax]="game.xpSpan()"
-              [attr.aria-label]="game.xpInto() + ' su ' + game.xpSpan() + ' XP per il prossimo livello'"><span [style.width.%]="game.levelProgress()"></span></div>
-            <span class="note">XP totali: {{ game.xp() }} · ogni livello richiede più XP del precedente</span>
+              [attr.aria-label]="'nav.xpBar' | t: { into: game.xpInto(), span: game.xpSpan() }"><span [style.width.%]="game.levelProgress()"></span></div>
+            <span class="note">{{ 'home.xpNote' | t: { xp: game.xp() } }}</span>
           </section>
         </header>
 
@@ -48,28 +49,28 @@ type CatalogKind = 'paths' | 'heroes';
           @if (selected(); as m) { <app-mission-card [mission]="m" [status]="missions.status(m)" /> }
 
           <section class="panel box" aria-label="Percorso">
-            <h2>PERCORSO</h2>
+            <h2>{{ 'home.path' | t }}</h2>
             <div class="box-body">
               <span class="icon" aria-hidden="true">{{ path()!.icon }}</span>
               <div class="txt">
                 <strong>{{ path()!.title }}</strong>
-                <span>{{ missions.completedCount(path()!) }} / {{ path()!.missions.length }} missioni</span>
-                @if (pathAuthor(); as a) { <span class="muted">di {{ a }}</span> }
+                <span>{{ 'home.missionsDone' | t: { done: missions.completedCount(path()!), total: path()!.missions.length } }}</span>
+                @if (pathAuthor(); as a) { <span class="muted">{{ 'home.by' | t: { author: a } }}</span> }
               </div>
             </div>
             @if (path()!.dashboard !== false) {
-              <a class="btn" [routerLink]="['/progetto', path()!.id]">📊 Dashboard ({{ missions.completedCount(path()!) }}/{{ path()!.missions.length }})</a>
+              <a class="btn" [routerLink]="['/progetto', path()!.id]">{{ 'home.dashboard' | t: { done: missions.completedCount(path()!), total: path()!.missions.length } }}</a>
             }
-            <button type="button" class="btn primary" (click)="openCatalog('paths')">🔍 Cambia / cerca ({{ registry.paths().length }})</button>
+            <button type="button" class="btn primary" (click)="openCatalog('paths')">{{ 'home.changePath' | t: { n: registry.paths().length } }}</button>
           </section>
 
           <section class="panel box" aria-label="Eroe">
-            <h2>EROE</h2>
+            <h2>{{ 'home.hero' | t }}</h2>
             <div class="box-body">
               <app-sprite-view [sprite]="hero()!.sprite" [scale]="4" [label]="hero()!.name" />
               <div class="txt">
                 <strong>{{ hero()!.name }}</strong>
-                <span class="muted">di {{ hero()!.author }}</span>
+                <span class="muted">{{ 'home.by' | t: { author: hero()!.author } }}</span>
               </div>
             </div>
             <div class="choices" aria-label="Scegli l'eroe">
@@ -82,7 +83,7 @@ type CatalogKind = 'paths' | 'heroes';
                 </button>
               }
             </div>
-            <button type="button" class="btn primary" (click)="openCatalog('heroes')">🔍 Cerca eroi ({{ registry.characters().length }})</button>
+            <button type="button" class="btn primary" (click)="openCatalog('heroes')">{{ 'home.searchHeroes' | t: { n: registry.characters().length } }}</button>
           </section>
         </div>
       }
@@ -92,12 +93,12 @@ type CatalogKind = 'paths' | 'heroes';
       <div class="backdrop" (click)="onBackdrop($event)">
         <div class="dialog panel" role="dialog" aria-modal="true" aria-labelledby="catalog-title">
           <header class="dhead">
-            <h2 id="catalog-title">{{ kind === 'paths' ? 'CATALOGO PERCORSI' : 'CATALOGO EROI' }}</h2>
+            <h2 id="catalog-title">{{ (kind === 'paths' ? 'home.catalogPaths' : 'home.catalogHeroes') | t }}</h2>
             <button type="button" class="btn danger" aria-label="Chiudi" (click)="closeCatalog()">✕</button>
           </header>
           <input #search class="search" type="search" [value]="query()" (input)="query.set($any($event.target).value)"
             [placeholder]="kind === 'paths' ? 'Cerca per titolo, argomento, tag…' : 'Cerca per nome, autore, tag…'"
-            [attr.aria-label]="kind === 'paths' ? 'Cerca percorsi' : 'Cerca eroi'" />
+            [attr.aria-label]="(kind === 'paths' ? 'home.searchPaths' : 'home.searchHeroesLabel') | t" />
           <div class="results">
             @if (kind === 'paths') {
               @for (p of foundPaths(); track p.id) {
@@ -109,7 +110,7 @@ type CatalogKind = 'paths' | 'heroes';
                     <span class="muted">{{ missions.completedCount(p) }}/{{ p.missions.length }} missioni · {{ p.tags.join(', ') }}</span>
                   </span>
                 </button>
-              } @empty { <p class="status">Nessun percorso trovato.</p> }
+              } @empty { <p class="status">{{ 'home.noPath' | t }}</p> }
             } @else {
               @for (c of foundHeroes(); track c.id) {
                 <button type="button" class="result" [class.active]="c.id === hero()!.id" [disabled]="!game.isCharacterUnlocked(c.id)" (click)="chooseHero(c)">
@@ -120,7 +121,7 @@ type CatalogKind = 'paths' | 'heroes';
                     <span class="muted">{{ game.isCharacterUnlocked(c.id) ? 'di ' + c.author : '🔒 Si sblocca al livello ' + c.unlockLevel }} · {{ c.tags.join(', ') }}</span>
                   </span>
                 </button>
-              } @empty { <p class="status">Nessun eroe trovato.</p> }
+              } @empty { <p class="status">{{ 'home.noHero' | t }}</p> }
             }
           </div>
         </div>

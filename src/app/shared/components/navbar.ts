@@ -3,57 +3,65 @@ import { RouterLink } from '@angular/router';
 import { GameStateService } from '../../core/services/game-state.service';
 import { SHARE_TEXT_COPIED, ShareService } from '../../core/services/share.service';
 import { levelShareText } from '../../core/utils/share-image';
+import { I18nService, LOCALES } from '../../core/i18n/i18n.service';
+import { TranslatePipe } from '../../core/i18n/translate.pipe';
 import { PrivacyModal } from './privacy-modal';
 import { SpriteView } from './sprite-view';
 
 @Component({
   selector: 'app-navbar',
-  imports: [RouterLink, SpriteView, PrivacyModal],
+  imports: [RouterLink, SpriteView, PrivacyModal, TranslatePipe],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
-    <nav class="nav" aria-label="Navigazione principale">
+    <nav class="nav" [attr.aria-label]="'nav.label' | t">
       <button type="button" class="btn burger" aria-controls="nav-items" [attr.aria-expanded]="menuOpen()"
-        [attr.aria-label]="menuOpen() ? 'Chiudi menu' : 'Apri menu'" (click)="toggleMenu()">{{ menuOpen() ? '✕' : '☰' }}</button>
+        [attr.aria-label]="menuOpen() ? ('nav.closeMenu' | t) : ('nav.openMenu' | t)" (click)="toggleMenu()">{{ menuOpen() ? '✕' : '☰' }}</button>
       <a routerLink="/" class="brand" aria-label="Pixelademy" (click)="closeMenu()">PIXELADEMY</a>
 
       <div id="nav-items" class="items" [class.open]="menuOpen()">
         <div class="links">
-          <a routerLink="/" class="btn home" (click)="closeMenu()">🏠 Home</a>
-          <a routerLink="/info" class="btn info" (click)="closeMenu()">ℹ️ Il progetto</a>
+          <a routerLink="/" class="btn home" (click)="closeMenu()">{{ 'nav.home' | t }}</a>
+          <a routerLink="/info" class="btn info" (click)="closeMenu()">{{ 'nav.project' | t }}</a>
         </div>
 
         <div class="right">
         <div class="profile">
           <button type="button" class="btn profile-btn" aria-haspopup="true" [attr.aria-expanded]="profileOpen()"
-            aria-label="Profilo giocatore: livello {{ game.level() }}, {{ game.xp() }} XP" (click)="profileOpen.set(!profileOpen()); shareMessage.set('')">
+            [attr.aria-label]="'nav.profile' | t: { level: game.level(), xp: game.xp() }" (click)="profileOpen.set(!profileOpen()); shareMessage.set('')">
             @if (game.selectedCharacter(); as c) { <app-sprite-view [sprite]="c.sprite" [scale]="2" [label]="c.name" /> }
             <span class="pname">{{ game.selectedCharacter()?.name }}</span>
-            <span class="lv">Lv {{ game.level() }}</span> <span aria-hidden="true">{{ profileOpen() ? '▴' : '▾' }}</span>
+            <span class="lv">{{ 'nav.levelShort' | t: { level: game.level() } }}</span> <span aria-hidden="true">{{ profileOpen() ? '▴' : '▾' }}</span>
           </button>
           @if (profileOpen()) {
             <div class="menu panel" role="region" aria-label="Esperienza e livello">
-              <p><strong>Livello {{ game.level() }}</strong></p>
-              <p class="status">{{ game.xpInto() }} / {{ game.xpSpan() }} XP verso il livello {{ game.level() + 1 }}</p>
+              <p><strong>{{ 'nav.level' | t: { level: game.level() } }}</strong></p>
+              <p class="status">{{ 'nav.xpToward' | t: { into: game.xpInto(), span: game.xpSpan(), next: game.level() + 1 } }}</p>
               <div class="bar" role="progressbar" [attr.aria-valuenow]="game.xpInto()" aria-valuemin="0" [attr.aria-valuemax]="game.xpSpan()"
-                [attr.aria-label]="game.xpInto() + ' su ' + game.xpSpan() + ' XP per il prossimo livello'"><span [style.width.%]="game.levelProgress()"></span></div>
-              <p class="status">XP totali: {{ game.xp() }}</p>
+                [attr.aria-label]="'nav.xpBar' | t: { into: game.xpInto(), span: game.xpSpan() }"><span [style.width.%]="game.levelProgress()"></span></div>
+              <p class="status">{{ 'nav.xpTotal' | t: { xp: game.xp() } }}</p>
               <button type="button" class="btn share" (click)="shareProfile()">🔗 Condividi livello e XP</button>
               <p class="status" role="status">{{ shareMessage() }}</p>
             </div>
           }
         </div>
 
-        <button type="button" class="btn privacy" aria-haspopup="dialog" aria-label="Privacy e dati" (click)="openPrivacy()">🔒 Privacy e dati</button>
+        <div class="lang" role="group" [attr.aria-label]="'nav.language' | t">
+          @for (l of locales; track l) {
+            <button type="button" class="btn" [attr.aria-pressed]="i18n.locale() === l" [class.primary]="i18n.locale() === l" (click)="i18n.setLocale(l)">{{ l.toUpperCase() }}</button>
+          }
+        </div>
+
+        <button type="button" class="btn privacy" aria-haspopup="dialog" [attr.aria-label]="'nav.privacyAria' | t" (click)="openPrivacy()">{{ 'nav.privacy' | t }}</button>
         </div>
       </div>
     </nav>
 
     @if (game.consent() === 'unknown') {
-      <section class="consent" aria-label="Consenso al salvataggio">
-        <span>Vuoi salvare i progressi in questo browser?</span>
-        <button type="button" class="btn primary" (click)="game.acceptSaving()">Sì, salva</button>
-        <button type="button" class="btn" (click)="game.declineSaving()">No, grazie</button>
-        <button type="button" class="btn" (click)="privacyOpen.set(true)">Dettagli</button>
+      <section class="consent" [attr.aria-label]="'nav.consentAria' | t">
+        <span>{{ 'nav.consentAsk' | t }}</span>
+        <button type="button" class="btn primary" (click)="game.acceptSaving()">{{ 'nav.consentYes' | t }}</button>
+        <button type="button" class="btn" (click)="game.declineSaving()">{{ 'nav.consentNo' | t }}</button>
+        <button type="button" class="btn" (click)="privacyOpen.set(true)">{{ 'nav.consentMore' | t }}</button>
       </section>
     }
 
@@ -81,6 +89,8 @@ import { SpriteView } from './sprite-view';
     .menu { margin: 6px 0 0; background: #0b0b24; }
     .menu p { margin: 4px 0; }
     .menu .share { width: 100%; margin-top: 4px; }
+    .lang { display: flex; gap: 4px; }
+    .lang .btn { min-width: 44px; padding: 6px 8px; }
     .consent { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; padding: 10px 12px; background: var(--panel); border-bottom: 3px solid var(--accent); font-size: .55rem; }
     .consent span { flex: 1 1 100%; }
 
@@ -101,6 +111,8 @@ import { SpriteView } from './sprite-view';
 })
 export class Navbar {
   protected readonly game = inject(GameStateService);
+  protected readonly i18n = inject(I18nService);
+  protected readonly locales = LOCALES;
   protected readonly menuOpen = signal(false);
   protected readonly profileOpen = signal(false);
   protected readonly shareMessage = signal('');

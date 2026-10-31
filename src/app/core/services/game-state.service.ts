@@ -69,6 +69,11 @@ export class GameStateService {
     this.update({ telemetry: on && this.consent() === 'granted' });
   }
 
+  /** Ricorda la lingua scelta (si salva solo con il consenso, come il resto). */
+  setLocale(locale: 'it' | 'en'): void {
+    this.update({ locale });
+  }
+
   resetProgress(): void {
     this.state.set(this.initialState());
     this.persist();
@@ -163,6 +168,7 @@ export class GameStateService {
       ),
       liked: raw.liked === true,
       telemetry: raw.telemetry === true,
+      ...(raw.locale === 'it' || raw.locale === 'en' ? { locale: raw.locale } : {}),
       selectedPathId: path?.id ?? base.selectedPathId,
       selectedCharacterId: this.registry.character(raw.selectedCharacterId ?? '')?.id ?? base.selectedCharacterId,
     };
