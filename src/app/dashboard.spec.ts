@@ -14,6 +14,7 @@ describe('Home (Dashboard)', () => {
 
   async function mount(withContent = true) {
     if (withContent) useMiniPack();
+    else TestBed.inject(ContentRegistryService).packs.set([]); // il pack reale c'è: per l'assenza di contenuti lo si svuota
     const f = TestBed.createComponent(Dashboard);
     f.detectChanges();
     await f.whenStable();
