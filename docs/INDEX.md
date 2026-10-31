@@ -29,3 +29,4 @@
 | E07 | US-07.6 Minigioco «Calcolo della media» | #52 | #112 | `docs/issues/US-07.6.md` | fatto |
 | E07 | US-07.7 Minigioco «Quale ramo scatta?» | #53 | #113 | `docs/issues/US-07.7.md` | fatto |
 | E07 | US-07.8 Minigioco «Archivio chiavi» | #54 | #114 | `docs/issues/US-07.8.md` | fatto |
+| E07 | US-07.9 Minigioco «Duello degli estremi» | #55 | #115 | `docs/issues/US-07.9.md` | fatto |

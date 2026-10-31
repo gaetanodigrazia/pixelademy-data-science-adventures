@@ -9,6 +9,7 @@ import { Accumulator } from './shared/components/games/accumulator';
 import { MeanCalc } from './shared/components/games/mean-calc';
 import { BranchPicker } from './shared/components/games/branch-picker';
 import { DictVault } from './shared/components/games/dict-vault';
+import { ExtremeDuel } from './shared/components/games/extreme-duel';
 // <<IMPORTS>>
 
 interface Case { id: string; index: number; component: Type<unknown>; solve: (g: Game) => void }
@@ -22,6 +23,7 @@ const CASES: Case[] = [
   { id: 'adventure-mean-calc', index: 4, component: MeanCalc, solve: (g) => { for (let i = 0; i < 20 && !g.cleared; i++) g.pick(g.options().find((o: { value: number }) => o.value === g.expected())); } },
   { id: 'adventure-branch-picker', index: 5, component: BranchPicker, solve: (g) => { for (let i = 0; i < 20 && !g.cleared; i++) g.pick(g.expected()); } },
   { id: 'adventure-dict-vault', index: 6, component: DictVault, solve: (g) => { for (let i = 0; i < g.requests.length && !g.cleared; i++) (i === g.requests.length - 1 ? g.keyError() : g.open(g.want())); } },
+  { id: 'adventure-extreme-duel', index: 7, component: ExtremeDuel, solve: (g) => { for (let i = 0; i < 50 && !g.cleared; i++) g.choose(g.isMax ? g.challenger() > g.champion() : g.challenger() < g.champion()); } },
   // <<CASES>>
 ];
 
