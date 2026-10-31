@@ -7,3 +7,4 @@
 | E02 | US-02.1 Modelli di dominio tipizzati | #18 | #90 | `docs/issues/US-02.1.md` | fatto |
 | E01 | US-01.3 Generazione automatica dei content pack | #15 | #91 | `docs/issues/US-01.3.md` | fatto |
 | E01 | US-01.4 Build di produzione e deploy | #16 | #92 | `docs/issues/US-01.4.md` | fatto |
+| E01 | US-01.5 CI: test e build su ogni PR | #17 | #93 | `docs/issues/US-01.5.md` | fatto |
