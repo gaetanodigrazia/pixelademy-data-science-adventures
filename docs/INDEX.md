@@ -83,3 +83,4 @@
 | E12 | US-12.5 Disattivare la scelta della lingua finché la traduzione non è completa | #171 | #172 | `docs/issues/US-12.5.md` | fatto |
 | E03 | BUG-03.1 L'editor di codice è decentrato nella build di produzione (CSS di Monaco mancante) | #173 | #174 | `docs/issues/BUG-03.1.md` | fatto |
 | E01 | US-01.6 Favicon di Pixelademy al posto di quella di Angular | #175 | #176 | `docs/issues/US-01.6.md` | fatto |
+| E06 | UX-06.1 Pagina missione: testo di vittoria, scroll del task e ripresa dopo il ricaricamento | #177 | #178 | `docs/issues/UX-06.1.md` | fatto |
