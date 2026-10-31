@@ -2,6 +2,7 @@ import { Injectable, computed, inject, signal } from '@angular/core';
 import { ConsentStatus, PlayerState, RewardSummary } from '../models/player-state.model';
 import { Mission } from '../models/mission.model';
 import { levelFromXp, xpForLevel } from '../utils/progress';
+import { STATE_VERSION, exportState, migrateState, parseExport } from '../utils/state-migrations';
 import { ContentRegistryService } from './content-registry.service';
 
 const STATE_KEY = 'pixelademy.player.v1';
@@ -68,6 +69,20 @@ export class GameStateService {
     this.persist();
   }
 
+  /** I progressi come file JSON (con versione), per salvarli o trasferirli. */
+  exportProgress(): string {
+    return exportState(this.state());
+  }
+
+  /** Ripristina i progressi da un file esportato (anche di una versione precedente). `false` se il file non è valido. */
+  importProgress(text: string): boolean {
+    const parsed = parseExport(text);
+    if (!parsed) return false;
+    this.state.set(this.normalize(parsed));
+    this.persist();
+    return true;
+  }
+
   isCompleted(missionId: string): boolean {
     return this.state().completedMissionIds.includes(missionId);
   }
@@ -113,6 +128,7 @@ export class GameStateService {
   private initialState(): PlayerState {
     const path = this.registry.paths()[0];
     return {
+      schemaVersion: STATE_VERSION,
       xp: 0,
       level: 1,
       completedMissionIds: [],
@@ -124,13 +140,15 @@ export class GameStateService {
   }
 
   /** Ripara uno stato salvato che riferisce contenuti non più esistenti. */
-  private normalize(raw: Partial<PlayerState> | null): PlayerState {
+  private normalize(stored: unknown): PlayerState {
     const base = this.initialState();
+    const raw = migrateState(stored);
     if (!raw) return base;
     const xp = Math.max(0, Number(raw.xp) || 0);
     const path = this.registry.path(raw.selectedPathId ?? '') ?? this.registry.path(base.selectedPathId);
     const ids = new Set(this.registry.missions().map((m) => m.id));
     return {
+      schemaVersion: STATE_VERSION,
       xp,
       level: levelFromXp(xp),
       completedMissionIds: (raw.completedMissionIds ?? []).filter((id) => ids.has(id)),
@@ -147,7 +165,7 @@ export class GameStateService {
     if (this.consent() === 'granted') this.write(STATE_KEY, JSON.stringify(this.state()));
   }
 
-  private readState(): Partial<PlayerState> | null {
+  private readState(): unknown {
     try {
       return JSON.parse(this.read(STATE_KEY) ?? 'null');
     } catch {

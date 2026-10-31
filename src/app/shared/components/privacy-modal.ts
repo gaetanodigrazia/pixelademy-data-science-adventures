@@ -28,6 +28,9 @@ import { GameStateService } from '../../core/services/game-state.service';
             <button type="button" class="btn" [disabled]="game.consent() === 'denied'" (click)="run(() => game.declineSaving(), 'Dati salvati rimossi: uso senza salvataggio.')">Usa senza salvare</button>
             <button type="button" class="btn danger" (click)="run(() => game.clearStoredData(), 'Dati salvati cancellati dal browser.')">Cancella dati salvati</button>
             <button type="button" class="btn" (click)="run(() => game.resetProgress(), 'Progressi azzerati.')">Ripristina stato iniziale</button>
+            <button type="button" class="btn" (click)="exportProgress()">Esporta i progressi (file)</button>
+            <button type="button" class="btn" (click)="fileInput.click()">Importa i progressi (file)</button>
+            <input #fileInput type="file" accept="application/json,.json" hidden aria-label="File dei progressi da importare" (change)="importProgress($event)" />
           </div>
           <p class="status" role="status">{{ message() }}</p>
           <button type="button" class="btn" (click)="closed.emit()">Chiudi</button>
@@ -75,6 +78,24 @@ export class PrivacyModal {
   protected run(action: () => void, msg: string): void {
     action();
     this.message.set(msg);
+  }
+
+  protected exportProgress(): void {
+    const url = URL.createObjectURL(new Blob([this.game.exportProgress()], { type: 'application/json' }));
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'pixelademy-progressi.json';
+    a.click();
+    URL.revokeObjectURL(url);
+    this.message.set('File dei progressi scaricato.');
+  }
+
+  protected async importProgress(e: Event): Promise<void> {
+    const input = e.target as HTMLInputElement;
+    const file = input.files?.[0];
+    input.value = '';
+    if (!file) return;
+    this.message.set(this.game.importProgress(await file.text()) ? 'Progressi importati.' : 'Il file non è valido: nessun dato è stato cambiato.');
   }
 
   protected onBackdrop(e: MouseEvent): void {
