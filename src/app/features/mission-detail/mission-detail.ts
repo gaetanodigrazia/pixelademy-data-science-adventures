@@ -115,7 +115,7 @@ type Phase = 'teoria' | 'battaglia' | 'task';
                   </details>
                 }
               }
-              <app-code-editor class="editor" [starterCode]="section()" [running]="running()" (runCode)="run($event)" />
+              <app-code-editor class="editor" [starterCode]="section()" [running]="running()" (runCode)="run($event)" (pasted)="pastedChars.update((n) => n + $event)" />
               <pre class="console" aria-live="polite" aria-label="Console">{{ output() || '(nessun output)' }}</pre>
               @if (error()) { <pre class="console err" role="alert">{{ error() }}</pre> }
               <div class="foot">
@@ -151,6 +151,7 @@ type Phase = 'teoria' | 'battaglia' | 'task';
                     <tr><td>Tempo ({{ sc.seconds }} s, rif. {{ par() }} s)</td><td>×{{ sc.timeFactor.toFixed(2) }}</td></tr>
                     <tr><td>Errori ({{ sc.errors }})</td><td>×{{ sc.errorFactor.toFixed(2) }}</td></tr>
                     <tr><td>Vicinanza alla soluzione ({{ (sc.similarity * 100).toFixed(0) }}%)</td><td>×{{ sc.similarityFactor.toFixed(2) }}</td></tr>
+                    @if (sc.pasteFactor < 1) { <tr><td>Codice incollato quasi identico alla soluzione</td><td>×{{ sc.pasteFactor.toFixed(2) }}</td></tr> }
                     @if (sc.viewedFactor < 1) { <tr><td>Soluzione aperta prima</td><td>×{{ sc.viewedFactor.toFixed(2) }}</td></tr> }
                     <tr class="total"><td>Totale</td><td>{{ sc.xp }} XP</td></tr>
                   </table>
@@ -281,6 +282,8 @@ export class MissionDetail {
   protected readonly seconds = signal(0);
   protected readonly errors = signal(0);
   protected readonly solutionViewed = signal(false);
+  /** Caratteri incollati nell'editor in questa missione (anti-incolla). */
+  protected readonly pastedChars = signal(0);
   protected readonly score = signal<ScoreBreakdown | null>(null);
   protected readonly clock = computed(() => `${String(Math.floor(this.seconds() / 60)).padStart(2, '0')}:${String(this.seconds() % 60).padStart(2, '0')}`);
   protected readonly par = computed(() => parSeconds(this.mission()?.difficulty ?? 1));
@@ -366,6 +369,7 @@ export class MissionDetail {
         this.seconds.set(0);
         this.errors.set(0);
         this.solutionViewed.set(false);
+        this.pastedChars.set(0);
         if (m && this.missions.status(m) === 'locked') this.router.navigateByUrl('/');
       });
     });
@@ -447,6 +451,7 @@ export class MissionDetail {
           code: stripBase(full, this.starterBase()),
           reference: stripBase(this.solution(), m.projectBase ?? ''),
           solutionViewed: this.solutionViewed(),
+          pastedChars: this.pastedChars(),
         });
         this.score.set(score);
         this.reward.set(this.game.completeMission(m, { xp: score.xp, code: full }));

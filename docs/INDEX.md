@@ -70,3 +70,4 @@
 | E10 | US-10.1 Mi piace anonimo | #67 | #152 | `docs/issues/US-10.1.md` | fatto |
 | E10 | US-10.2 Pagina «Il progetto» | #68 | #153 | `docs/issues/US-10.2.md` | fatto |
 | E12 | IMP-04 PO Improvement — Persistenza versionata con migrazioni | #83 | #154 | `docs/issues/IMP-04.md` | fatto |
+| E12 | IMP-05 PO Improvement — Anti-cheat leggero e punteggio trasparente | #84 | #155 | `docs/issues/IMP-05.md` | fatto |
