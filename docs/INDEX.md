@@ -15,3 +15,4 @@
 | E04 | US-04.3 Stato giocatore e persistenza con consenso | #33 | #98 | `docs/issues/US-04.3.md` | fatto |
 | E02 | US-02.2 ContentRegistry e MissionService | #19 | #99 | `docs/issues/US-02.2.md` | fatto |
 | E02 | US-02.4 I 10 concetti Python (BUILDERS) | #21 | #100 | `docs/issues/US-02.4.md` | fatto |
+| E02 | US-02.6 Esercizi propri per percorso | #23 | #101 | `docs/issues/US-02.6.md` | fatto |
