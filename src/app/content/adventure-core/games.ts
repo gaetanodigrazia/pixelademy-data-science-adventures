@@ -2,6 +2,7 @@ import { GameDefinition } from '../../core/models/game.model';
 import { Accumulator } from '../../shared/components/games/accumulator';
 import { BranchPicker } from '../../shared/components/games/branch-picker';
 import { DictVault } from '../../shared/components/games/dict-vault';
+import { ExerciseQuiz } from '../../shared/components/games/exercise-quiz';
 import { ExtremeDuel } from '../../shared/components/games/extreme-duel';
 import { FilterBelt } from '../../shared/components/games/filter-belt';
 import { FunctionForge } from '../../shared/components/games/function-forge';
@@ -10,7 +11,7 @@ import { ListBench } from '../../shared/components/games/list-bench';
 import { MeanCalc } from '../../shared/components/games/mean-calc';
 import { PipelineLine } from '../../shared/components/games/pipeline-line';
 
-/** Un minigioco per concetto, nello stesso ordine delle 10 missioni standard: si impara il concetto giocandolo sui dati della missione. Il quiz «Esegui il codice a mano» si aggiunge con US-07.12. */
+/** I primi 10: un minigioco per concetto, nello stesso ordine delle 10 missioni standard (poi quelli dei percorsi con esercizi propri): si impara il concetto giocandolo sui dati della missione. */
 export const GAMES: GameDefinition[] = [
   { id: 'adventure-index-rack', title: 'Scaffale degli indici', description: 'Trova la cella indicata da un indice, anche negativo.', controls: 'Clic sulle celle', component: IndexRack },
   { id: 'adventure-list-bench', title: 'Banco della lista', description: 'Riempi e svuota una lista guardando len() cambiare.', controls: 'append() e pop()', component: ListBench },
@@ -22,6 +23,7 @@ export const GAMES: GameDefinition[] = [
   { id: 'adventure-extreme-duel', title: 'Duello degli estremi', description: "Scopri l'algoritmo di massimo e minimo confronto dopo confronto.", controls: 'Clic sul vincitore', component: ExtremeDuel },
   { id: 'adventure-function-forge', title: 'Fucina delle funzioni', description: 'Monta una funzione riga per riga e provala con un test.', controls: 'Clic sulle righe', component: FunctionForge },
   { id: 'adventure-pipeline-line', title: 'Linea di analisi', description: 'Componi una pipeline e guarda i dati cambiare a ogni passo.', controls: 'Clic sui passi', component: PipelineLine },
+  { id: 'adventure-quiz', title: 'Esegui il codice a mano', description: 'Scegli il risultato di ogni passo del codice, tra quello vero e le sviste più comuni.', controls: 'Clic sul risultato', component: ExerciseQuiz },
 ];
 
 export const GAME_IDS = GAMES.map((g) => g.id);
