@@ -4,6 +4,7 @@ import { r2 } from './shared/components/games/base-game';
 import { Game, mountGame } from './testing/game-harness';
 import { IndexRack } from './shared/components/games/index-rack';
 import { ListBench } from './shared/components/games/list-bench';
+import { FilterBelt } from './shared/components/games/filter-belt';
 // <<IMPORTS>>
 
 interface Case { id: string; index: number; component: Type<unknown>; solve: (g: Game) => void }
@@ -12,6 +13,7 @@ interface Case { id: string; index: number; component: Type<unknown>; solve: (g:
 const CASES: Case[] = [
   { id: 'adventure-index-rack', index: 0, component: IndexRack, solve: (g) => { for (const q of [...g.queries]) g.pick(q.idx); } },
   { id: 'adventure-list-bench', index: 1, component: ListBench, solve: (g) => { for (let i = 0; i < 100 && !g.cleared; i++) (g.items().length < g.goal().target ? g.append() : g.pop()); } },
+  { id: 'adventure-filter-belt', index: 2, component: FilterBelt, solve: (g) => { for (let i = 0; i < 50 && g.index() < g.values.length; i++) g.decide(g.values[g.index()] > g.threshold); } },
   // <<CASES>>
 ];
 
@@ -51,6 +53,22 @@ describe('minigiochi: si impara giocando', () => {
     g.pop();
     expect(g.mistakes()).toBe(1);
     expect(g.feedback().text).toContain('IndexError');
+  });
+
+    it('filtro: i valori e la soglia della missione compaiono nella console del gioco', () => {
+    const { el } = mountGame(FilterBelt, 2);
+    expect(el.textContent).toContain('12, 35, 48, 22, 61, 30, 55');
+    expect(el.textContent).toContain('soglia = 40');
+  });
+
+  it('filtro: un errore non fa vincere, conta tra gli errori e spiega il perché', () => {
+    const cleared = vi.fn();
+    const { fixture, g } = mountGame(FilterBelt, 2, cleared);
+    g.decide(!(g.values[0] > g.threshold)); // mossa sbagliata
+    fixture.detectChanges();
+    expect(cleared).not.toHaveBeenCalled();
+    expect(g.mistakes()).toBe(1);
+    expect(fixture.nativeElement.querySelector('[role=status]').textContent).toContain('→');
   });
 
   // <<EXTRA>>
