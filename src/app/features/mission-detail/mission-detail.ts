@@ -1,5 +1,5 @@
 import { NgComponentOutlet } from '@angular/common';
-import { ChangeDetectionStrategy, Component, computed, effect, inject, signal, untracked } from '@angular/core';
+import { ChangeDetectionStrategy, Component, DestroyRef, computed, effect, inject, signal, untracked } from '@angular/core';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { map } from 'rxjs';
@@ -8,6 +8,7 @@ import { RewardSummary } from '../../core/models/player-state.model';
 import { ContentRegistryService } from '../../core/services/content-registry.service';
 import { GameStateService } from '../../core/services/game-state.service';
 import { MissionService } from '../../core/services/mission.service';
+import { TelemetryService } from '../../core/services/telemetry.service';
 import { PythonRunnerService } from '../../core/services/python-runner.service';
 import { baseLineCount, composeProject, editorSection, neededContext, shiftErrorLines } from '../../core/utils/project-context';
 import { projectCode } from '../../core/utils/project-code';
@@ -249,6 +250,10 @@ export class MissionDetail {
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
   protected readonly python = inject(PythonRunnerService);
+  private readonly telemetry = inject(TelemetryService);
+  private readonly destroyRef = inject(DestroyRef);
+  /** Missione su cui si sta lavorando: serve a contare l'abbandono quando si lascia la pagina senza averla superata. */
+  private current: string | null = null;
   private readonly missions = inject(MissionService);
   protected readonly registry = inject(ContentRegistryService);
   protected readonly game = inject(GameStateService);
@@ -345,12 +350,15 @@ export class MissionDetail {
   });
 
   constructor() {
+    this.destroyRef.onDestroy(() => this.noteAbandoned());
     // Nuova missione (anche con riuso del componente): azzera lo stato di sessione.
     // Reagisce solo al cambio di missione: il resto è untracked, altrimenti completare il task
     // (che cambia lo stato di gioco) rilancerebbe l'effect e riporterebbe tutto alla teoria.
     effect(() => {
       const m = this.mission();
       untracked(() => {
+        this.noteAbandoned();
+        this.current = m?.id ?? null;
         this.phase.set('teoria');
         this.slide.set(0);
         this.battleWon.set(false);
@@ -385,6 +393,11 @@ export class MissionDetail {
       const timer = setInterval(() => this.seconds.update((s) => s + 1), 1000);
       onCleanup(() => clearInterval(timer));
     });
+  }
+
+  /** Abbandono: si lascia una missione con almeno un tentativo e senza averla superata. */
+  private noteAbandoned(): void {
+    if (this.current && this.attempts() > 0 && !this.reward()) this.telemetry.record('abandoned', this.current);
   }
 
   protected openSolution(): void {
@@ -436,6 +449,7 @@ export class MissionDetail {
     this.output.set(res.output);
     this.error.set(res.error ? shiftErrorLines(res.error, baseLineCount(this.base())) : '');
     this.attempts.update((a) => a + 1);
+    this.telemetry.record('attempt', m.id);
     if (res.error) {
       this.errors.update((e) => e + 1);
       this.result.set({ ok: false, message: 'Il codice ha generato un errore: leggi il messaggio qui sopra.' });
@@ -455,6 +469,7 @@ export class MissionDetail {
         });
         this.score.set(score);
         this.reward.set(this.game.completeMission(m, { xp: score.xp, code: full }));
+        this.telemetry.record('completed', m.id);
         this.rewardOpen.set(true);
       } else {
         this.errors.update((e) => e + 1);
