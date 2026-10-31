@@ -31,7 +31,7 @@ describe('sfide in stile Kaggle (pandas)', () => {
   });
 
   it('i dati del dataset sono quelli attesi (le risposte si ricavano da lì)', () => {
-    const out = execFileSync('python3', ['-I', '-c', `${pack.solutions[path.missions[2].id].split('\n# 1.')[0]}\nprint(len(vendite), list(vendite.columns))`], { encoding: 'utf8' });
+    const out = execFileSync('python3', ['-E', '-c'], `${pack.solutions[path.missions[2].id].split('\n# 1.')[0]}\nprint(len(vendite), list(vendite.columns))`], { encoding: 'utf8' });
     expect(out.trim()).toBe("9 ['categoria', 'prezzo', 'quantita']");
   });
 });
