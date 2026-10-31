@@ -34,3 +34,8 @@ e confronta l'output con il bollettino atteso. Per eseguire la suite in locale s
 
 ### Layout mobile
 `npm run check:responsive` (con `npm start` attivo e Playwright installato) controlla a 360×640 con puntatore touch: nessuno scroll orizzontale, modali dentro lo schermo, bersagli toccabili ≥ 44 px. Non fa parte della CI.
+
+## Condivisione su LinkedIn
+A progetto completo la Dashboard offre «Condividi su LinkedIn»: si condivide un link a `/condividi/<percorso>/`, una pagina con i meta-tag Open Graph (`og:image`) che LinkedIn mostra come grande foto nel post.
+Immagine e pagina si generano a ogni build con `scripts/generate-share-assets.mjs` (`npm run share`, lanciato da `prebuild`; usa `URL` di Netlify per gli indirizzi assoluti, `SHARE_ORIGIN` in locale) e non sono nel repository.
+Se LinkedIn mostra una vecchia anteprima, aggiornala con https://www.linkedin.com/post-inspector/.

@@ -4,3 +4,4 @@ dist/
 *.log
 src/app/core/data/packs.generated.ts
 /public/condividi/
+/public/share/
