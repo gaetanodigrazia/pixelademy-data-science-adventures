@@ -50,3 +50,4 @@
 | E06 | US-06.2 Battaglia: minigioco che sblocca il task | #41 | — (commit diretto su main) | `docs/issues/US-06.2.md` | fatto |
 | E06 | US-06.3 Task Python con codice precedente e console | #42 | #133 | `docs/issues/US-06.3.md` | fatto |
 | E06 | US-06.4 Suggerimento e confronto con la soluzione | #43 | #134 | `docs/issues/US-06.4.md` | fatto |
+| E06 | US-06.6 Ricompensa e avanzamento | #45 | #135 | `docs/issues/US-06.6.md` | fatto |
