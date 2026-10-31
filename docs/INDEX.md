@@ -69,3 +69,4 @@
 | E09 | US-09.4 Condivisione del profilo (livello ed XP) | #66 | #151 | `docs/issues/US-09.4.md` | fatto |
 | E10 | US-10.1 Mi piace anonimo | #67 | #152 | `docs/issues/US-10.1.md` | fatto |
 | E10 | US-10.2 Pagina «Il progetto» | #68 | #153 | `docs/issues/US-10.2.md` | fatto |
+| E12 | IMP-04 PO Improvement — Persistenza versionata con migrazioni | #83 | #154 | `docs/issues/IMP-04.md` | fatto |
