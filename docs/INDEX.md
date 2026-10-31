@@ -73,3 +73,4 @@
 | E12 | IMP-05 PO Improvement — Anti-cheat leggero e punteggio trasparente | #84 | #155 | `docs/issues/IMP-05.md` | fatto |
 | E12 | IMP-01 PO Improvement — Esecuzione Python in Web Worker | #80 | #156 | `docs/issues/IMP-01.md` | fatto |
 | E12 | IMP-07 PO Improvement — Performance e bundle | #86 | #157 | `docs/issues/IMP-07.md` | fatto |
+| E12 | IMP-02 PO Improvement — Pyodide self-hosted e modalità offline (PWA) | #81 | #158 | `docs/issues/IMP-02.md` | fatto |

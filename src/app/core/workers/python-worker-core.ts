@@ -11,8 +11,10 @@ export type WorkerReply =
 
 type Pyodide = any;
 
+/** Versione di Pyodide (la stessa del pacchetto `pyodide` in devDependencies, copiato in `/pyodide/` dalla build). */
 export const PYODIDE_VERSION = '0.27.7';
-export const PYODIDE_BASE_URL = `https://cdn.jsdelivr.net/pyodide/v${PYODIDE_VERSION}/full/`;
+/** Pyodide è ospitato dal sito stesso: niente CDN, funziona offline (con il Service Worker) e la cache è sotto il nostro controllo. */
+export const PYODIDE_BASE_URL = '/pyodide/';
 
 /** Ultime righe di un errore Python (il resto è rumore di traceback interno). */
 const shortError = (e: unknown): string => (e instanceof Error ? e.message : String(e)).trim().split('\n').slice(-4).join('\n');
