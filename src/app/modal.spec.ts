@@ -19,6 +19,8 @@ class Host {
 }
 
 describe('Modal', () => {
+  // la modale ripristina il valore che trova: se un test precedente lo lascia a «hidden» non è un errore di questo
+  beforeEach(() => (document.body.style.overflow = ''));
   async function mount() {
     const f = TestBed.createComponent(Host);
     f.detectChanges();
