@@ -115,7 +115,7 @@ type Phase = 'teoria' | 'battaglia' | 'task';
                   </details>
                 }
               }
-              <app-code-editor class="editor" [starterCode]="section()" [running]="running()" (runCode)="run($event)" (pasted)="pastedChars.update((n) => n + $event)" />
+              <app-code-editor class="editor" [starterCode]="section()" [running]="running()" (runCode)="run($event)" (stopCode)="python.stop()" (pasted)="pastedChars.update((n) => n + $event)" />
               <pre class="console" aria-live="polite" aria-label="Console">{{ output() || '(nessun output)' }}</pre>
               @if (error()) { <pre class="console err" role="alert">{{ error() }}</pre> }
               <div class="foot">

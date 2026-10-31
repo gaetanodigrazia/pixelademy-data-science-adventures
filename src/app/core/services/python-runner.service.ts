@@ -1,90 +1,119 @@
-import { Injectable, signal } from '@angular/core';
+import { InjectionToken, Injectable, inject, signal } from '@angular/core';
 import { PythonRunResult } from '../models/python.model';
+import type { WorkerReply, WorkerRequest } from '../workers/python-worker-core';
 
-const PYODIDE_VERSION = '0.27.7';
-const BASE_URL = `https://cdn.jsdelivr.net/pyodide/v${PYODIDE_VERSION}/full/`;
+/** Dopo quanti ms un programma ancora in esecuzione viene interrotto (ciclo infinito o troppo lento). */
+export const RUN_TIMEOUT_MS = 5000;
 
-/* eslint-disable @typescript-eslint/no-explicit-any */
-type Pyodide = any;
+/** Il minimo del Worker che serve al servizio: così nei test si sostituisce con uno finto. */
+export interface PythonWorker {
+  postMessage(m: WorkerRequest): void;
+  terminate(): void;
+  onmessage: ((e: { data: WorkerReply }) => void) | null;
+  onerror: ((e: unknown) => void) | null;
+}
 
+export const PYTHON_WORKER_FACTORY = new InjectionToken<() => PythonWorker>('PYTHON_WORKER_FACTORY', {
+  providedIn: 'root',
+  factory: () => () => new Worker(new URL('../workers/python.worker', import.meta.url), { type: 'module' }) as unknown as PythonWorker,
+});
+
+const NO_RUNTIME = 'Impossibile caricare l\'interprete Python (Pyodide). Verifica la connessione a internet e riprova.';
+
+/**
+ * Esegue Python (Pyodide) in un Web Worker: la pagina resta reattiva e un programma che non finisce si può interrompere
+ * (da solo dopo `timeoutMs`, o con `stop()`). Interrompere significa terminare il worker: Pyodide si ricarica alla prossima esecuzione.
+ */
 @Injectable({ providedIn: 'root' })
 export class PythonRunnerService {
-  private runtime?: Promise<Pyodide>;
+  private readonly factory = inject(PYTHON_WORKER_FACTORY);
   /** Stato del compilatore, per mostrare l'avanzamento del caricamento. */
   readonly status = signal<'idle' | 'loading' | 'ready' | 'error'>('idle');
 
-  /** Carica Pyodide al primo utilizzo (lazy) dalla CDN jsdelivr. */
-  loadRuntime(): Promise<Pyodide> {
-    if (!this.runtime) {
+  private worker?: PythonWorker;
+  private ready?: Promise<void>;
+  private nextId = 1;
+  private pending = new Map<number, (r: PythonRunResult) => void>();
+  private abort?: (message: string) => void;
+
+  /** Carica Pyodide al primo utilizzo (lazy) nel worker. */
+  loadRuntime(): Promise<void> {
+    if (!this.ready) {
       this.status.set('loading');
-      this.runtime = this.init().then(
-        (py) => {
-          this.status.set('ready');
-          return py;
-        },
-        (err) => {
-          this.runtime = undefined; // consente un nuovo tentativo
-          this.status.set('error');
-          throw err;
-        },
-      );
+      let worker: PythonWorker;
+      try {
+        worker = this.factory();
+      } catch {
+        // browser senza Web Worker (o file del worker non disponibile): stesso esito di un download fallito
+        this.status.set('error');
+        return Promise.reject(new Error('Worker non disponibile'));
+      }
+      this.worker = worker;
+      this.ready = new Promise<void>((resolve, reject) => {
+        worker.onmessage = (e) => {
+          const m = e.data;
+          if (m.type === 'ready') {
+            this.status.set('ready');
+            resolve();
+          } else if (m.type === 'init-error') {
+            this.dispose('error');
+            reject(new Error(m.message));
+          } else {
+            this.pending.get(m.id)?.({ output: m.output, error: m.error });
+            this.pending.delete(m.id);
+          }
+        };
+        worker.onerror = () => {
+          this.dispose('error');
+          reject(new Error('Worker non disponibile'));
+        };
+        worker.postMessage({ type: 'init' });
+      });
+      this.ready.catch(() => undefined);
     }
-    return this.runtime;
+    return this.ready;
   }
 
-  async run(code: string): Promise<PythonRunResult> {
-    let pyodide: Pyodide;
+  /** Esegue il codice; dopo `timeoutMs` dall'avvio dell'esecuzione (non del caricamento) lo interrompe. */
+  async run(code: string, timeoutMs = RUN_TIMEOUT_MS): Promise<PythonRunResult> {
     try {
-      pyodide = await this.loadRuntime();
+      await this.loadRuntime();
     } catch {
-      return {
-        output: '',
-        error: 'Impossibile caricare l\'interprete Python (Pyodide). Verifica la connessione a internet e riprova.',
-      };
+      return { output: '', error: NO_RUNTIME };
     }
-    let out = '';
-    let err = '';
-    pyodide.setStdout({ batched: (s: string) => (out += s + '\n') });
-    pyodide.setStderr({ batched: (s: string) => (err += s + '\n') });
-    let error: string | undefined;
-    // namespace isolato a ogni esecuzione
-    const globals = pyodide.globals.get('dict')();
-    try {
-      await pyodide.loadPackagesFromImports(code);
-      await pyodide.runPythonAsync(code, { globals });
-    } catch (e) {
-      error = this.shortError(e);
-    } finally {
-      globals.destroy?.();
-    }
-    if (!error && err.trim()) error = err.trim();
-    return { output: out, error };
-  }
-
-  private shortError(e: unknown): string {
-    const msg = e instanceof Error ? e.message : String(e);
-    return msg.trim().split('\n').slice(-4).join('\n');
-  }
-
-  private async init(): Promise<Pyodide> {
-    await this.loadScript(`${BASE_URL}pyodide.js`);
-    const load = (window as any).loadPyodide;
-    if (typeof load !== 'function') throw new Error('Pyodide non disponibile');
-    return load({ indexURL: BASE_URL });
-  }
-
-  private loadScript(src: string): Promise<void> {
-    return new Promise((resolve, reject) => {
-      if (typeof (window as any).loadPyodide === 'function') return resolve();
-      const s = document.createElement('script');
-      s.src = src;
-      s.async = true;
-      s.onload = () => resolve();
-      s.onerror = () => {
-        s.remove();
-        reject(new Error('Download di Pyodide non riuscito'));
+    const worker = this.worker!;
+    const id = this.nextId++;
+    return new Promise<PythonRunResult>((resolve) => {
+      const timer = setTimeout(() => this.interrupt(`Il programma ha impiegato più di ${timeoutMs / 1000} secondi ed è stato interrotto (ciclo infinito?).`), timeoutMs);
+      const finish = (r: PythonRunResult) => {
+        clearTimeout(timer);
+        this.pending.delete(id);
+        this.abort = undefined;
+        resolve(r);
       };
-      document.head.appendChild(s);
+      this.pending.set(id, finish);
+      this.abort = (message) => finish({ output: '', error: message });
+      worker.postMessage({ type: 'run', id, code });
     });
+  }
+
+  /** Interrompe l'esecuzione in corso (pulsante «Interrompi»). Non fa nulla se non c'è. */
+  stop(): void {
+    this.interrupt('Esecuzione interrotta.');
+  }
+
+  private interrupt(message: string): void {
+    if (!this.abort) return;
+    const abort = this.abort;
+    this.dispose('idle');
+    abort(message);
+  }
+
+  private dispose(status: 'idle' | 'error'): void {
+    this.worker?.terminate();
+    this.worker = undefined;
+    this.ready = undefined;
+    this.pending.clear();
+    this.status.set(status);
   }
 }

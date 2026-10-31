@@ -63,4 +63,14 @@ describe('CodeEditor', () => {
     ta.dispatchEvent(ev);
     expect(pasted).toHaveBeenCalledWith(13);
   });
+
+  it('durante l\'esecuzione compare «Interrompi», che emette stopCode; a riposo non c\'è', async () => {
+    const idle = await mount('x');
+    expect(btn(idle.el, "Interrompi l'esecuzione")).toBeNull();
+    const busy = await mount('x', true);
+    const stop = vi.fn();
+    busy.f.componentInstance.stopCode.subscribe(stop);
+    btn(busy.el, "Interrompi l'esecuzione").click();
+    expect(stop).toHaveBeenCalledTimes(1);
+  });
 });
