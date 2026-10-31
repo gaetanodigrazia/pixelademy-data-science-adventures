@@ -1,0 +1,7 @@
+# Solo le funzioni: build e pubblicazione restano quelle impostate su Netlify.
+[functions]
+  node_bundler = "esbuild"
+  # il canvas ha un modulo nativo: non si include nel bundle, ma si porta com'è
+  external_node_modules = ["@napi-rs/canvas"]
+  # il carattere pixel per disegnare la foto del profilo
+  included_files = ["node_modules/@fontsource/press-start-2p/files/press-start-2p-latin-400-normal.woff"]
