@@ -22,9 +22,10 @@ describe('App (routing)', () => {
     return { el: fixture.nativeElement as HTMLElement, router };
   }
 
-  it('la home mostra il titolo del progetto', async () => {
+  it('la home mostra il marchio nella navbar e la pagina del percorso', async () => {
     const { el } = await open('/');
-    expect(el.querySelector('h1')?.textContent).toContain('PIXELADEMY');
+    expect(el.querySelector('.brand')?.textContent).toContain('PIXELADEMY');
+    expect(el.querySelector('app-dashboard')).not.toBeNull();
   });
 
   it.each([

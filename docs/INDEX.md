@@ -38,3 +38,4 @@
 | E03 | US-03.1 Esecuzione di Python nel browser (Pyodide) | #26 | #121 | `docs/issues/US-03.1.md` | fatto |
 | E03 | US-03.2 Indicatore di caricamento del compilatore | #27 | #122 | `docs/issues/US-03.2.md` | fatto |
 | E03 | US-03.3 Editor di codice (Monaco) | #28 | #123 | `docs/issues/US-03.3.md` | fatto |
+| E05 | US-05.2 Home: catalogo percorsi e mappa | #37 | #124 | `docs/issues/US-05.2.md` | fatto |
