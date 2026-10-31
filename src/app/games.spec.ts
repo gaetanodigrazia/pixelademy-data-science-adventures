@@ -3,6 +3,7 @@ import { TestBed } from '@angular/core/testing';
 import { r2 } from './shared/components/games/base-game';
 import { Game, mountGame } from './testing/game-harness';
 import { IndexRack } from './shared/components/games/index-rack';
+import { ListBench } from './shared/components/games/list-bench';
 // <<IMPORTS>>
 
 interface Case { id: string; index: number; component: Type<unknown>; solve: (g: Game) => void }
@@ -10,6 +11,7 @@ interface Case { id: string; index: number; component: Type<unknown>; solve: (g:
 /** Gioca ogni gioco come un giocatore esperto: la sequenza di mosse corrette per quel concetto. */
 const CASES: Case[] = [
   { id: 'adventure-index-rack', index: 0, component: IndexRack, solve: (g) => { for (const q of [...g.queries]) g.pick(q.idx); } },
+  { id: 'adventure-list-bench', index: 1, component: ListBench, solve: (g) => { for (let i = 0; i < 100 && !g.cleared; i++) (g.items().length < g.goal().target ? g.append() : g.pop()); } },
   // <<CASES>>
 ];
 
@@ -42,6 +44,13 @@ describe('minigiochi: si impara giocando', () => {
     expect(g.showIdx()).toBe(true);
     expect(g.round()).toBe(0);
     expect(g.mistakes()).toBe(1);
+  });
+
+    it('lista: pop() su lista vuota è un IndexError', () => {
+    const { g } = mountGame(ListBench, 1);
+    g.pop();
+    expect(g.mistakes()).toBe(1);
+    expect(g.feedback().text).toContain('IndexError');
   });
 
   // <<EXTRA>>
