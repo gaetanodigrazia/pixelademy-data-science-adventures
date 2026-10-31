@@ -72,16 +72,19 @@ describe('PythonRunnerService', () => {
   });
 
   it('se il download fallisce dà un messaggio sulla connessione, stato error, e consente un nuovo tentativo', async () => {
+    // lo script non viene davvero inserito nel documento (jsdom proverebbe a scaricarlo dalla CDN): lo si cattura e si simula l'errore
+    const scripts: HTMLScriptElement[] = [];
+    const append = vi.spyOn(document.head, 'appendChild').mockImplementation(((n: HTMLScriptElement) => { scripts.push(n); return n; }) as never);
     const s = TestBed.inject(PythonRunnerService);
     const first = s.run('1');
-    await Promise.resolve();
-    const script = document.head.querySelector('script[src*="pyodide.js"]')!;
-    script.dispatchEvent(new Event('error'));
+    expect(scripts.length).toBe(1);
+    expect(scripts[0].src).toContain('/pyodide.js');
+    scripts[0].onerror!(new Event('error'));
     const r = await first;
     expect(r.output).toBe('');
     expect(r.error).toContain('Verifica la connessione');
     expect(s.status()).toBe('error');
-    expect(document.head.querySelector('script[src*="pyodide.js"]')).toBeNull();
+    append.mockRestore();
 
     install(fakePyodide((_c, out) => out('ok')));
     expect((await s.run('1')).output).toBe('ok\n');
