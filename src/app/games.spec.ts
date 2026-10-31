@@ -11,6 +11,7 @@ import { BranchPicker } from './shared/components/games/branch-picker';
 import { DictVault } from './shared/components/games/dict-vault';
 import { ExtremeDuel } from './shared/components/games/extreme-duel';
 import { FunctionForge } from './shared/components/games/function-forge';
+import { PipelineLine } from './shared/components/games/pipeline-line';
 // <<IMPORTS>>
 
 interface Case { id: string; index: number; component: Type<unknown>; solve: (g: Game) => void }
@@ -26,6 +27,7 @@ const CASES: Case[] = [
   { id: 'adventure-dict-vault', index: 6, component: DictVault, solve: (g) => { for (let i = 0; i < g.requests.length && !g.cleared; i++) (i === g.requests.length - 1 ? g.keyError() : g.open(g.want())); } },
   { id: 'adventure-extreme-duel', index: 7, component: ExtremeDuel, solve: (g) => { for (let i = 0; i < 50 && !g.cleared; i++) g.choose(g.isMax ? g.challenger() > g.champion() : g.challenger() < g.champion()); } },
   { id: 'adventure-function-forge', index: 8, component: FunctionForge, solve: (g) => { for (const l of ['def escursione(valori):', '    massimo = max(valori)', '    minimo = min(valori)', '    return massimo - minimo']) g.add(l); g.run(); } },
+  { id: 'adventure-pipeline-line', index: 9, component: PipelineLine, solve: (g) => { for (const id of ['filter', 'mean', 'round']) g.add(id); g.run(); for (const id of ['filter', 'count']) g.add(id); g.run(); } },
   // <<CASES>>
 ];
 
@@ -114,6 +116,15 @@ describe('minigiochi: si impara giocando', () => {
     expect(run(['def escursione(valori):', '    massimo = max(valori)', '    minimo = min(valori)', '    print(massimo - minimo)'])).toContain('None');
     expect(run(['def escursione(valori):', '    massimo = max(valori)', '    minimo = min(valori)', '    return minimo - massimo'])).toContain('massimo − minimo');
     expect(g.mistakes()).toBe(4);
+  });
+
+    it('pipeline: un passo che riceve il tipo sbagliato è un TypeError', () => {
+    const { g } = mountGame(PipelineLine, 9);
+    g.add('mean');
+    g.add('filter');
+    g.run();
+    expect(g.feedback().text).toContain('TypeError');
+    expect(g.mistakes()).toBe(1);
   });
 
   // <<EXTRA>>
