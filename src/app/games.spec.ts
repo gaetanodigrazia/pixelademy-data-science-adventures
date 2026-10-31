@@ -6,6 +6,7 @@ import { IndexRack } from './shared/components/games/index-rack';
 import { ListBench } from './shared/components/games/list-bench';
 import { FilterBelt } from './shared/components/games/filter-belt';
 import { Accumulator } from './shared/components/games/accumulator';
+import { MeanCalc } from './shared/components/games/mean-calc';
 // <<IMPORTS>>
 
 interface Case { id: string; index: number; component: Type<unknown>; solve: (g: Game) => void }
@@ -16,6 +17,7 @@ const CASES: Case[] = [
   { id: 'adventure-list-bench', index: 1, component: ListBench, solve: (g) => { for (let i = 0; i < 100 && !g.cleared; i++) (g.items().length < g.goal().target ? g.append() : g.pop()); } },
   { id: 'adventure-filter-belt', index: 2, component: FilterBelt, solve: (g) => { for (let i = 0; i < 50 && g.index() < g.values.length; i++) g.decide(g.values[g.index()] > g.threshold); } },
   { id: 'adventure-accumulator', index: 3, component: Accumulator, solve: (g) => { for (let i = 0; i < 50 && g.index() < g.values.length; i++) { const next = r2(g.total() + g.values[g.index()]); g.pick(g.options().find((o: { value: number }) => o.value === next)); } } },
+  { id: 'adventure-mean-calc', index: 4, component: MeanCalc, solve: (g) => { for (let i = 0; i < 20 && !g.cleared; i++) g.pick(g.options().find((o: { value: number }) => o.value === g.expected())); } },
   // <<CASES>>
 ];
 
