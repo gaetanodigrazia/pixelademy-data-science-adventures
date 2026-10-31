@@ -2,10 +2,17 @@ import { TestBed } from '@angular/core/testing';
 import { Router, provideRouter } from '@angular/router';
 import { App } from './app';
 import { routes } from './app.routes';
+import { useMiniPack } from './testing/mini-pack';
 
 describe('App (routing)', () => {
+  beforeEach(() => {
+    localStorage.clear();
+    TestBed.resetTestingModule();
+  });
+
   async function open(url: string): Promise<{ el: HTMLElement; router: Router }> {
     TestBed.configureTestingModule({ providers: [provideRouter(routes)] });
+    useMiniPack();
     const fixture = TestBed.createComponent(App);
     const router = TestBed.inject(Router);
     await router.navigateByUrl(url);
