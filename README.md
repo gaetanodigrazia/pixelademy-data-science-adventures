@@ -53,3 +53,6 @@ Il pack `src/app/content/challenges` ha un percorso «Sfide con pandas»: un dat
 
 ### Lingue (it/en)
 L'interfaccia ha due dizionari tipizzati (`src/app/core/i18n/it.ts` e `en.ts`: se manca una chiave in inglese la compilazione fallisce). All'avvio si usa la lingua scelta (salvata con il consenso) o quella del browser; dalla navbar si cambia con IT/EN. **Tradotti**: navbar, consenso, modale «Privacy e dati» e home. **Non ancora tradotti** (restano in italiano): pagina missione e minigiochi, Dashboard del progetto, pagina «Il progetto», condivisione e tutti i contenuti didattici (teoria, missioni, consegne, percorsi).
+
+### Contributor di un percorso
+Per indicare chi ha creato un percorso aggiungi alla sua voce `PATH_SEEDS` (o al `LearningPath` di un pack) `contributor: { name: 'Nome Cognome', url: 'https://…' }` (l'indirizzo, https, è facoltativo): compare come «Contributor: nome» nel riquadro «Percorso» della home (con link al profilo) e nel catalogo. I test rifiutano indirizzi non `https`.

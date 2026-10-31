@@ -117,6 +117,7 @@ const pack: ContentPack = {
       missions,
       dashboard: false,
       defaultCharacterId: 'adventure-core-teo',
+      contributor: { name: 'Gaetano Di Grazia', url: 'https://github.com/gaetanodigrazia' },
     },
   ],
   characters: [],

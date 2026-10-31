@@ -3,6 +3,12 @@ import { GameDefinition } from './game.model';
 import { Mission } from './mission.model';
 import { ProjectSpec } from './project.model';
 
+/** Chi ha creato o curato un percorso. Si mostra nella home e nel catalogo; `url` (https) è il suo profilo o sito. */
+export interface Contributor {
+  name: string;
+  url?: string;
+}
+
 export interface LearningPath {
   id: string;
   title: string;
@@ -15,6 +21,7 @@ export interface LearningPath {
   /** Mostra la Dashboard dei risultati del progetto (link, presentazione, pagina). Se omesso vale `true`. */
   dashboard?: boolean;
   defaultCharacterId?: string;
+  contributor?: Contributor;
 }
 
 export interface ContentPack {

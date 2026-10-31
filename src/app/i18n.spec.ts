@@ -23,7 +23,7 @@ describe('dizionari it/en', () => {
 
   it('l\'inglese non è una copia dell\'italiano (restano uguali solo parole identiche nelle due lingue)', () => {
     const same = (Object.keys(IT) as (keyof typeof IT)[]).filter((k) => IT[k] === EN[k] && /[a-zà-ù]{4,}/i.test(IT[k]));
-    expect(same).toEqual(['nav.home', 'nav.levelShort', 'home.dashboard']); // «Home», «Lv» e «Dashboard» sono uguali nelle due lingue
+    expect(same).toEqual(['nav.home', 'nav.levelShort', 'home.dashboard', 'home.contributor']); // «Home», «Lv», «Dashboard» e «Contributor» sono uguali nelle due lingue
   });
 });
 
