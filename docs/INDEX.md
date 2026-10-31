@@ -12,3 +12,4 @@
 | E03 | US-03.4 Validazione deterministica dell'output | #29 | #95 | `docs/issues/US-03.4.md` | fatto |
 | E03 | US-03.5 Helper Python per i float | #30 | #96 | `docs/issues/US-03.5.md` | fatto |
 | E04 | US-04.2 Punteggio per missione | #32 | #97 | `docs/issues/US-04.2.md` | fatto |
+| E04 | US-04.3 Stato giocatore e persistenza con consenso | #33 | #98 | `docs/issues/US-04.3.md` | fatto |
