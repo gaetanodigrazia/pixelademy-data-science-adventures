@@ -3,6 +3,7 @@ import { Router, RouterLink } from '@angular/router';
 import { Character } from '../../core/models/character.model';
 import { LearningPath } from '../../core/models/content-pack.model';
 import { ContentRegistryService } from '../../core/services/content-registry.service';
+import { LikeService } from '../../core/services/like.service';
 import { GameStateService } from '../../core/services/game-state.service';
 import { MissionService } from '../../core/services/mission.service';
 import { MissionCard } from '../../shared/components/mission-card';
@@ -25,6 +26,8 @@ type CatalogKind = 'paths' | 'heroes';
         <header class="head">
           <div class="titlerow">
             <h1>{{ path()!.icon }} {{ path()!.title }}</h1>
+            <button type="button" class="btn like" [attr.aria-pressed]="game.liked()" [disabled]="game.liked() || likes.sending()"
+              aria-label="Mi piace al progetto, in modo anonimo" (click)="likes.likeOnce()">{{ game.liked() ? '👍 Grazie!' : '👍 Mi piace' }}</button>
           </div>
           <p class="hint">Frecce: muovi · Invio: entra nel blocco</p>
           <section class="level" aria-label="Progressione del giocatore">
@@ -129,6 +132,7 @@ type CatalogKind = 'paths' | 'heroes';
     main { gap: clamp(4px, 1.2vh, 10px); }
     .head { flex: none; text-align: center; }
     .titlerow { display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 4px 10px; }
+    .titlerow .like { padding: 3px 8px; font-size: .5rem; }
     .head h1 { margin: 0; font-size: clamp(.7rem, 2.4vh, 1rem); line-height: 1.4; }
     .hint { margin: 0; color: #cbd5e1; font-size: .55rem; }
     .level { display: grid; grid-template-columns: minmax(0, auto) minmax(0, min(240px, 35vw)); align-items: center; justify-content: center;
@@ -190,6 +194,7 @@ type CatalogKind = 'paths' | 'heroes';
 export class Dashboard {
   protected readonly registry = inject(ContentRegistryService);
   protected readonly game = inject(GameStateService);
+  protected readonly likes = inject(LikeService);
   protected readonly missions = inject(MissionService);
   private readonly router = inject(Router);
 
