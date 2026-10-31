@@ -40,3 +40,4 @@
 | E03 | US-03.3 Editor di codice (Monaco) | #28 | #123 | `docs/issues/US-03.3.md` | fatto |
 | E05 | US-05.2 Home: catalogo percorsi e mappa | #37 | #124 | `docs/issues/US-05.2.md` | fatto |
 | E04 | US-04.5 Selezione di percorso ed eroe | #35 | #125 | `docs/issues/US-04.5.md` | fatto |
+| E11 | US-11.1 Percorso «Osservatorio delle Nuvole (10 missioni, standard)» | #69 | #126 | `docs/issues/US-11.1.md` | fatto |
