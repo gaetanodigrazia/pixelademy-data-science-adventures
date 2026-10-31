@@ -60,3 +60,6 @@ Per indicare chi ha creato un percorso aggiungi alla sua voce `PATH_SEEDS` (o al
 
 ### Mappa su telefono
 Sotto i 760 px la mappa usa una tela più stretta (2 blocchi per riga, blocchi da 56 unità ≈ 48 px sullo schermo), è larga quanto lo schermo e alta quanto serve: è la pagina a scorrere. L'area di tocco di un blocco ha raggio ≥ 28 px sullo schermo. Il layout si ricalcola se lo schermo cambia o ruota. `npm run check:responsive` ne verifica dimensioni e tocco.
+
+### Provare sulla build di produzione
+Col dev server (`npm start`) alcune cose funzionano diversamente dalla produzione: ad esempio il CSS dei chunk caricati a richiesta è iniettato da JavaScript, mentre nella build sono file separati che vanno collegati a mano (è successo con Monaco, vedi `core/utils/monaco-styles.ts`). Le prove visive vanno fatte su `npm run build` servito da `dist/pixelademy/browser`: `node scripts/check-editor-prod.mjs` controlla che l'editor sia disegnato bene e che il suo CSS si scarichi solo nel task.
