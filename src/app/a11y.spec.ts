@@ -81,6 +81,13 @@ describe('accessibilità (axe)', () => {
     expect(await audit(full.el), 'piena').toEqual([]);
   });
 
+  it('pagina «Il progetto»', async () => {
+    vi.stubGlobal('fetch', async () => ({ ok: true, json: async () => ({ count: 3 }) }));
+    const { el } = await open('/info');
+    expect(await audit(el)).toEqual([]);
+    vi.unstubAllGlobals();
+  });
+
   it('modale privacy', async () => {
     const { f, el } = await open('/');
     btn(el, 'Privacy e dati').click();
