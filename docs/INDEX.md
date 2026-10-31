@@ -60,3 +60,4 @@
 | E11 | US-11.3 Percorso «Officina dell'Energia (3 missioni, esercizi propri)» | #71 | #142 | `docs/issues/US-11.3.md` | fatto |
 | E12 | US-12.3 Accessibilità di base | #78 | #143 | `docs/issues/US-12.3.md` | fatto |
 | E12 | US-12.4 Responsive e touch | #79 | #144 | `docs/issues/US-12.4.md` | fatto |
+| E11 | US-11.4 Percorso «Statistica dei Segnali (6 missioni)» | #72 | #145 | `docs/issues/US-11.4.md` | fatto |
