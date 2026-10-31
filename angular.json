@@ -25,7 +25,6 @@
               }
             ],
             "styles": [
-              "node_modules/monaco-editor/min/vs/editor/editor.main.css",
               "src/styles.css"
             ],
             "webWorkerTsConfig": "tsconfig.worker.json"
@@ -35,8 +34,8 @@
               "budgets": [
                 {
                   "type": "initial",
-                  "maximumWarning": "500kB",
-                  "maximumError": "1MB"
+                  "maximumWarning": "450kB",
+                  "maximumError": "600kB"
                 },
                 {
                   "type": "anyComponentStyle",
