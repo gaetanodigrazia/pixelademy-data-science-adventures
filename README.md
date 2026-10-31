@@ -41,7 +41,7 @@ Immagine e pagina si generano a ogni build con `scripts/generate-share-assets.mj
 Se LinkedIn mostra una vecchia anteprima, aggiornala con https://www.linkedin.com/post-inspector/.
 
 ### Prestazioni
-Le pagine (tranne la home) si caricano alla prima visita; Monaco e il worker di Python sono ancora più tardi. Bundle iniziale in produzione: ~434 kB grezzi, ~117 kB trasferiti (budget: avviso 450 kB, errore 600 kB in `angular.json`). Misura con Lighthouse: `npm run build`, servire `dist/pixelademy/browser` su `:4300` e `npm run audit:lighthouse` (non è in CI).
+Le pagine (tranne la home) si caricano alla prima visita; Monaco e il worker di Python sono ancora più tardi. Bundle iniziale in produzione: ~455 kB grezzi, ~122 kB trasferiti (era 644 kB prima del caricamento pigro; è salito con Service Worker, i18n e pacchetto sfide; budget: avviso 470 kB, errore 600 kB in `angular.json`). Misura con Lighthouse: `npm run build`, servire `dist/pixelademy/browser` su `:4300` e `npm run audit:lighthouse` (non è in CI).
 
 ### Offline e installazione (PWA)
 Pyodide non viene più dalla CDN: la build lo copia in `/pyodide/` (da `node_modules/pyodide`, stessa versione) e un Service Worker (solo in produzione) mette in cache app e interprete. Dopo il primo uso si può giocare anche senza connessione; il sito è installabile (manifest e icone, rigenerabili con `node scripts/generate-icons.mjs`).
