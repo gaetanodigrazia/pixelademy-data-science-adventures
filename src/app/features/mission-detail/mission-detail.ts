@@ -21,6 +21,8 @@ import { ProjectIntro } from '../../shared/components/project-intro';
 import { Modal } from '../../shared/components/modal';
 
 const INTRO_KEY = 'pixelademy.intro.v1';
+/** La fase di ogni missione (battaglia/task) per la sessione del browser: ricaricando la pagina non si rifanno teoria e battaglia. */
+const PHASE_KEY = 'pixelademy.phase.v1';
 
 type Phase = 'teoria' | 'battaglia' | 'task';
 
@@ -64,9 +66,9 @@ type Phase = 'teoria' | 'battaglia' | 'task';
                 @if (slide() < m.theory.length - 1) {
                   <button type="button" class="btn primary" (click)="slide.set(slide() + 1)">Avanti →</button>
                 } @else {
-                  <button type="button" class="btn primary" (click)="phase.set('battaglia')">Alla battaglia →</button>
+                  <button type="button" class="btn primary" (click)="go('battaglia')">Alla battaglia →</button>
                 }
-                <button type="button" class="btn" (click)="phase.set('battaglia')">Salta la teoria</button>
+                <button type="button" class="btn" (click)="go('battaglia')">Salta la teoria</button>
               </div>
             </section>
           }
@@ -78,12 +80,12 @@ type Phase = 'teoria' | 'battaglia' | 'task';
                 <p class="panel err">Minigioco non disponibile: {{ m.game.type }}</p>
               }
               @if (taskUnlocked()) {
-                <div class="row"><button type="button" class="btn primary" (click)="phase.set('task')">Vai al task →</button></div>
+                <div class="row"><button type="button" class="btn primary" (click)="go('task')">Vai al task →</button></div>
               }
             </section>
           }
           @case ('task') {
-            <section class="panel stage task" aria-label="Task Python">
+            <section class="panel stage task" [class.scrolls]="showAll() || !!error()" aria-label="Task Python">
               <details class="brief" open>
                 <summary>📝 Cosa fare</summary>
                 <p>{{ m.briefing }}</p>
@@ -136,7 +138,7 @@ type Phase = 'teoria' | 'battaglia' | 'task';
         @if (introOpen() && projectPath(); as pp) { <app-project-intro [path]="pp" (closed)="closeIntro()" /> }
         @if (victoryOpen()) {
           <app-modal title="Battaglia vinta!" (closed)="victoryOpen.set(false)">
-            <p class="ok">Hai sconfitto il bug! Il task Python è sbloccato.</p>
+            <p class="ok">Missione completata! Il task Python è sbloccato.</p>
             <div class="row">
               <button type="button" class="btn primary" (click)="goToTask()">Vai al task →</button>
               <button type="button" class="btn" (click)="victoryOpen.set(false)">Resta qui</button>
@@ -226,7 +228,12 @@ type Phase = 'teoria' | 'battaglia' | 'task';
     .ctx .all { margin: 2px 8px 6px; padding: 3px 8px; font-size: .5rem; }
     .ctx pre { max-height: 6.5em; overflow: auto; margin: 0; padding: 2px 8px 4px; font: .55rem/1.5 var(--mono); color: var(--muted); }
     .hintrow { flex: none; display: flex; flex-wrap: wrap; align-items: center; gap: 8px; font-size: .55rem; }
-    .editor { flex: 1; min-height: 0; }
+    /* L'editor non scende sotto i 150 px (a 680 px di altezza era schiacciato a 74): se manca spazio, scorre il riquadro del task. */
+    .editor { flex: 1; min-height: 150px; }
+    .task { overflow-y: auto; }
+    /* Programma esteso o errore in console: il contenuto non deve schiacciare l'editor fino a farlo sparire, il riquadro scorre. */
+    .task.scrolls { overflow-y: auto; }
+    .task.scrolls .editor { flex: 1 0 auto; min-height: 260px; }
     .console { flex: none; max-height: 20%; min-height: 2.6em; overflow: auto; background: #020617; border: 2px solid var(--line); padding: 6px; font-size: .55rem; }
     .console.err { border-color: var(--bad); }
     .foot { flex: none; display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px; font-size: .6rem; }
@@ -364,9 +371,11 @@ export class MissionDetail {
       untracked(() => {
         this.noteAbandoned();
         this.current = m?.id ?? null;
-        this.phase.set(m?.challenge ? 'task' : 'teoria');
+        // dopo un ricaricamento si riparte dalla fase raggiunta (se la battaglia era vinta, il task resta sbloccato)
+        const saved = m && !m.challenge ? this.savedPhase(m.id) : null;
+        this.phase.set(m?.challenge ? 'task' : saved ?? 'teoria');
         this.slide.set(0);
-        this.battleWon.set(false);
+        this.battleWon.set(saved === 'task');
         this.victoryOpen.set(false);
         this.rewardOpen.set(false);
         // Prima missione di un progetto, non ancora completata: si presenta il progetto (una volta per sessione).
@@ -433,15 +442,39 @@ export class MissionDetail {
     }
   }
 
+  /** Cambia fase e la ricorda per la sessione (la teoria è la partenza: non si salva). */
+  protected go(p: Phase): void {
+    this.phase.set(p);
+    const id = this.current;
+    if (!id) return;
+    try {
+      const all = JSON.parse(sessionStorage.getItem(PHASE_KEY) ?? '{}') as Record<string, Phase>;
+      if (p === 'teoria') delete all[id];
+      else all[id] = p;
+      sessionStorage.setItem(PHASE_KEY, JSON.stringify(all));
+    } catch {
+      /* senza storage (o con dati rovinati) la ripresa non c'è: non è un problema */
+    }
+  }
+
+  private savedPhase(id: string): Phase | null {
+    try {
+      const p = (JSON.parse(sessionStorage.getItem(PHASE_KEY) ?? '{}') as Record<string, unknown>)[id];
+      return p === 'battaglia' || p === 'task' ? p : null;
+    } catch {
+      return null;
+    }
+  }
+
   protected restart(): void {
     this.victoryOpen.set(false);
     this.slide.set(0);
-    this.phase.set('teoria');
+    this.go('teoria');
   }
 
   protected goToTask(): void {
     this.victoryOpen.set(false);
-    this.phase.set('task');
+    this.go('task');
   }
 
   protected async run(code: string): Promise<void> {
