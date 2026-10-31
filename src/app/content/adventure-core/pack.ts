@@ -47,6 +47,7 @@ const paths: LearningPath[] = PATH_SEEDS.map((p) => {
     dashboard: p.dashboard !== false,
     defaultCharacterId: `${PACK_ID}-${p.characterSlug}`,
     contributor: p.contributor,
+    requires: p.requires?.map((slug) => `${PACK_ID}-${slug}`),
   };
 });
 

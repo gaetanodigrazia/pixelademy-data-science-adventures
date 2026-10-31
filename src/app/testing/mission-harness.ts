@@ -4,6 +4,8 @@ import { Router, provideRouter } from '@angular/router';
 import { App } from '../app';
 import { routes } from '../app.routes';
 import { PACKS } from '../core/data/packs.generated';
+import { ContentRegistryService } from '../core/services/content-registry.service';
+import { GameStateService } from '../core/services/game-state.service';
 import { PythonRunnerService } from '../core/services/python-runner.service';
 import { CodeEditor } from '../shared/components/code-editor';
 
@@ -14,6 +16,16 @@ export const btn = (el: HTMLElement, text: string) => Array.from(el.querySelecto
 export const dialogBtn = (el: HTMLElement, text: string) =>
   Array.from(el.querySelector('[role=dialog]')?.querySelectorAll('button') ?? []).find((b) => b.textContent?.includes(text)) as HTMLButtonElement;
 
+/**
+ * «Osservatorio delle Nuvole» si apre solo dopo «Centro Mobilità»: i test che giocano l'Osservatorio da uno stato nuovo
+ * completano prima (a 0 XP, così non cambiano i conti) il percorso richiesto.
+ */
+export function unlockPaths(): void {
+  const game = TestBed.inject(GameStateService);
+  const required = TestBed.inject(ContentRegistryService).paths().find((p) => p.id === 'adventure-core-mobilita')!;
+  for (const m of required.missions) game.completeMission(m, { xp: 0 });
+}
+
 /** Prepara il TestBed con il router e un Python finto (nessun download dalla CDN). */
 export function setup() {
   localStorage.clear();
@@ -23,6 +35,7 @@ export function setup() {
   const python = TestBed.inject(PythonRunnerService);
   vi.spyOn(python, 'loadRuntime').mockResolvedValue(undefined);
   const run = vi.spyOn(python, 'run').mockResolvedValue({ output: '' });
+  unlockPaths();
   return { run };
 }
 

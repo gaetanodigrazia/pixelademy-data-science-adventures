@@ -9,16 +9,16 @@ describe('GameStateService', () => {
     TestBed.resetTestingModule();
   });
 
-  it('parte dal primo percorso con il suo personaggio predefinito', () => {
+  it('parte dal primo percorso sbloccato (Centro Mobilità: l\'Osservatorio richiede di averlo completato) con il suo personaggio predefinito', () => {
     const g = TestBed.inject(GameStateService);
-    const path = TestBed.inject(ContentRegistryService).paths()[0];
+    const path = TestBed.inject(ContentRegistryService).paths().find((p) => p.id === 'adventure-core-mobilita')!;
     expect(g.state().selectedPathId).toBe(path.id);
     expect(g.state().selectedCharacterId).toBe(path.defaultCharacterId);
   });
 
-  it('selezionando un percorso imposta il suo personaggio predefinito', () => {
+  it('selezionando un percorso sbloccato imposta il suo personaggio predefinito', () => {
     const g = TestBed.inject(GameStateService);
-    const path = TestBed.inject(ContentRegistryService).paths()[0];
+    const path = TestBed.inject(ContentRegistryService).paths().find((p) => p.id === 'adventure-core-energia')!;
     g.selectPath(path.id);
     expect(g.state().selectedCharacterId).toBe(path.defaultCharacterId);
   });
@@ -66,7 +66,7 @@ describe('GameStateService', () => {
   it('sblocca le missioni in sequenza', () => {
     const g = TestBed.inject(GameStateService);
     const ms = TestBed.inject(MissionService);
-    const path = TestBed.inject(ContentRegistryService).paths()[0];
+    const path = TestBed.inject(ContentRegistryService).paths().find((p) => p.id === 'adventure-core-mobilita')!;
     expect(ms.status(path.missions[0])).toBe('available');
     expect(ms.status(path.missions[1])).toBe('locked');
     g.completeMission(path.missions[0]);

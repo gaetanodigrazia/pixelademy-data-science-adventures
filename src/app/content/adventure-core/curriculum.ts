@@ -19,6 +19,8 @@ export interface PathSeed {
   tags: string[];
   /** Chi ha creato il percorso: compare nella home e nel catalogo. */
   contributor?: Contributor;
+  /** Slug dei percorsi da completare prima: il percorso resta bloccato finché non lo sono. */
+  requires?: string[];
   characterSlug: string;
   enemySlug: string;
   /** Il progetto del percorso: completare le sue missioni lo realizza. */
@@ -41,6 +43,8 @@ export const PATH_SEEDS: PathSeed[] = [
   {
     slug: 'nuvole',
     contributor: OWNER,
+    // il percorso lungo (10 missioni) si apre dopo il breve (3 missioni)
+    requires: ['mobilita'],
     title: 'Osservatorio delle Nuvole',
     description: 'Costruisci il bollettino meteo dell\'osservatorio: temperatura, pioggia e vento, una sezione per missione.',
     icon: '☁️',

@@ -2,6 +2,7 @@ import { ChangeDetectionStrategy, Component, computed, effect, inject, signal, u
 import { toSignal } from '@angular/core/rxjs-interop';
 import { ActivatedRoute, RouterLink } from '@angular/router';
 import { map } from 'rxjs';
+import { MissionService } from '../../core/services/mission.service';
 import { ContentRegistryService } from '../../core/services/content-registry.service';
 import { GameStateService } from '../../core/services/game-state.service';
 import { buildDashboardCards } from '../../core/utils/dashboard-cards';
@@ -113,6 +114,7 @@ export class ProjectDashboard {
   private readonly route = inject(ActivatedRoute);
   private readonly registry = inject(ContentRegistryService);
   private readonly game = inject(GameStateService);
+  private readonly missions = inject(MissionService);
 
   constructor() {
     effect(() => {
@@ -124,7 +126,8 @@ export class ProjectDashboard {
   /** Un percorso con `dashboard: false` non ha questa pagina: si comporta come un percorso inesistente. */
   protected readonly path = computed(() => {
     const p = this.registry.path(this.id());
-    return p?.dashboard === false ? undefined : p;
+    // un percorso bloccato (o senza Dashboard) si comporta come un percorso inesistente
+    return p?.dashboard === false || (p && !this.missions.pathUnlocked(p)) ? undefined : p;
   });
   protected readonly project = computed(() => this.path()?.project);
   protected readonly codeOpen = signal(false);

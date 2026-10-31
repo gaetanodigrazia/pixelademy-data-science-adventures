@@ -68,6 +68,7 @@ export const IT = {
   'home.searchHeroesLabel': 'Cerca eroi',
   'home.noPath': 'Nessun percorso trovato.',
   'home.noHero': 'Nessun eroe trovato.',
+  'home.pathLocked': 'Completa «{names}» per sbloccarlo',
   'home.contributor': 'Contributor:',
   'home.leaderboard': '🏆 Classifica',
   'home.like': '👍 Mi piace',
