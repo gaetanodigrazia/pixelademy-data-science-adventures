@@ -36,3 +36,4 @@
 | E04 | US-04.4 Modale privacy | #34 | #119 | `docs/issues/US-04.4.md` | fatto |
 | E05 | US-05.1 Navbar con profilo, livello e XP | #36 | #120 | `docs/issues/US-05.1.md` | fatto |
 | E03 | US-03.1 Esecuzione di Python nel browser (Pyodide) | #26 | #121 | `docs/issues/US-03.1.md` | fatto |
+| E03 | US-03.2 Indicatore di caricamento del compilatore | #27 | #122 | `docs/issues/US-03.2.md` | fatto |
