@@ -44,7 +44,7 @@ Se LinkedIn mostra una vecchia anteprima, aggiornala con https://www.linkedin.co
 Le pagine (tranne la home) si caricano alla prima visita; Monaco e il worker di Python sono ancora più tardi. Bundle iniziale in produzione: ~455 kB grezzi, ~122 kB trasferiti (era 644 kB prima del caricamento pigro; è salito con Service Worker, i18n e pacchetto sfide; budget: avviso 470 kB, errore 600 kB in `angular.json`). Misura con Lighthouse: `npm run build`, servire `dist/pixelademy/browser` su `:4300` e `npm run audit:lighthouse` (non è in CI).
 
 ### Offline e installazione (PWA)
-Pyodide non viene più dalla CDN: la build lo copia in `/pyodide/` (da `node_modules/pyodide`, stessa versione) e un Service Worker (solo in produzione) mette in cache app e interprete. Dopo il primo uso si può giocare anche senza connessione; il sito è installabile (manifest e icone, rigenerabili con `node scripts/generate-icons.mjs`).
+Pyodide non viene più dalla CDN: la build lo copia in `/pyodide/` (da `node_modules/pyodide`, stessa versione) e un Service Worker (solo in produzione) mette in cache app e interprete. Dopo il primo uso si può giocare anche senza connessione; il sito è installabile (manifest e icone e favicon, rigenerabili insieme con `node scripts/generate-icons.mjs`).
 Prove nel browser (opzionali, richiedono Playwright; servire `dist/pixelademy/browser` su `:4300` con fallback SPA): `node scripts/check-offline.mjs` (Python online e offline, nessuna richiesta esterna) e `node scripts/check-infinite-loop.mjs` (interruzione di un ciclo infinito).
 Peso: ~14 MB di Pyodide nel sito (scaricati solo quando si apre un task). I pacchetti Python aggiuntivi (es. pandas, vedi US IMP-06) non sono inclusi.
 
