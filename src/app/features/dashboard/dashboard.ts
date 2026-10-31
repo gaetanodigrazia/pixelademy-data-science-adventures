@@ -160,8 +160,9 @@ type CatalogKind = 'paths' | 'heroes';
     .icon { font-size: 1.8rem; }
     .txt { display: flex; flex-direction: column; gap: 3px; min-width: 0; line-height: 1.5; overflow-wrap: anywhere; }
     .muted { color: var(--muted); }
-    .choices { display: flex; flex-wrap: wrap; gap: 4px; }
-    .choice { position: relative; display: flex; align-items: center; justify-content: center; min-width: 36px; padding: 4px;
+    /* Gli eroi stanno su una riga che scorre di lato, qualunque sia il loro numero. */
+    .choices { display: flex; flex-wrap: nowrap; gap: 4px; overflow-x: auto; overscroll-behavior-x: contain; padding-bottom: 2px; }
+    .choice { flex: none; position: relative; display: flex; align-items: center; justify-content: center; min-width: 36px; padding: 4px;
       border: 3px solid var(--line); background: #020617; color: var(--text); cursor: pointer; }
     .choice.active { border-color: var(--good); box-shadow: 0 0 0 2px rgba(74, 222, 128, .25); }
     .choice:hover:not(:disabled) { border-color: var(--accent-2); }
@@ -174,8 +175,9 @@ type CatalogKind = 'paths' | 'heroes';
     .dhead h2 { margin: 0; }
     .search { padding: 10px; background: #000; color: var(--accent-2); border: 4px solid var(--line); font-size: .65rem; }
     .search:focus { outline: none; border-color: var(--accent-2); }
-    .results { display: flex; flex-direction: column; gap: 8px; min-height: 0; overflow-y: auto; }
-    .result { display: flex; align-items: center; gap: 10px; padding: 10px; background: var(--panel); color: var(--text); border: 4px solid var(--line);
+    /* L'elenco scorre dentro la finestra; le voci tengono la loro altezza (senza «flex: none» si comprimevano e i testi si sovrapponevano). */
+    .results { display: flex; flex-direction: column; gap: 8px; min-height: 0; overflow-y: auto; overscroll-behavior: contain; -webkit-overflow-scrolling: touch; }
+    .result { flex: none; display: flex; align-items: center; gap: 10px; padding: 10px; background: var(--panel); color: var(--text); border: 4px solid var(--line);
       font: inherit; text-align: left; cursor: pointer; }
     .result:hover:not(:disabled) { border-color: var(--accent-2); }
     .result.active { border-color: var(--good); }
@@ -246,11 +248,17 @@ export class Dashboard {
     const q = this.norm(this.query());
     return this.registry.characters().filter((c) => this.norm(`${c.name} ${c.author} ${c.description} ${c.tags.join(' ')}`).includes(q));
   });
+  private touch(): boolean {
+    return typeof window !== 'undefined' && typeof window.matchMedia === 'function' && window.matchMedia('(pointer: coarse)').matches;
+  }
   private readonly searchInput = viewChild<ElementRef<HTMLInputElement>>('search');
 
   constructor() {
     this.game.lastCompletedId.set(null);
-    effect(() => this.searchInput()?.nativeElement.focus());
+    // Il campo di ricerca prende il fuoco da solo solo con mouse e tastiera: su un dispositivo touch aprirebbe la tastiera sopra la lista.
+    effect(() => {
+      if (!this.touch()) this.searchInput()?.nativeElement.focus();
+    });
     // Scroll lock mentre la modale è aperta.
     effect((onCleanup) => {
       if (!this.catalog()) return;

@@ -53,7 +53,8 @@ const map = await page.evaluate(() => {
   return { w: b.width, h: b.height, left: b.left, top: b.top, logicalW: c.width, logicalH: c.height };
 });
 if (map.w < 300) problems.push(`mappa: troppo stretta (${Math.round(map.w)} px)`);
-const nodePx = (56 * map.w) / map.logicalW;
+if (map.h > 360) problems.push(`mappa: troppo alta (${Math.round(map.h)} px, max 360)`);
+const nodePx = (84 * map.w) / map.logicalW;
 if (nodePx < MIN) problems.push(`mappa: blocchi di ${Math.round(nodePx)} px (< ${MIN})`);
 console.log(`mappa: ${Math.round(map.w)}×${Math.round(map.h)} px, blocchi di ${Math.round(nodePx)} px`);
 await page.mouse.click(map.left + (map.w * 100) / map.logicalW + 30, map.top + 4 + ((map.h - 8) * 120) / map.logicalH); // tocco a 30 px dal centro del blocco 1
@@ -62,6 +63,17 @@ await page.goto(base);
 await page.waitForSelector('app-world-map canvas');
 await page.click('button:has-text("Cambia / cerca")');
 await check('catalogo percorsi');
+// l'elenco scorre dentro la finestra e le voci non si comprimono (testo che esce dalla voce = sovrapposizione)
+const list = await page.evaluate(() => {
+  const r = document.querySelector('.results');
+  const squashed = [...document.querySelectorAll('.result')].filter((e) => e.scrollHeight > e.clientHeight + 2).length;
+  return { scrolls: r.scrollHeight > r.clientHeight, overflowY: getComputedStyle(r).overflowY, squashed, items: document.querySelectorAll('.result').length };
+});
+console.log(`catalogo: ${list.items} voci, scorre: ${list.scrolls}, voci compresse: ${list.squashed}`);
+if (list.overflowY !== 'auto' && list.overflowY !== 'scroll') problems.push('catalogo: l\'elenco non scorre');
+if (list.squashed > 0) problems.push(`catalogo: ${list.squashed} voci compresse (testo sovrapposto)`);
+const focused = await page.evaluate(() => document.activeElement?.matches?.('input[type=search]'));
+if (focused) problems.push('catalogo: il campo di ricerca prende il fuoco da solo su touch (apre la tastiera)');
 await page.keyboard.press('Escape');
 await page.click('button:has-text("Privacy e dati"), button[aria-label="Apri menu"]').catch(() => undefined);
 await page.goto(`${base}/info`);
