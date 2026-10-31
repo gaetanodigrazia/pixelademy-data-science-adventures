@@ -56,3 +56,4 @@
 | E11 | US-11.7 Focus data science nei testi | #75 | #138 | `docs/issues/US-11.7.md` | fatto |
 | E08 | US-08.4 Pagina Dashboard del progetto | #62 | #139 | `docs/issues/US-08.4.md` | fatto |
 | E07 | US-07.12 Quiz «Esegui il codice a mano» | #58 | #140 | `docs/issues/US-07.12.md` | fatto |
+| E11 | US-11.2 Percorso «Centro Mobilità (3 missioni, esercizi propri)» | #70 | #141 | `docs/issues/US-11.2.md` | fatto |

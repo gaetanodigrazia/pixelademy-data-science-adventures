@@ -50,7 +50,7 @@ describe('adventure-core pack', () => {
     expect(new Set(pack.games.map((g) => g.component)).size).toBe(11);
     const used = new Set(missions.map((m) => m.game.type));
     for (const m of missions) expect(pack.games.some((g) => g.id === m.game.type)).toBe(true);
-    expect(used.size).toBe(10); // l'undicesimo (quiz) compare solo nei percorsi con esercizi propri (US-11.2…11.6)
+    expect(used.size).toBe(11);
   });
 
   it('ha una soluzione per ogni missione che non compare in starter code né hint', () => {

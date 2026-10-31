@@ -7,6 +7,26 @@ import { evaluateViz } from './core/utils/viz';
 import { quizFor } from './shared/components/games/quiz-steps';
 
 const pack = PACKS[0];
+const path = (slug: string) => pack.paths.find((p) => p.id.endsWith(`-${slug}`))!;
+const lines = (slug: string) => (path(slug).missions.at(-1)!.validation as { expected: string[] }).expected;
+
+/** Il quiz di ogni missione di un percorso, sui suoi dati veri: giusta tra almeno 3 opzioni, sviste spiegate, deterministico. */
+function quizCases(slug: string) {
+  for (const m of path(slug).missions) {
+    it(`${m.id}: ogni passo ha la risposta giusta tra almeno 3 opzioni, sviste spiegate, deterministico`, () => {
+      const c = m.game.config as { exercise: string; name: string; v: number[]; th: number; thName: string; k: number };
+      const quiz = quizFor(c);
+      expect(quiz.steps.length).toBeGreaterThan(0);
+      for (const st of quiz.steps) {
+        const labels = [st.correct, ...st.traps.map((t) => t.label)];
+        expect(new Set(labels).size).toBe(labels.length);
+        expect(st.traps.length).toBeGreaterThanOrEqual(2);
+        for (const t of st.traps) expect(t.why.length).toBeGreaterThan(5);
+      }
+      expect(JSON.stringify(quizFor(c))).toBe(JSON.stringify(quiz));
+    });
+  }
+}
 
 // I test dei bollettini e delle dipendenze di ogni percorso con esercizi propri entrano con la rispettiva issue (US-11.2…11.6).
 describe('esercizi propri', () => {
@@ -60,4 +80,24 @@ describe('viz «value» e «pick»', () => {
     expect(evaluateViz(pick, true, '[7, 4]\n', '').status).toBe('wrong');
     expect(evaluateViz(pick, true, '[4]\n', '').status).toBe('wrong');
   });
+});
+
+describe('percorso «mobilita»', () => {
+  it('bollettino', () => {
+    expect(lines('mobilita').slice(1)).toEqual(["Variazione dell'attesa: 7", 'Le tre attese più brevi: [4, 6, 7]', 'Attese lunghe (%): 57']);
+  });
+
+  it('3 missioni di difficoltà 1..3, senza Dashboard, tutte con il quiz', () => {
+    const p = path('mobilita');
+    expect(p.missions.map((m) => m.difficulty)).toEqual([1, 2, 3]);
+    expect(p.dashboard).toBe(false);
+    expect(p.missions.every((m) => m.game.type === 'adventure-quiz')).toBe(true);
+  });
+
+  it('non ripete i primi tre esercizi standard di Nuvole', () => {
+    const nuvole = path('nuvole').missions.slice(0, 3).map((m) => m.topic);
+    for (const m of path('mobilita').missions) expect(nuvole).not.toContain(m.topic);
+  });
+
+  quizCases('mobilita');
 });
