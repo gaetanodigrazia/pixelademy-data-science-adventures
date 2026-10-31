@@ -101,3 +101,23 @@ describe('percorso «mobilita»', () => {
 
   quizCases('mobilita');
 });
+
+describe('percorso «energia»', () => {
+  it('bollettino', () => {
+    expect(lines('energia').slice(1)).toEqual(['Costo della quinta lettura: 81.25', 'Posizione del picco: 5', 'Energia sopra soglia: 1080']);
+  });
+
+  it('3 missioni di difficoltà 1..3, senza Dashboard, tutte con il quiz', () => {
+    const p = path('energia');
+    expect(p.missions.map((m) => m.difficulty)).toEqual([1, 2, 3]);
+    expect(p.dashboard).toBe(false);
+    expect(p.missions.every((m) => m.game.type === 'adventure-quiz')).toBe(true);
+  });
+
+  it('non ripete i primi tre esercizi standard di Nuvole', () => {
+    const nuvole = path('nuvole').missions.slice(0, 3).map((m) => m.topic);
+    for (const m of path('energia').missions) expect(nuvole).not.toContain(m.topic);
+  });
+
+  quizCases('energia');
+});
