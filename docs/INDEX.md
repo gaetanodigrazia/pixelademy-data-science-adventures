@@ -45,3 +45,4 @@
 | E08 | US-08.3 Grafico a barre | #61 | #128 | `docs/issues/US-08.3.md` | fatto |
 | E08 | US-08.2 Riquadri della Dashboard | #60 | #129 | `docs/issues/US-08.2.md` | fatto |
 | E06 | US-06.7 Introduzione al progetto del percorso | #46 | #130 | `docs/issues/US-06.7.md` | fatto |
+| E06 | US-06.5 Scena di gioco guidata dal codice | #44 | #131 | `docs/issues/US-06.5.md` | fatto |
