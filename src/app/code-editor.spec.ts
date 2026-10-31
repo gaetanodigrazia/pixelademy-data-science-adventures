@@ -53,4 +53,14 @@ describe('CodeEditor', () => {
     expect(btn(el, 'Esegui codice').textContent).toContain('In esecuzione');
     expect(btn(el, 'Ripristina codice iniziale').disabled).toBe(true);
   });
+
+  it('emette quanti caratteri sono stati incollati (anti-incolla)', async () => {
+    const { f, ta } = await mount('x = 1');
+    const pasted = vi.fn();
+    f.componentInstance.pasted.subscribe(pasted);
+    const ev = new Event('paste') as Event & { clipboardData: unknown };
+    ev.clipboardData = { getData: () => 'print("ciao")' };
+    ta.dispatchEvent(ev);
+    expect(pasted).toHaveBeenCalledWith(13);
+  });
 });

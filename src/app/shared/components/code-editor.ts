@@ -9,7 +9,7 @@ import { AfterViewInit, ChangeDetectionStrategy, Component, ElementRef, OnDestro
       <div #host class="host" [hidden]="fallback()" aria-label="Editor di codice Python"></div>
       @if (fallback()) {
         <textarea #ta class="fallback" spellcheck="false" autocapitalize="off" autocorrect="off" aria-label="Editor di codice Python"
-          [value]="text()" (input)="text.set($any($event.target).value)" (focus)="typing.set(true)" (blur)="typing.set(false)"></textarea>
+          [value]="text()" (input)="text.set($any($event.target).value)" (focus)="typing.set(true)" (blur)="typing.set(false)" (paste)="pasted.emit($any($event).clipboardData?.getData('text')?.length ?? 0)"></textarea>
       }
     </div>
     <div class="row left">
@@ -39,6 +39,8 @@ export class CodeEditor implements AfterViewInit, OnDestroy {
   readonly starterCode = input.required<string>();
   readonly running = input(false);
   readonly runCode = output<string>();
+  /** Quanti caratteri sono stati incollati (anti-incolla: il punteggio ne tiene conto). */
+  readonly pasted = output<number>();
 
   private readonly host = viewChild.required<ElementRef<HTMLElement>>('host');
   protected readonly fallback = signal(false);
@@ -49,6 +51,8 @@ export class CodeEditor implements AfterViewInit, OnDestroy {
   private editor?: {
     getValue(): string; setValue(v: string): void; dispose(): void; focus(): void;
     onDidFocusEditorText(cb: () => void): unknown; onDidBlurEditorText(cb: () => void): unknown;
+    onDidPaste(cb: (e: { range: { startLineNumber: number; startColumn: number; endLineNumber: number; endColumn: number } }) => void): unknown;
+    getModel(): { getValueInRange(r: unknown): string } | null;
   };
 
   constructor() {
@@ -90,6 +94,7 @@ export class CodeEditor implements AfterViewInit, OnDestroy {
       });
       this.editor.onDidFocusEditorText(() => this.typing.set(true));
       this.editor.onDidBlurEditorText(() => this.typing.set(false));
+      this.editor.onDidPaste((e) => this.pasted.emit(this.editor?.getModel()?.getValueInRange(e.range).length ?? 0));
     } catch {
       this.fallback.set(true);
     }
