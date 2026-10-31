@@ -82,3 +82,4 @@
 | E05 | BUG-05.2 Mappa enorme su telefono e cataloghi che non scorrono | #169 | #170 | `docs/issues/BUG-05.2.md` | fatto |
 | E12 | US-12.5 Disattivare la scelta della lingua finché la traduzione non è completa | #171 | #172 | `docs/issues/US-12.5.md` | fatto |
 | E03 | BUG-03.1 L'editor di codice è decentrato nella build di produzione (CSS di Monaco mancante) | #173 | #174 | `docs/issues/BUG-03.1.md` | fatto |
+| E01 | US-01.6 Favicon di Pixelademy al posto di quella di Angular | #175 | #176 | `docs/issues/US-01.6.md` | fatto |
