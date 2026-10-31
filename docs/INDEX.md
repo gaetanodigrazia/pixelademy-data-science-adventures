@@ -77,3 +77,4 @@
 | E12 | IMP-08 PO Improvement — Telemetria privacy-first e feedback | #87 | #159 | `docs/issues/IMP-08.md` | fatto |
 | E12 | IMP-06 PO Improvement — Sfide in stile Kaggle (pandas) | #85 | #160 | `docs/issues/IMP-06.md` | fatto (PR #160 e #164) |
 | E12 | IMP-03 PO Improvement — Internazionalizzazione (it/en) | #82 | #161 | `docs/issues/IMP-03.md` | **parziale** (issue aperta: vedi `docs/issues/IMP-03.md`) |
+| E11 | US-11.8 Contributor di un percorso | #165 | #166 | `docs/issues/US-11.8.md` | fatto |
