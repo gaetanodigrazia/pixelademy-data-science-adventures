@@ -10,7 +10,8 @@
     "build": "ng build",
     "pretest": "npm run packs",
     "test": "ng test",
-    "test:coverage": "ng test --watch=false --coverage"
+    "test:coverage": "ng test --watch=false --coverage",
+    "check:responsive": "node scripts/check-responsive.mjs"
   },
   "private": true,
   "packageManager": "npm@10.9.4",
