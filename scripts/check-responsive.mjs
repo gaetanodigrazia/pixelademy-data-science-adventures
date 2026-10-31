@@ -16,7 +16,7 @@ try {
 const base = process.argv[2] ?? 'http://localhost:4200';
 const MIN = 44;
 const browser = await chromium.launch();
-const ctx = await browser.newContext({ viewport: { width: 360, height: 640 }, hasTouch: true, isMobile: true, deviceScaleFactor: 2 });
+const ctx = await browser.newContext({ locale: 'it-IT', viewport: { width: 360, height: 640 }, hasTouch: true, isMobile: true, deviceScaleFactor: 2 });
 const page = await ctx.newPage();
 const problems = [];
 
@@ -24,7 +24,8 @@ async function check(name) {
   const r = await page.evaluate((min) => {
     const vw = window.innerWidth, vh = window.innerHeight;
     const visible = (e) => { const b = e.getBoundingClientRect(); const s = getComputedStyle(e); return b.width > 0 && b.height > 0 && s.visibility !== 'hidden' && s.display !== 'none'; };
-    const small = [...document.querySelectorAll('button, a[href], input, [role=button]')].filter(visible)
+    // i link dentro un paragrafo o una lista sono esenti (WCAG 2.5.8, eccezione «inline»)
+    const small = [...document.querySelectorAll('button, a[href], input, [role=button]')].filter(visible).filter((e) => !(e.tagName === 'A' && e.closest('p, li')))
       .filter((e) => { const b = e.getBoundingClientRect(); return b.height < min || b.width < min; })
       .map((e) => `${e.tagName.toLowerCase()} «${(e.getAttribute('aria-label') || e.textContent || '').trim().slice(0, 28)}» ${Math.round(e.getBoundingClientRect().width)}×${Math.round(e.getBoundingClientRect().height)}`);
     const d = document.querySelector('[role=dialog]');
@@ -45,6 +46,20 @@ await page.evaluate(() => localStorage.clear());
 await page.goto(base);
 await page.waitForSelector('app-navbar');
 await check('home');
+// La mappa su telefono: larga quanto lo schermo, blocchi ≥ 44 px e un tocco su un blocco funziona.
+const map = await page.evaluate(() => {
+  const c = document.querySelector('app-world-map canvas');
+  const b = c.getBoundingClientRect();
+  return { w: b.width, h: b.height, left: b.left, top: b.top, logicalW: c.width, logicalH: c.height };
+});
+if (map.w < 300) problems.push(`mappa: troppo stretta (${Math.round(map.w)} px)`);
+const nodePx = (56 * map.w) / map.logicalW;
+if (nodePx < MIN) problems.push(`mappa: blocchi di ${Math.round(nodePx)} px (< ${MIN})`);
+console.log(`mappa: ${Math.round(map.w)}×${Math.round(map.h)} px, blocchi di ${Math.round(nodePx)} px`);
+await page.mouse.click(map.left + (map.w * 100) / map.logicalW + 30, map.top + 4 + ((map.h - 8) * 120) / map.logicalH); // tocco a 30 px dal centro del blocco 1
+await page.waitForURL(/\/missione\//, { timeout: 5000 }).catch(() => problems.push('mappa: il tocco sul blocco 1 non apre la missione'));
+await page.goto(base);
+await page.waitForSelector('app-world-map canvas');
 await page.click('button:has-text("Cambia / cerca")');
 await check('catalogo percorsi');
 await page.keyboard.press('Escape');

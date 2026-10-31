@@ -1,13 +1,12 @@
-import { AfterViewInit, ChangeDetectionStrategy, Component, ElementRef, NgZone, OnDestroy, effect, inject, input, output, viewChild } from '@angular/core';
+import { AfterViewInit, ChangeDetectionStrategy, ChangeDetectorRef, Component, ElementRef, NgZone, OnDestroy, effect, inject, input, output, viewChild } from '@angular/core';
 import { GameLoop } from '../../core/graphics/game-loop';
 import { drawSprite, spriteSize } from '../../core/graphics/sprite';
 import { Character } from '../../core/models/character.model';
 import { Mission } from '../../core/models/mission.model';
 import { MissionStatus } from '../../core/services/mission.service';
+import { COMPACT_MAX_WIDTH, MapLayout, hitRadius, mapLayout, nodeAt } from '../../core/utils/map-layout';
 
-const W = 800;
 const SCALE = 3;
-const NODE = 40;
 const FONT = '"Press Start 2P", "Courier New", monospace';
 
 /** Mappa del mondo: l'eroe cammina tra i blocchi missione (frecce/click per muoversi, Invio/Spazio per giocare). */
@@ -15,12 +14,17 @@ const FONT = '"Press Start 2P", "Courier New", monospace';
   selector: 'app-world-map',
   changeDetection: ChangeDetectionStrategy.OnPush,
   template:
-    '<canvas #canvas [width]="800" [height]="height" ' +
+    '<canvas #canvas [width]="w" [height]="height" ' +
     'aria-label="Mappa del mondo: frecce per muoverti, Invio per giocare" (click)="onClick($event)"></canvas>',
   styles: `
     :host { display: flex; align-items: center; justify-content: center; min-height: 0; min-width: 0; }
     canvas { width: auto; height: auto; max-width: 100%; max-height: 100%; display: block; image-rendering: pixelated;
       border: 4px solid #fbbf24; box-shadow: 0 0 0 4px #000, 0 0 24px rgba(251, 191, 36, .35); cursor: pointer; }
+    /* Telefono: la mappa è larga quanto lo schermo e alta quanto serve (la pagina scorre), invece di rimpicciolirsi nello spazio che avanza. */
+    @media (max-width: 760px) {
+      :host { display: block; }
+      canvas { width: 100%; max-height: none; touch-action: manipulation; }
+    }
   `,
 })
 export class WorldMap implements AfterViewInit, OnDestroy {
@@ -36,7 +40,14 @@ export class WorldMap implements AfterViewInit, OnDestroy {
 
   private readonly canvasRef = viewChild.required<ElementRef<HTMLCanvasElement>>('canvas');
   private readonly zone = inject(NgZone);
+  protected w = 800;
   protected height = 360;
+  /** Lato di un blocco missione, in unità della tela (più grande su telefono). */
+  private node = 40;
+  private compact = false;
+  private mq?: MediaQueryList;
+  private readonly cdr = inject(ChangeDetectorRef);
+  private readonly onMedia = () => this.applyMedia();
   private ctx: CanvasRenderingContext2D | null = null;
   private loop?: GameLoop;
   private time = 0;
@@ -49,7 +60,7 @@ export class WorldMap implements AfterViewInit, OnDestroy {
   private shake = 0;
   private walked = false;
   private readonly dataMotes = Array.from({ length: 64 }, (_, i) => ({
-    x: (i * 137 + 29) % W,
+    x: (i * 137 + 29) % 400,
     y: (i * 71 + 13) % 300,
     size: i % 5 === 0 ? 3 : 1 + (i % 2),
     phase: i * 0.31,
@@ -57,6 +68,8 @@ export class WorldMap implements AfterViewInit, OnDestroy {
   private readonly onKeyDown = (e: KeyboardEvent) => this.handleKey(e);
 
   constructor() {
+    this.mq = typeof window !== 'undefined' && typeof window.matchMedia === 'function' ? window.matchMedia(`(max-width: ${COMPACT_MAX_WIDTH}px)`) : undefined;
+    this.compact = this.mq?.matches ?? false;
     // Percorso cambiato: ricalcola layout e posizione dell'eroe.
     effect(() => {
       this.missions();
@@ -67,6 +80,7 @@ export class WorldMap implements AfterViewInit, OnDestroy {
   }
 
   ngAfterViewInit(): void {
+    this.mq?.addEventListener?.('change', this.onMedia);
     this.ctx = this.canvasRef().nativeElement.getContext('2d');
     if (!this.ctx) return;
     this.zone.runOutsideAngular(() => {
@@ -79,17 +93,25 @@ export class WorldMap implements AfterViewInit, OnDestroy {
   ngOnDestroy(): void {
     this.loop?.stop();
     window.removeEventListener('keydown', this.onKeyDown);
+    this.mq?.removeEventListener?.('change', this.onMedia);
+  }
+
+  /** Schermo ridimensionato o ruotato: si passa al layout da telefono (o si torna a quello largo) senza ricaricare. */
+  private applyMedia(): void {
+    const compact = this.mq?.matches ?? false;
+    if (compact === this.compact) return;
+    this.compact = compact;
+    this.layout();
+    this.cdr.markForCheck();
   }
 
   private layout(): void {
     const missions = this.missions();
-    const perRow = 4;
-    this.nodes = missions.map((_, i) => {
-      const row = Math.floor(i / perRow);
-      const col = row % 2 === 0 ? i % perRow : perRow - 1 - (i % perRow);
-      return { x: 100 + col * 200, y: 120 + row * 130 };
-    });
-    this.height = Math.max(360, ...this.nodes.map((n) => n.y + 110));
+    const l: MapLayout = mapLayout(missions.length, this.compact);
+    this.nodes = l.nodes;
+    this.w = l.w;
+    this.node = l.node;
+    this.height = l.height;
     this.index = Math.max(0, missions.findIndex((m) => m.id === this.startId()));
     this.queue = [];
     const from = this.walked ? -1 : missions.findIndex((m) => m.id === this.walkFrom());
@@ -144,9 +166,10 @@ export class WorldMap implements AfterViewInit, OnDestroy {
 
   protected onClick(event: MouseEvent): void {
     const rect = this.canvasRef().nativeElement.getBoundingClientRect();
-    const x = ((event.clientX - rect.left) / rect.width) * W;
+    const scale = rect.width / this.w;
+    const x = ((event.clientX - rect.left) / rect.width) * this.w;
     const y = ((event.clientY - rect.top) / rect.height) * this.height;
-    const hit = this.nodes.findIndex((n) => Math.hypot(n.x - x, n.y - y) < NODE);
+    const hit = nodeAt(this.nodes, x, y, hitRadius(this.node, scale));
     if (hit < 0) return;
     if (hit === this.index) this.enter();
     else if (this.isUnlocked(hit)) this.moveTo(hit);
@@ -156,7 +179,7 @@ export class WorldMap implements AfterViewInit, OnDestroy {
   private update(dt: number, t: number): void {
     this.time = t;
     this.shake -= dt;
-    for (const mote of this.dataMotes) mote.x = (mote.x + (8 + mote.size * 3) * dt) % W;
+    for (const mote of this.dataMotes) mote.x = (mote.x + (8 + mote.size * 3) * dt) % this.w;
     const next = this.queue[0];
     if (next === undefined) return;
     const n = this.nodes[next];
@@ -179,17 +202,17 @@ export class WorldMap implements AfterViewInit, OnDestroy {
     const ctx = this.ctx;
     if (!ctx) return;
     const H = this.height;
-    const backdrop = ctx.createLinearGradient(0, 0, W, H);
+    const backdrop = ctx.createLinearGradient(0, 0, this.w, H);
     backdrop.addColorStop(0, '#080b1e');
     backdrop.addColorStop(0.55, '#111b38');
     backdrop.addColorStop(1, '#24143d');
     ctx.fillStyle = backdrop;
-    ctx.fillRect(0, 0, W, H);
+    ctx.fillRect(0, 0, this.w, H);
 
     ctx.save();
     ctx.strokeStyle = 'rgba(103, 232, 249, 0.08)';
     ctx.lineWidth = 1;
-    for (let x = 0; x <= W; x += 40) {
+    for (let x = 0; x <= this.w; x += 40) {
       ctx.beginPath();
       ctx.moveTo(x, 0);
       ctx.lineTo(x, H - 30);
@@ -198,7 +221,7 @@ export class WorldMap implements AfterViewInit, OnDestroy {
     for (let y = 0; y <= H - 30; y += 40) {
       ctx.beginPath();
       ctx.moveTo(0, y);
-      ctx.lineTo(W, y);
+      ctx.lineTo(this.w, y);
       ctx.stroke();
     }
     ctx.restore();
@@ -241,43 +264,46 @@ export class WorldMap implements AfterViewInit, OnDestroy {
     const shakeX = this.shake > 0 ? Math.sin(this.time * 60) * 4 : 0;
     ctx.fillStyle = 'rgba(0,0,0,0.3)';
     ctx.beginPath();
-    ctx.ellipse(this.heroX, this.heroY - NODE / 2 - 2, hs.w / 2, 4, 0, 0, Math.PI * 2);
+    ctx.ellipse(this.heroX, this.heroY - this.node / 2 - 2, hs.w / 2, 4, 0, 0, Math.PI * 2);
     ctx.fill();
-    drawSprite(ctx, sprite, this.heroX - hs.w / 2 + shakeX, this.heroY - NODE / 2 - hs.h - hop, SCALE, this.facingLeft);
+    drawSprite(ctx, sprite, this.heroX - hs.w / 2 + shakeX, this.heroY - this.node / 2 - hs.h - hop, SCALE, this.facingLeft);
 
     const current = this.missions()[this.index];
     if (current) {
-      ctx.font = `12px ${FONT}`;
+      // il titolo si rimpicciolisce finché sta nella tela (su telefono è larga la metà)
+      let size = 12;
+      ctx.font = `${size}px ${FONT}`;
+      while (size > 7 && ctx.measureText(current.title).width + 24 > this.w - 16) ctx.font = `${--size}px ${FONT}`;
       const w = ctx.measureText(current.title).width + 24;
       ctx.fillStyle = 'rgba(0,0,0,0.75)';
-      ctx.fillRect(W / 2 - w / 2, 10, w, 28);
+      ctx.fillRect(this.w / 2 - w / 2, 10, w, 28);
       ctx.fillStyle = '#fde047';
-      ctx.fillText(current.title, W / 2, 29);
+      ctx.fillText(current.title, this.w / 2, 29);
     }
 
-    ctx.font = `9px ${FONT}`;
+    ctx.font = `${this.compact ? 8 : 9}px ${FONT}`;
     ctx.fillStyle = '#ffffff';
-    ctx.fillText('FRECCE: MUOVI    INVIO / SPAZIO: GIOCA', W / 2, H - 12);
+    ctx.fillText(this.compact ? 'TOCCA UN BLOCCO · TOCCA ANCORA PER ENTRARE' : 'FRECCE: MUOVI    INVIO / SPAZIO: GIOCA', this.w / 2, H - 12);
   }
 
   private drawNode(ctx: CanvasRenderingContext2D, x: number, y: number, i: number): void {
     const completed = this.isCompleted(i);
     const unlocked = this.isUnlocked(i);
     const bob = unlocked && !completed ? Math.sin(this.time * 3 + i) * 3 : 0;
-    const top = y - NODE / 2 + bob;
-    const left = x - NODE / 2;
+    const top = y - this.node / 2 + bob;
+    const left = x - this.node / 2;
 
     if (i === this.index && Math.floor(this.time * 4) % 2 === 0) {
       ctx.fillStyle = '#ffffff';
-      ctx.fillRect(left - 6, top - 6, NODE + 12, NODE + 12);
+      ctx.fillRect(left - 6, top - 6, this.node + 12, this.node + 12);
     }
     ctx.fillStyle = '#000000';
-    ctx.fillRect(left - 3, top - 3, NODE + 6, NODE + 6);
+    ctx.fillRect(left - 3, top - 3, this.node + 6, this.node + 6);
     ctx.fillStyle = completed ? '#16a34a' : unlocked ? '#f59e0b' : '#6b7280';
-    ctx.fillRect(left, top, NODE, NODE);
+    ctx.fillRect(left, top, this.node, this.node);
     ctx.fillStyle = completed ? '#4ade80' : unlocked ? '#fde047' : '#9ca3af';
-    ctx.fillRect(left, top, NODE, 5);
-    ctx.fillRect(left, top, 5, NODE);
+    ctx.fillRect(left, top, this.node, 5);
+    ctx.fillRect(left, top, 5, this.node);
 
     ctx.font = `20px ${FONT}`;
     ctx.fillStyle = '#ffffff';
@@ -285,8 +311,8 @@ export class WorldMap implements AfterViewInit, OnDestroy {
 
     ctx.font = `9px ${FONT}`;
     ctx.fillStyle = '#000000';
-    ctx.fillText(String(i + 1), x + 1, y + NODE / 2 + 17);
+    ctx.fillText(String(i + 1), x + 1, y + this.node / 2 + 17);
     ctx.fillStyle = '#ffffff';
-    ctx.fillText(String(i + 1), x, y + NODE / 2 + 16);
+    ctx.fillText(String(i + 1), x, y + this.node / 2 + 16);
   }
 }

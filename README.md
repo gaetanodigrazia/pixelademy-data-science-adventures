@@ -56,3 +56,6 @@ L'interfaccia ha due dizionari tipizzati (`src/app/core/i18n/it.ts` e `en.ts`: s
 
 ### Contributor di un percorso
 Per indicare chi ha creato un percorso aggiungi alla sua voce `PATH_SEEDS` (o al `LearningPath` di un pack) `contributor: { name: 'Nome Cognome', url: 'https://…' }` (l'indirizzo, https, è facoltativo): compare come «Contributor: nome» nel riquadro «Percorso» della home (con link al profilo) e nel catalogo. I test rifiutano indirizzi non `https`.
+
+### Mappa su telefono
+Sotto i 760 px la mappa usa una tela più stretta (2 blocchi per riga, blocchi da 56 unità ≈ 48 px sullo schermo), è larga quanto lo schermo e alta quanto serve: è la pagina a scorrere. L'area di tocco di un blocco ha raggio ≥ 28 px sullo schermo. Il layout si ricalcola se lo schermo cambia o ruota. `npm run check:responsive` ne verifica dimensioni e tocco.

@@ -193,6 +193,9 @@ type CatalogKind = 'paths' | 'heroes';
     /* Schermi molto bassi: resta l'anteprima dell'eroe, la fila delle miniature cede lo spazio alla mappa. */
     @media (max-height: 700px) { .choices { display: none; } }
     @media (max-width: 760px) {
+      /* La mappa tiene la sua altezza (larga come lo schermo): è la pagina che scorre, non la mappa che si schiaccia. */
+      main { overflow-y: auto; overflow-x: hidden; }
+      .map { flex: none; }
       .hint, .note { display: none; }
       .level { grid-template-columns: minmax(0, 1fr); width: 100%; padding: 4px 8px; }
       .box { padding: 6px 8px; gap: 4px; }

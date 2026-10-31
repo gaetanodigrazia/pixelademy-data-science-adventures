@@ -14,6 +14,9 @@ vi.mock('monaco-editor/esm/vs/editor/editor.api.js', () => {
   throw new Error('Monaco non disponibile nei test');
 });
 
+// ogni test esegue più audit axe sulla pagina intera: più lenti di un test normale
+vi.setConfig({ testTimeout: 20000 });
+
 const path = PACKS[0].paths[0];
 
 /** Esegue axe sulla pagina renderizzata. In jsdom non si può misurare il contrasto (nessun layout): lo copre `contrast.spec.ts`. */
