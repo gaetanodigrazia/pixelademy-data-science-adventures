@@ -18,7 +18,7 @@ import { MissionStatus } from '../../core/services/mission.service';
         @if (status() === 'completed') { <span aria-label="Completata">✅</span> }
         @else if (status() === 'locked') { <span aria-label="Bloccata">🔒</span> }
       </div>
-      <h3>{{ mission().title }}</h3>
+      <h2>{{ mission().title }}</h2>
       <p class="topic">{{ mission().topic }}</p>
       <p class="story">{{ mission().story }}</p>
       <div class="reward">+{{ mission().xp }} XP</div>
@@ -34,7 +34,7 @@ import { MissionStatus } from '../../core/services/mission.service';
     .head { display: flex; justify-content: space-between; align-items: center; }
     .diff { display: flex; flex-direction: column; color: var(--accent); font-size: .5rem; line-height: 1.2; }
     .num { color: #cbd5e1; }
-    h3 { margin: 0; font-size: .85rem; color: var(--text); line-height: 1.4; }
+    h2 { margin: 0; font-size: .85rem; color: var(--text); line-height: 1.4; }
     .topic { margin: 0; color: #9ca3af; font-size: .65rem; }
     .story { margin: 0; flex: 1; min-height: 0; font-size: .6rem; color: #d1d5db; display: -webkit-box; -webkit-line-clamp: 2; line-clamp: 2;
       -webkit-box-orient: vertical; overflow: hidden; }

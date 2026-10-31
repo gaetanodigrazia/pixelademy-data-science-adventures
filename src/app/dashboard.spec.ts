@@ -35,7 +35,7 @@ describe('Home (Dashboard)', () => {
     expect(el.querySelector('h1')!.textContent).toContain('Percorso di prova');
     expect(el.textContent).toContain('Livello 1');
     expect(el.querySelector('app-world-map canvas')).not.toBeNull();
-    expect(el.querySelector('app-mission-card h3')!.textContent).toContain('Missione 1');
+    expect(el.querySelector('app-mission-card h2')!.textContent).toContain('Missione 1');
     expect(el.textContent).toContain('0 / 10 missioni');
     expect(el.querySelector('a[href="/progetto/mini-path"]')).not.toBeNull();
   });
@@ -46,7 +46,7 @@ describe('Home (Dashboard)', () => {
     expect(el.querySelector('app-mission-card a')!.getAttribute('href')).toBe('/missione/mini-path-01');
     game.completeMission(reg.missions()[0]);
     f.detectChanges();
-    expect(el.querySelector('app-mission-card h3')!.textContent).toContain('Missione 2');
+    expect(el.querySelector('app-mission-card h2')!.textContent).toContain('Missione 2');
   });
 
   it('catalogo percorsi: si apre, filtra senza badare agli accenti, scegliere chiude; Esc chiude', async () => {

@@ -28,3 +28,6 @@ Un pack è una cartella `src/app/content/<id>/pack.ts` che esporta (default) un 
 Gli output attesi di ogni missione sono verificati **con un Python reale**: `python-solutions.spec.ts` esegue `python3` su ogni soluzione di riferimento
 e confronta l'output con il bollettino atteso. Per eseguire la suite in locale serve quindi `python3` nel PATH (in CI c'è già).
 `npm run test:coverage` stampa la copertura (a oggi: ~89% delle istruzioni, ~91% in `core/utils`; l'intera suite gira in circa 15 secondi). Le utility pure (`progress`, `validator`, `scoring`, `py`, `project-*`, `dashboard-cards`, `viz`) hanno ciascuna il proprio spec; quelle di condivisione e «Mi piace» arrivano con le loro issue.
+
+### Accessibilità
+`a11y.spec.ts` esegue [axe-core](https://github.com/dequelabs/axe-core) su home, catalogo, missione (presentazione, teoria, battaglia, task), Dashboard e modale privacy; `contrast.spec.ts` misura il contrasto (≥ 4,5:1) delle coppie di colori del tema in `src/styles.css`.
