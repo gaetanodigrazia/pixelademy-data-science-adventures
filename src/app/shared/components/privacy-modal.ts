@@ -1,9 +1,13 @@
 import { ChangeDetectionStrategy, Component, ElementRef, effect, inject, input, output, signal, viewChild } from '@angular/core';
+import { I18nKey } from '../../core/i18n/it';
+import { I18nService } from '../../core/i18n/i18n.service';
+import { TranslatePipe } from '../../core/i18n/translate.pipe';
 import { GameStateService } from '../../core/services/game-state.service';
 
 /** Modale «Privacy e dati»: consenso al salvataggio locale, cancellazione e ripristino. */
 @Component({
   selector: 'app-privacy-modal',
+  imports: [TranslatePipe],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     @if (open()) {
@@ -11,35 +15,29 @@ import { GameStateService } from '../../core/services/game-state.service';
         <div #dialog class="dialog panel" role="dialog" aria-modal="true" aria-labelledby="privacy-title" tabindex="-1"
           (keydown.escape)="closed.emit()" (keydown)="trapTab($event)">
           <header class="head">
-            <h2 id="privacy-title">Privacy e dati</h2>
-            <button type="button" class="btn" aria-label="Chiudi" (click)="closed.emit()">✕</button>
+            <h2 id="privacy-title">{{ 'privacy.title' | t }}</h2>
+            <button type="button" class="btn" [attr.aria-label]="'privacy.close' | t" (click)="closed.emit()">✕</button>
           </header>
-          <p>
-            Pixelademy non ha server né account. Se lo consenti, XP, livello, missioni e scelte vengono
-            salvati solo in questo browser (localStorage). Non raccogliamo dati personali.
-          </p>
-          <p>
-            Il pulsante «Mi piace» è anonimo: invia una richiesta vuota che aumenta di 1 un contatore e non salva nulla di te
-            (nessun nome, cookie o identificativo). Come per ogni sito, il servizio di hosting vede l'indirizzo IP della richiesta ma noi non lo leggiamo né lo salviamo.
-          </p>
+          <p>{{ 'privacy.p1' | t }}</p>
+          <p>{{ 'privacy.p2' | t }}</p>
           <p>
             <label class="opt"><input type="checkbox" [checked]="game.state().telemetry" [disabled]="game.consent() !== 'granted'"
               (change)="setTelemetry($any($event.target).checked)" />
-              Contribuisci con statistiche anonime (facoltativo)</label>
+              {{ 'privacy.optin' | t }}</label>
           </p>
-          <p class="status">Se attivo (serve il salvataggio), per ogni missione contiamo soltanto quanti tentativi sono serviti e se è stata superata o lasciata: un contatore per missione, <strong>senza</strong> identificativi, cookie o dati personali. Ci aiuta a capire dove i contenuti sono troppo difficili.</p>
-          <p class="status">Stato: <strong>{{ consentLabel() }}</strong></p>
+          <p class="status">{{ 'privacy.optinInfo' | t }}</p>
+          <p class="status">{{ 'privacy.state' | t }} <strong>{{ consentLabel() }}</strong></p>
           <div class="actions">
-            <button type="button" class="btn primary" [disabled]="game.consent() === 'granted'" (click)="run(() => game.acceptSaving(), 'Salvataggio attivato.')">Accetta il salvataggio</button>
-            <button type="button" class="btn" [disabled]="game.consent() === 'denied'" (click)="run(() => game.declineSaving(), 'Dati salvati rimossi: uso senza salvataggio.')">Usa senza salvare</button>
-            <button type="button" class="btn danger" (click)="run(() => game.clearStoredData(), 'Dati salvati cancellati dal browser.')">Cancella dati salvati</button>
-            <button type="button" class="btn" (click)="run(() => game.resetProgress(), 'Progressi azzerati.')">Ripristina stato iniziale</button>
-            <button type="button" class="btn" (click)="exportProgress()">Esporta i progressi (file)</button>
-            <button type="button" class="btn" (click)="fileInput.click()">Importa i progressi (file)</button>
-            <input #fileInput type="file" accept="application/json,.json" hidden aria-label="File dei progressi da importare" (change)="importProgress($event)" />
+            <button type="button" class="btn primary" [disabled]="game.consent() === 'granted'" (click)="run(() => game.acceptSaving(), 'privacy.msgAccepted')">{{ 'privacy.accept' | t }}</button>
+            <button type="button" class="btn" [disabled]="game.consent() === 'denied'" (click)="run(() => game.declineSaving(), 'privacy.msgDeclined')">{{ 'privacy.decline' | t }}</button>
+            <button type="button" class="btn danger" (click)="run(() => game.clearStoredData(), 'privacy.msgCleared')">{{ 'privacy.clear' | t }}</button>
+            <button type="button" class="btn" (click)="run(() => game.resetProgress(), 'privacy.msgReset')">{{ 'privacy.reset' | t }}</button>
+            <button type="button" class="btn" (click)="exportProgress()">{{ 'privacy.export' | t }}</button>
+            <button type="button" class="btn" (click)="fileInput.click()">{{ 'privacy.import' | t }}</button>
+            <input #fileInput type="file" accept="application/json,.json" hidden [attr.aria-label]="'privacy.importFile' | t" (change)="importProgress($event)" />
           </div>
           <p class="status" role="status">{{ message() }}</p>
-          <button type="button" class="btn" (click)="closed.emit()">Chiudi</button>
+          <button type="button" class="btn" (click)="closed.emit()">{{ 'privacy.close' | t }}</button>
         </div>
       </div>
     }
@@ -56,6 +54,7 @@ import { GameStateService } from '../../core/services/game-state.service';
 })
 export class PrivacyModal {
   protected readonly game = inject(GameStateService);
+  private readonly i18n = inject(I18nService);
   readonly open = input(false);
   readonly closed = output<void>();
   protected readonly message = signal('');
@@ -79,17 +78,17 @@ export class PrivacyModal {
 
   protected setTelemetry(on: boolean): void {
     this.game.setTelemetry(on);
-    this.message.set(on ? 'Statistiche anonime attivate: grazie!' : 'Statistiche anonime disattivate.');
+    this.message.set(this.i18n.t(on ? 'privacy.msgTelemOn' : 'privacy.msgTelemOff'));
   }
 
   protected consentLabel(): string {
     const c = this.game.consent();
-    return c === 'granted' ? 'salvataggio attivo' : c === 'denied' ? 'uso senza salvataggio' : 'scelta da fare';
+    return this.i18n.t(c === 'granted' ? 'privacy.granted' : c === 'denied' ? 'privacy.denied' : 'privacy.unknown');
   }
 
-  protected run(action: () => void, msg: string): void {
+  protected run(action: () => void, msg: I18nKey): void {
     action();
-    this.message.set(msg);
+    this.message.set(this.i18n.t(msg));
   }
 
   protected exportProgress(): void {
@@ -99,7 +98,7 @@ export class PrivacyModal {
     a.download = 'pixelademy-progressi.json';
     a.click();
     URL.revokeObjectURL(url);
-    this.message.set('File dei progressi scaricato.');
+    this.message.set(this.i18n.t('privacy.msgExported'));
   }
 
   protected async importProgress(e: Event): Promise<void> {
@@ -107,7 +106,7 @@ export class PrivacyModal {
     const file = input.files?.[0];
     input.value = '';
     if (!file) return;
-    this.message.set(this.game.importProgress(await file.text()) ? 'Progressi importati.' : 'Il file non è valido: nessun dato è stato cambiato.');
+    this.message.set(this.i18n.t(this.game.importProgress(await file.text()) ? 'privacy.msgImported' : 'privacy.msgInvalid'));
   }
 
   protected onBackdrop(e: MouseEvent): void {
