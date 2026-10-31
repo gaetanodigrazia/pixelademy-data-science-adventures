@@ -68,6 +68,7 @@ export const IT = {
   'home.searchHeroesLabel': 'Cerca eroi',
   'home.noPath': 'Nessun percorso trovato.',
   'home.noHero': 'Nessun eroe trovato.',
+  'home.contributor': 'Contributor:',
   'home.leaderboard': '🏆 Classifica',
   'home.like': '👍 Mi piace',
   'home.liked': '👍 Grazie!',

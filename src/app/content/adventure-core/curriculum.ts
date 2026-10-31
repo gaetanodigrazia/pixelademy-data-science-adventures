@@ -1,6 +1,10 @@
+import { Contributor } from '../../core/models/content-pack.model';
 import { ProjectSpec } from './concepts';
 
 export const PACK_ID = 'adventure-core';
+
+/** Il curatore dei percorsi di base (il proprietario del repository). */
+const OWNER: Contributor = { name: 'Gaetano Di Grazia', url: 'https://github.com/gaetanodigrazia' };
 
 export interface MissionText {
   title: string;
@@ -13,6 +17,8 @@ export interface PathSeed {
   description: string;
   icon: string;
   tags: string[];
+  /** Chi ha creato il percorso: compare nella home e nel catalogo. */
+  contributor?: Contributor;
   characterSlug: string;
   enemySlug: string;
   /** Il progetto del percorso: completare le sue missioni lo realizza. */
@@ -34,6 +40,7 @@ export interface PathSeed {
 export const PATH_SEEDS: PathSeed[] = [
   {
     slug: 'nuvole',
+    contributor: OWNER,
     title: 'Osservatorio delle Nuvole',
     description: 'Costruisci il bollettino meteo dell\'osservatorio: temperatura, pioggia e vento, una sezione per missione.',
     icon: '☁️',
@@ -79,6 +86,7 @@ export const PATH_SEEDS: PathSeed[] = [
   },
   {
     slug: 'mobilita',
+    contributor: OWNER,
     title: 'Centro Mobilità',
     description: 'Costruisci il rapporto della linea 7: variazione delle attese, le attese più brevi e la percentuale di attese lunghe.',
     icon: '🚲',
@@ -121,6 +129,7 @@ export const PATH_SEEDS: PathSeed[] = [
   },
   {
     slug: 'energia',
+    contributor: OWNER,
     title: 'Officina dell\'Energia',
     description: 'Costruisci il registro della centrale: il costo di una lettura, la posizione del picco e la somma dei consumi alti.',
     icon: '🔋',
@@ -163,6 +172,7 @@ export const PATH_SEEDS: PathSeed[] = [
   },
   {
     slug: 'statistica',
+    contributor: OWNER,
     title: 'Statistica dei Segnali',
     description: 'Le basi della matematica per la data science: media, mediana, moda, campo di variazione, varianza e deviazione standard, sui segnali delle boe.',
     icon: '📊',
@@ -208,6 +218,7 @@ export const PATH_SEEDS: PathSeed[] = [
   },
   {
     slug: 'outlier',
+    contributor: OWNER,
     title: 'Caccia agli Outlier',
     description: 'Impara a riconoscere i valori anomali: media, varianza, deviazione standard e z-score, sui tempi di consegna di un servizio.',
     icon: '🔍',
@@ -252,6 +263,7 @@ export const PATH_SEEDS: PathSeed[] = [
   },
   {
     slug: 'probabilita',
+    contributor: OWNER,
     title: 'Probabilità con i Dadi',
     description: 'I primi concetti di probabilità: frequenza osservata, valore atteso e probabilità di un evento, con i lanci di un dado.',
     icon: '🎲',

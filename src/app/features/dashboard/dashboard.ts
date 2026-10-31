@@ -8,6 +8,7 @@ import { GameStateService } from '../../core/services/game-state.service';
 import { MissionService } from '../../core/services/mission.service';
 import { MissionCard } from '../../shared/components/mission-card';
 import { TranslatePipe } from '../../core/i18n/translate.pipe';
+import { ContributorLine } from '../../shared/components/contributor';
 import { Leaderboard } from '../../shared/components/leaderboard';
 import { SpriteView } from '../../shared/components/sprite-view';
 import { WorldMap } from '../../shared/components/world-map';
@@ -16,7 +17,7 @@ type CatalogKind = 'paths' | 'heroes';
 
 @Component({
   selector: 'app-dashboard',
-  imports: [Leaderboard, MissionCard, RouterLink, SpriteView, WorldMap, TranslatePipe],
+  imports: [ContributorLine, Leaderboard, MissionCard, RouterLink, SpriteView, WorldMap, TranslatePipe],
   changeDetection: ChangeDetectionStrategy.OnPush,
   host: { '(document:keydown.escape)': 'closeCatalog()' },
   template: `
@@ -57,6 +58,7 @@ type CatalogKind = 'paths' | 'heroes';
                 <strong>{{ path()!.title }}</strong>
                 <span>{{ 'home.missionsDone' | t: { done: missions.completedCount(path()!), total: path()!.missions.length } }}</span>
                 @if (pathAuthor(); as a) { <span class="muted">{{ 'home.by' | t: { author: a } }}</span> }
+                @if (path()!.contributor; as c) { <span class="muted contributor"><app-contributor [contributor]="c" /></span> }
               </div>
             </div>
             @if (path()!.dashboard !== false) {
@@ -114,6 +116,7 @@ type CatalogKind = 'paths' | 'heroes';
                     <strong>{{ p.title }}</strong>
                     <span>{{ p.description }}</span>
                     <span class="muted">{{ missions.completedCount(p) }}/{{ p.missions.length }} missioni · {{ p.tags.join(', ') }}</span>
+                    @if (p.contributor; as c) { <span class="muted contributor"><app-contributor [contributor]="c" [link]="false" /></span> }
                   </span>
                 </button>
               } @empty { <p class="status">{{ 'home.noPath' | t }}</p> }
