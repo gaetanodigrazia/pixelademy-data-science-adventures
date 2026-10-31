@@ -1,0 +1,6 @@
+node_modules/
+dist/
+.angular/
+*.log
+src/app/core/data/packs.generated.ts
+/public/condividi/
