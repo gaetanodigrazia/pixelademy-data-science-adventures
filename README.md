@@ -39,3 +39,6 @@ e confronta l'output con il bollettino atteso. Per eseguire la suite in locale s
 A progetto completo la Dashboard offre «Condividi su LinkedIn»: si condivide un link a `/condividi/<percorso>/`, una pagina con i meta-tag Open Graph (`og:image`) che LinkedIn mostra come grande foto nel post.
 Immagine e pagina si generano a ogni build con `scripts/generate-share-assets.mjs` (`npm run share`, lanciato da `prebuild`; usa `URL` di Netlify per gli indirizzi assoluti, `SHARE_ORIGIN` in locale) e non sono nel repository.
 Se LinkedIn mostra una vecchia anteprima, aggiornala con https://www.linkedin.com/post-inspector/.
+
+### Prestazioni
+Le pagine (tranne la home) si caricano alla prima visita; Monaco e il worker di Python sono ancora più tardi. Bundle iniziale in produzione: ~434 kB grezzi, ~117 kB trasferiti (budget: avviso 450 kB, errore 600 kB in `angular.json`). Misura con Lighthouse: `npm run build`, servire `dist/pixelademy/browser` su `:4300` e `npm run audit:lighthouse` (non è in CI).

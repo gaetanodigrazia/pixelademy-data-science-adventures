@@ -12,7 +12,8 @@
     "pretest": "npm run packs",
     "test": "ng test",
     "test:coverage": "ng test --watch=false --coverage",
-    "check:responsive": "node scripts/check-responsive.mjs"
+    "check:responsive": "node scripts/check-responsive.mjs",
+    "audit:lighthouse": "npx lighthouse http://localhost:4300/ --only-categories=performance --chrome-flags=\"--headless --no-sandbox\""
   },
   "private": true,
   "packageManager": "npm@10.9.4",
