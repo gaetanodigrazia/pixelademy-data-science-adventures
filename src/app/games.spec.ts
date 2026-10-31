@@ -8,6 +8,7 @@ import { FilterBelt } from './shared/components/games/filter-belt';
 import { Accumulator } from './shared/components/games/accumulator';
 import { MeanCalc } from './shared/components/games/mean-calc';
 import { BranchPicker } from './shared/components/games/branch-picker';
+import { DictVault } from './shared/components/games/dict-vault';
 // <<IMPORTS>>
 
 interface Case { id: string; index: number; component: Type<unknown>; solve: (g: Game) => void }
@@ -20,6 +21,7 @@ const CASES: Case[] = [
   { id: 'adventure-accumulator', index: 3, component: Accumulator, solve: (g) => { for (let i = 0; i < 50 && g.index() < g.values.length; i++) { const next = r2(g.total() + g.values[g.index()]); g.pick(g.options().find((o: { value: number }) => o.value === next)); } } },
   { id: 'adventure-mean-calc', index: 4, component: MeanCalc, solve: (g) => { for (let i = 0; i < 20 && !g.cleared; i++) g.pick(g.options().find((o: { value: number }) => o.value === g.expected())); } },
   { id: 'adventure-branch-picker', index: 5, component: BranchPicker, solve: (g) => { for (let i = 0; i < 20 && !g.cleared; i++) g.pick(g.expected()); } },
+  { id: 'adventure-dict-vault', index: 6, component: DictVault, solve: (g) => { for (let i = 0; i < g.requests.length && !g.cleared; i++) (i === g.requests.length - 1 ? g.keyError() : g.open(g.want())); } },
   // <<CASES>>
 ];
 
@@ -83,6 +85,16 @@ describe('minigiochi: si impara giocando', () => {
     g.pick(wrong);
     expect(g.mistakes()).toBe(1);
     expect(g.index()).toBe(0);
+  });
+
+    it('dizionario: una chiave inesistente non apre nessun cassetto e richiede KeyError', () => {
+    const cleared = vi.fn();
+    const { g } = mountGame(DictVault, 6, cleared);
+    g.round.set(g.requests.length - 1);
+    g.open(g.keys[0]);
+    expect(g.mistakes()).toBe(1);
+    g.keyError();
+    expect(cleared).toHaveBeenCalledTimes(1);
   });
 
   // <<EXTRA>>
