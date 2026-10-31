@@ -1,0 +1,349 @@
+
+<!doctype html>
+<html lang="en">
+
+<head>
+    <title>Code coverage report for app/core/utils/project-context.ts</title>
+    <meta charset="utf-8" />
+    <link rel="stylesheet" href="../../../prettify.css" />
+    <link rel="stylesheet" href="../../../base.css" />
+    <link rel="shortcut icon" type="image/x-icon" href="../../../favicon.png" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <style type='text/css'>
+        .coverage-summary .sorter {
+            background-image: url(../../../sort-arrow-sprite.png);
+        }
+    </style>
+</head>
+    
+<body>
+<div class='wrapper'>
+    <div class='pad1'>
+        <h1><a href="../../../index.html">All files</a> / <a href="index.html">app/core/utils</a> project-context.ts</h1>
+        <div class='clearfix'>
+            
+            <div class='fl pad1y space-right2'>
+                <span class="strong">100% </span>
+                <span class="quiet">Statements</span>
+                <span class='fraction'>51/51</span>
+            </div>
+        
+            
+            <div class='fl pad1y space-right2'>
+                <span class="strong">92.85% </span>
+                <span class="quiet">Branches</span>
+                <span class='fraction'>26/28</span>
+            </div>
+        
+            
+            <div class='fl pad1y space-right2'>
+                <span class="strong">100% </span>
+                <span class="quiet">Functions</span>
+                <span class='fraction'>18/18</span>
+            </div>
+        
+            
+            <div class='fl pad1y space-right2'>
+                <span class="strong">100% </span>
+                <span class="quiet">Lines</span>
+                <span class='fraction'>33/33</span>
+            </div>
+        
+            
+        </div>
+        <p class="quiet">
+            Press <em>n</em> or <em>j</em> to go to the next uncovered block, <em>b</em>, <em>p</em> or <em>k</em> for the previous block.
+        </p>
+        <template id="filterTemplate">
+            <div class="quiet">
+                Filter:
+                <input type="search" id="fileSearch">
+            </div>
+        </template>
+    </div>
+    <div class='status-line high'></div>
+    <pre><table class="coverage">
+<tr><td class="line-count quiet"><a name='L1'></a><a href='#L1'>1</a>
+<a name='L2'></a><a href='#L2'>2</a>
+<a name='L3'></a><a href='#L3'>3</a>
+<a name='L4'></a><a href='#L4'>4</a>
+<a name='L5'></a><a href='#L5'>5</a>
+<a name='L6'></a><a href='#L6'>6</a>
+<a name='L7'></a><a href='#L7'>7</a>
+<a name='L8'></a><a href='#L8'>8</a>
+<a name='L9'></a><a href='#L9'>9</a>
+<a name='L10'></a><a href='#L10'>10</a>
+<a name='L11'></a><a href='#L11'>11</a>
+<a name='L12'></a><a href='#L12'>12</a>
+<a name='L13'></a><a href='#L13'>13</a>
+<a name='L14'></a><a href='#L14'>14</a>
+<a name='L15'></a><a href='#L15'>15</a>
+<a name='L16'></a><a href='#L16'>16</a>
+<a name='L17'></a><a href='#L17'>17</a>
+<a name='L18'></a><a href='#L18'>18</a>
+<a name='L19'></a><a href='#L19'>19</a>
+<a name='L20'></a><a href='#L20'>20</a>
+<a name='L21'></a><a href='#L21'>21</a>
+<a name='L22'></a><a href='#L22'>22</a>
+<a name='L23'></a><a href='#L23'>23</a>
+<a name='L24'></a><a href='#L24'>24</a>
+<a name='L25'></a><a href='#L25'>25</a>
+<a name='L26'></a><a href='#L26'>26</a>
+<a name='L27'></a><a href='#L27'>27</a>
+<a name='L28'></a><a href='#L28'>28</a>
+<a name='L29'></a><a href='#L29'>29</a>
+<a name='L30'></a><a href='#L30'>30</a>
+<a name='L31'></a><a href='#L31'>31</a>
+<a name='L32'></a><a href='#L32'>32</a>
+<a name='L33'></a><a href='#L33'>33</a>
+<a name='L34'></a><a href='#L34'>34</a>
+<a name='L35'></a><a href='#L35'>35</a>
+<a name='L36'></a><a href='#L36'>36</a>
+<a name='L37'></a><a href='#L37'>37</a>
+<a name='L38'></a><a href='#L38'>38</a>
+<a name='L39'></a><a href='#L39'>39</a>
+<a name='L40'></a><a href='#L40'>40</a>
+<a name='L41'></a><a href='#L41'>41</a>
+<a name='L42'></a><a href='#L42'>42</a>
+<a name='L43'></a><a href='#L43'>43</a>
+<a name='L44'></a><a href='#L44'>44</a>
+<a name='L45'></a><a href='#L45'>45</a>
+<a name='L46'></a><a href='#L46'>46</a>
+<a name='L47'></a><a href='#L47'>47</a>
+<a name='L48'></a><a href='#L48'>48</a>
+<a name='L49'></a><a href='#L49'>49</a>
+<a name='L50'></a><a href='#L50'>50</a>
+<a name='L51'></a><a href='#L51'>51</a>
+<a name='L52'></a><a href='#L52'>52</a>
+<a name='L53'></a><a href='#L53'>53</a>
+<a name='L54'></a><a href='#L54'>54</a>
+<a name='L55'></a><a href='#L55'>55</a>
+<a name='L56'></a><a href='#L56'>56</a>
+<a name='L57'></a><a href='#L57'>57</a>
+<a name='L58'></a><a href='#L58'>58</a>
+<a name='L59'></a><a href='#L59'>59</a>
+<a name='L60'></a><a href='#L60'>60</a>
+<a name='L61'></a><a href='#L61'>61</a>
+<a name='L62'></a><a href='#L62'>62</a>
+<a name='L63'></a><a href='#L63'>63</a>
+<a name='L64'></a><a href='#L64'>64</a>
+<a name='L65'></a><a href='#L65'>65</a>
+<a name='L66'></a><a href='#L66'>66</a>
+<a name='L67'></a><a href='#L67'>67</a>
+<a name='L68'></a><a href='#L68'>68</a>
+<a name='L69'></a><a href='#L69'>69</a>
+<a name='L70'></a><a href='#L70'>70</a>
+<a name='L71'></a><a href='#L71'>71</a>
+<a name='L72'></a><a href='#L72'>72</a>
+<a name='L73'></a><a href='#L73'>73</a>
+<a name='L74'></a><a href='#L74'>74</a>
+<a name='L75'></a><a href='#L75'>75</a>
+<a name='L76'></a><a href='#L76'>76</a>
+<a name='L77'></a><a href='#L77'>77</a>
+<a name='L78'></a><a href='#L78'>78</a>
+<a name='L79'></a><a href='#L79'>79</a>
+<a name='L80'></a><a href='#L80'>80</a>
+<a name='L81'></a><a href='#L81'>81</a>
+<a name='L82'></a><a href='#L82'>82</a>
+<a name='L83'></a><a href='#L83'>83</a>
+<a name='L84'></a><a href='#L84'>84</a>
+<a name='L85'></a><a href='#L85'>85</a>
+<a name='L86'></a><a href='#L86'>86</a>
+<a name='L87'></a><a href='#L87'>87</a>
+<a name='L88'></a><a href='#L88'>88</a>
+<a name='L89'></a><a href='#L89'>89</a></td><td class="line-coverage quiet"><span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">3x</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">555x</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">1126x</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">44x</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">511x</span>
+<span class="cline-any cline-yes">511x</span>
+<span class="cline-any cline-yes">832x</span>
+<span class="cline-any cline-yes">832x</span>
+<span class="cline-any cline-yes">832x</span>
+<span class="cline-any cline-yes">832x</span>
+<span class="cline-any cline-yes">832x</span>
+<span class="cline-any cline-yes">832x</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">511x</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">23x</span>
+<span class="cline-any cline-yes">23x</span>
+<span class="cline-any cline-yes">672x</span>
+<span class="cline-any cline-yes">489x</span>
+<span class="cline-any cline-yes">435x</span>
+<span class="cline-any cline-yes">308x</span>
+<span class="cline-any cline-yes">54x</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">23x</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">43x</span>
+<span class="cline-any cline-yes">44x</span>
+<span class="cline-any cline-yes">134x</span>
+<span class="cline-any cline-yes">23x</span>
+<span class="cline-any cline-yes">159x</span>
+<span class="cline-any cline-yes">308x</span>
+<span class="cline-any cline-yes">23x</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">42x</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">34x</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">5x</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">7x</span>
+<span class="cline-any cline-yes">5x</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span></td><td class="text"><pre class="prettyprint lang-js">/**
+ * Nel task l'editor mostra solo la sezione da scrivere. Il resto del programma (le sezioni già fatte) resta nascosto e
+ * si ricompone all'esecuzione; qui si ricava quali righe precedenti la sezione usa davvero, da mostrare in sola lettura.
+ */
+&nbsp;
+const NON_NAMES = new Set([
+  'print', 'len', 'sum', 'max', 'min', 'round', 'range', 'abs', 'sorted', 'str', 'int', 'float', 'list', 'dict', 'set', 'enumerate', 'zip',
+  'for', 'in', 'if', 'else', 'elif', 'while', 'def', 'return', 'pass', 'import', 'from', 'as', 'and', 'or', 'not', 'is', 'None', 'True', 'False',
+  'append', 'extend', 'pop', 'remove', 'insert', 'sort', 'get', 'items', 'keys', 'values',
+]);
+&nbsp;
+/** Toglie stringhe e commenti, che non contengono nomi di variabili. */
+function code(text: string): string {
+  return text
+    .split('\n')
+    .map((l) =&gt; l.replace(/"(?:[^"\\]|\\.)*"|'(?:[^'\\]|\\.)*'/g, '""').replace(/#.*$/, ''))
+    .join('\n');
+}
+&nbsp;
+const identifiers = (text: string): Set&lt;string&gt; =&gt; new Set(code(text).match(/[A-Za-z_]\w*/g) ?? <span class="branch-1 cbranch-no" title="branch not covered" >[])</span>;
+&nbsp;
+/** Variabili e funzioni che un pezzo di codice definisce o modifica (assegnazioni, +=, append, def). */
+function defined(text: string): Set&lt;string&gt; {
+  const out = new Set&lt;string&gt;();
+  for (const l of code(text).split('\n')) {
+    const assign = l.match(/^\s*([A-Za-z_]\w*)\s*(?:=(?!=)|\+=|-=|\*=)/);
+    if (assign) out.add(assign[1]);
+    const call = l.match(/\b([A-Za-z_]\w*)\.(?:append|extend|pop|remove|insert|sort)\(/);
+    if (call) out.add(call[1]);
+    const def = l.match(/^def\s+([A-Za-z_]\w*)/);
+    if (def) out.add(def[1]);
+  }
+  return out;
+}
+&nbsp;
+/** Istruzioni di primo livello (con il loro corpo rientrato); commenti e righe vuote a margine non ne aprono una. */
+function statements(text: string): string[] {
+  const out: string[] = [];
+  for (const line of text.split('\n')) {
+    if (!line.trim()) continue;
+    if (/^\S/.test(line)) {
+      if (line.startsWith('#')) continue;
+      out.push(line);
+    <span class="missing-if-branch" title="else path not taken" >E</span>} else if (out.length) out[out.length - 1] += `\n${line}`;
+  }
+  return out;
+}
+&nbsp;
+export interface ProjectContext {
+  /** Nomi che la sezione usa e che arrivano dal codice precedente. */
+  names: string[];
+  /** Le istruzioni precedenti che li definiscono, nell'ordine in cui compaiono. */
+  code: string;
+}
+&nbsp;
+/**
+ * Le righe di `base` (le sezioni già scritte) che la sezione usa senza definirle. `sections` sono il codice di partenza
+ * (un modello, che spesso non nomina ciò che serve) e la soluzione della sezione: dalla seconda si capisce cosa serve,
+ * ma non se ne mostra mai il codice, solo le righe precedenti che definiscono quei nomi.
+ */
+export function neededContext(base: string, ...sections: string[]): ProjectContext {
+  if (!base.trim()) return { names: [], code: '' };
+  const own = new Set(sections.flatMap((s) =&gt; [...defined(s)]));
+  const used = [...new Set(sections.flatMap((s) =&gt; [...identifiers(s)]))].filter((n) =&gt; !NON_NAMES.has(n) &amp;&amp; !own.has(n));
+  const blocks = statements(base);
+  const names = used.filter((n) =&gt; blocks.some((b) =&gt; defined(b).has(n)));
+  const picked = blocks.filter((b) =&gt; [...defined(b)].some((n) =&gt; names.includes(n)));
+  return { names, code: picked.join('\n') };
+}
+&nbsp;
+/** La sezione come appare nell'editor: senza le righe vuote iniziali (nel programma completo le separa una riga vuota). */
+export const editorSection = (section: string): string =&gt; section.replace(/^\n+/, '');
+&nbsp;
+/** Il programma completo: le sezioni precedenti, una riga vuota e la sezione scritta nell'editor (come nel codice di riferimento). */
+export function composeProject(base: string, section: string): string {
+  return base.trim() ? `${base.trimEnd()}\n\n${editorSection(section)}` : section;
+}
+&nbsp;
+/** Quante righe precedono la sezione nel programma completo (sezioni precedenti + riga vuota di separazione). */
+export function baseLineCount(base: string): number {
+  return base.trim() ? base.trimEnd().split('\n').length + 1 : 0;
+}
+&nbsp;
+/** Riporta i numeri di riga di un errore Python a quelli dell'editor (dove la sezione parte dalla riga 1). */
+export function shiftErrorLines(error: string, offset: number): string {
+  if (!offset) return error;
+  return error.replace(/\bline (\d+)/g, (all, n: string) =&gt; (Number(n) &gt; offset ? `line ${Number(n) - offset}` : all));
+}
+&nbsp;</pre></td></tr></table></pre>
+
+                <div class='push'></div><!-- for sticky footer -->
+            </div><!-- /wrapper -->
+            <div class='footer quiet pad2 space-top1 center small'>
+                Code coverage generated by
+                <a href="https://istanbul.js.org/" target="_blank" rel="noopener noreferrer">istanbul</a>
+                at 2026-10-31T14:01:40.600Z
+            </div>
+        <script src="../../../prettify.js"></script>
+        <script>
+            window.onload = function () {
+                prettyPrint();
+            };
+        </script>
+        <script src="../../../sorter.js"></script>
+        <script src="../../../block-navigation.js"></script>
+    </body>
+</html>
+    

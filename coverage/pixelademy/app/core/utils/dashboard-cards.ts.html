@@ -1,0 +1,370 @@
+
+<!doctype html>
+<html lang="en">
+
+<head>
+    <title>Code coverage report for app/core/utils/dashboard-cards.ts</title>
+    <meta charset="utf-8" />
+    <link rel="stylesheet" href="../../../prettify.css" />
+    <link rel="stylesheet" href="../../../base.css" />
+    <link rel="shortcut icon" type="image/x-icon" href="../../../favicon.png" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <style type='text/css'>
+        .coverage-summary .sorter {
+            background-image: url(../../../sort-arrow-sprite.png);
+        }
+    </style>
+</head>
+    
+<body>
+<div class='wrapper'>
+    <div class='pad1'>
+        <h1><a href="../../../index.html">All files</a> / <a href="index.html">app/core/utils</a> dashboard-cards.ts</h1>
+        <div class='clearfix'>
+            
+            <div class='fl pad1y space-right2'>
+                <span class="strong">100% </span>
+                <span class="quiet">Statements</span>
+                <span class='fraction'>34/34</span>
+            </div>
+        
+            
+            <div class='fl pad1y space-right2'>
+                <span class="strong">96% </span>
+                <span class="quiet">Branches</span>
+                <span class='fraction'>48/50</span>
+            </div>
+        
+            
+            <div class='fl pad1y space-right2'>
+                <span class="strong">100% </span>
+                <span class="quiet">Functions</span>
+                <span class='fraction'>6/6</span>
+            </div>
+        
+            
+            <div class='fl pad1y space-right2'>
+                <span class="strong">100% </span>
+                <span class="quiet">Lines</span>
+                <span class='fraction'>22/22</span>
+            </div>
+        
+            
+        </div>
+        <p class="quiet">
+            Press <em>n</em> or <em>j</em> to go to the next uncovered block, <em>b</em>, <em>p</em> or <em>k</em> for the previous block.
+        </p>
+        <template id="filterTemplate">
+            <div class="quiet">
+                Filter:
+                <input type="search" id="fileSearch">
+            </div>
+        </template>
+    </div>
+    <div class='status-line high'></div>
+    <pre><table class="coverage">
+<tr><td class="line-count quiet"><a name='L1'></a><a href='#L1'>1</a>
+<a name='L2'></a><a href='#L2'>2</a>
+<a name='L3'></a><a href='#L3'>3</a>
+<a name='L4'></a><a href='#L4'>4</a>
+<a name='L5'></a><a href='#L5'>5</a>
+<a name='L6'></a><a href='#L6'>6</a>
+<a name='L7'></a><a href='#L7'>7</a>
+<a name='L8'></a><a href='#L8'>8</a>
+<a name='L9'></a><a href='#L9'>9</a>
+<a name='L10'></a><a href='#L10'>10</a>
+<a name='L11'></a><a href='#L11'>11</a>
+<a name='L12'></a><a href='#L12'>12</a>
+<a name='L13'></a><a href='#L13'>13</a>
+<a name='L14'></a><a href='#L14'>14</a>
+<a name='L15'></a><a href='#L15'>15</a>
+<a name='L16'></a><a href='#L16'>16</a>
+<a name='L17'></a><a href='#L17'>17</a>
+<a name='L18'></a><a href='#L18'>18</a>
+<a name='L19'></a><a href='#L19'>19</a>
+<a name='L20'></a><a href='#L20'>20</a>
+<a name='L21'></a><a href='#L21'>21</a>
+<a name='L22'></a><a href='#L22'>22</a>
+<a name='L23'></a><a href='#L23'>23</a>
+<a name='L24'></a><a href='#L24'>24</a>
+<a name='L25'></a><a href='#L25'>25</a>
+<a name='L26'></a><a href='#L26'>26</a>
+<a name='L27'></a><a href='#L27'>27</a>
+<a name='L28'></a><a href='#L28'>28</a>
+<a name='L29'></a><a href='#L29'>29</a>
+<a name='L30'></a><a href='#L30'>30</a>
+<a name='L31'></a><a href='#L31'>31</a>
+<a name='L32'></a><a href='#L32'>32</a>
+<a name='L33'></a><a href='#L33'>33</a>
+<a name='L34'></a><a href='#L34'>34</a>
+<a name='L35'></a><a href='#L35'>35</a>
+<a name='L36'></a><a href='#L36'>36</a>
+<a name='L37'></a><a href='#L37'>37</a>
+<a name='L38'></a><a href='#L38'>38</a>
+<a name='L39'></a><a href='#L39'>39</a>
+<a name='L40'></a><a href='#L40'>40</a>
+<a name='L41'></a><a href='#L41'>41</a>
+<a name='L42'></a><a href='#L42'>42</a>
+<a name='L43'></a><a href='#L43'>43</a>
+<a name='L44'></a><a href='#L44'>44</a>
+<a name='L45'></a><a href='#L45'>45</a>
+<a name='L46'></a><a href='#L46'>46</a>
+<a name='L47'></a><a href='#L47'>47</a>
+<a name='L48'></a><a href='#L48'>48</a>
+<a name='L49'></a><a href='#L49'>49</a>
+<a name='L50'></a><a href='#L50'>50</a>
+<a name='L51'></a><a href='#L51'>51</a>
+<a name='L52'></a><a href='#L52'>52</a>
+<a name='L53'></a><a href='#L53'>53</a>
+<a name='L54'></a><a href='#L54'>54</a>
+<a name='L55'></a><a href='#L55'>55</a>
+<a name='L56'></a><a href='#L56'>56</a>
+<a name='L57'></a><a href='#L57'>57</a>
+<a name='L58'></a><a href='#L58'>58</a>
+<a name='L59'></a><a href='#L59'>59</a>
+<a name='L60'></a><a href='#L60'>60</a>
+<a name='L61'></a><a href='#L61'>61</a>
+<a name='L62'></a><a href='#L62'>62</a>
+<a name='L63'></a><a href='#L63'>63</a>
+<a name='L64'></a><a href='#L64'>64</a>
+<a name='L65'></a><a href='#L65'>65</a>
+<a name='L66'></a><a href='#L66'>66</a>
+<a name='L67'></a><a href='#L67'>67</a>
+<a name='L68'></a><a href='#L68'>68</a>
+<a name='L69'></a><a href='#L69'>69</a>
+<a name='L70'></a><a href='#L70'>70</a>
+<a name='L71'></a><a href='#L71'>71</a>
+<a name='L72'></a><a href='#L72'>72</a>
+<a name='L73'></a><a href='#L73'>73</a>
+<a name='L74'></a><a href='#L74'>74</a>
+<a name='L75'></a><a href='#L75'>75</a>
+<a name='L76'></a><a href='#L76'>76</a>
+<a name='L77'></a><a href='#L77'>77</a>
+<a name='L78'></a><a href='#L78'>78</a>
+<a name='L79'></a><a href='#L79'>79</a>
+<a name='L80'></a><a href='#L80'>80</a>
+<a name='L81'></a><a href='#L81'>81</a>
+<a name='L82'></a><a href='#L82'>82</a>
+<a name='L83'></a><a href='#L83'>83</a>
+<a name='L84'></a><a href='#L84'>84</a>
+<a name='L85'></a><a href='#L85'>85</a>
+<a name='L86'></a><a href='#L86'>86</a>
+<a name='L87'></a><a href='#L87'>87</a>
+<a name='L88'></a><a href='#L88'>88</a>
+<a name='L89'></a><a href='#L89'>89</a>
+<a name='L90'></a><a href='#L90'>90</a>
+<a name='L91'></a><a href='#L91'>91</a>
+<a name='L92'></a><a href='#L92'>92</a>
+<a name='L93'></a><a href='#L93'>93</a>
+<a name='L94'></a><a href='#L94'>94</a>
+<a name='L95'></a><a href='#L95'>95</a>
+<a name='L96'></a><a href='#L96'>96</a></td><td class="line-coverage quiet"><span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">254x</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">31x</span>
+<span class="cline-any cline-yes">31x</span>
+<span class="cline-any cline-yes">31x</span>
+<span class="cline-any cline-yes">31x</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">31x</span>
+<span class="cline-any cline-yes">31x</span>
+<span class="cline-any cline-yes">31x</span>
+<span class="cline-any cline-yes">3x</span>
+<span class="cline-any cline-yes">3x</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">31x</span>
+<span class="cline-any cline-yes">31x</span>
+<span class="cline-any cline-yes">31x</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">31x</span>
+<span class="cline-any cline-yes">35x</span>
+<span class="cline-any cline-yes">31x</span>
+<span class="cline-any cline-yes">31x</span>
+<span class="cline-any cline-yes">31x</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">31x</span>
+<span class="cline-any cline-yes">31x</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">31x</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">305x</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span></td><td class="text"><pre class="prettyprint lang-js">import type { ChartLine, Tone } from '../../shared/components/bar-chart';
+import type { ProjectSpec } from '../models/project.model';
+import { parseResults } from './project-results';
+&nbsp;
+export interface Stat {
+  label: string;
+  /** Valore prodotto dal programma dell'utente; `null` finché la missione non è completata. */
+  text: string | null;
+  /** Missione (1..10) che produce questo valore. */
+  section: number;
+  tone?: 'good' | 'bad';
+}
+&nbsp;
+/** Un riquadro della Dashboard: titolo, indicatori e grafico a barre (con evidenziazioni e linee di riferimento). */
+export interface DashboardCard {
+  title: string;
+  stats: Stat[];
+  /** `null` finché la missione che produce il grafico non è completata. */
+  values: number[] | null;
+  labels: string[];
+  marks: Record&lt;number, Tone&gt;;
+  refs: ChartLine[];
+  chartSection: number;
+}
+&nbsp;
+const fmt = (n: number | undefined, unit = ''): string | null =&gt; (n === undefined ? null : `${Math.round(n * 100) / 100}${unit ? ' ' + unit : ''}`);
+&nbsp;
+/**
+ * I riquadri della Dashboard dopo `done` missioni completate. `lines` è l'output del bollettino fino a quella missione.
+ * `total` è il numero di missioni del percorso: un percorso breve (es. 3) non ha le sezioni successive, quindi
+ * gli indicatori e i riquadri che dipendono da quelle non compaiono (non si potrebbero mai sbloccare).
+ * Funzione pura: la usano la pagina e lo script che genera l'immagine di anteprima per la condivisione.
+ */
+export function buildDashboardCards(p: ProjectSpec, done: number, lines: string[], total = 10): DashboardCard[] {
+&nbsp;
+    const r = parseResults(lines, p.labels);
+    const d = done;
+    const L = p.labels;
+    const alertTone = r.alert === undefined ? undefined : r.alert === 'OK' ? <span class="branch-0 cbranch-no" title="branch not covered" >'good' : '</span>bad';
+&nbsp;
+    const aMarks: Record&lt;number, Tone&gt; = {};
+    if (d &gt;= 1) aMarks[p.k] = 'accent';
+    if (d &gt;= 8 &amp;&amp; r.extreme !== undefined) {
+      const i = p.a.values.indexOf(r.extreme);
+      <span class="missing-if-branch" title="else path not taken" >E</span>if (i &gt;= 0 &amp;&amp; !(i in aMarks)) aMarks[i] = 'good';
+    }
+    const aRefs: ChartLine[] = [];
+    if (d &gt;= 5 &amp;&amp; r.mean !== undefined) aRefs.push({ value: r.mean, label: `media ${fmt(r.mean)}`, tone: 'accent' });
+    if (d &gt;= 6) aRefs.push({ value: p.alert, label: `soglia ${p.alert}`, tone: 'bad' });
+&nbsp;
+    const cMarks: Record&lt;number, Tone&gt; = {};
+    if (d &gt;= 3) p.c.values.forEach((v, i) =&gt; v &gt; p.cut &amp;&amp; (cMarks[i] = 'accent'));
+    const cRefs: ChartLine[] = [];
+    if (d &gt;= 3) cRefs.push({ value: p.cut, label: `soglia ${p.cut}`, tone: 'bad' });
+    if (d &gt;= 10 &amp;&amp; r.final !== undefined) cRefs.push({ value: r.final, label: `media ${fmt(r.final)}`, tone: 'good' });
+&nbsp;
+    const keys = Object.keys(p.registry.entries);
+    const dMarks: Record&lt;number, Tone&gt; = d &gt;= 7 ? { [keys.indexOf(p.registry.key)]: 'accent' } : {};
+&nbsp;
+    const cards: DashboardCard[] = [
+      {
+        title: `${p.a.label} (${p.a.unit})`,
+        stats: [
+          { label: L.first, text: fmt(r.first, p.a.unit), section: 1 },
+          { label: L.mean, text: fmt(r.mean, p.a.unit), section: 5 },
+          { label: L.extreme, text: fmt(r.extreme, p.a.unit), section: 8 },
+          { label: L.range, text: fmt(r.range, p.a.unit), section: 9 },
+          { label: L.alert, text: r.alert ?? null, section: 6, tone: alertTone },
+        ] as Stat[],
+        values: d &gt;= 1 ? p.a.values : null, labels: [] as string[], marks: aMarks, refs: aRefs, chartSection: 1,
+      },
+      {
+        title: `${p.b.label} (${p.b.unit})`,
+        stats: [
+          { label: L.count, text: fmt(r.count), section: 2 },
+          { label: L.total, text: fmt(r.total, p.b.unit), section: 4 },
+        ] as Stat[],
+        values: d &gt;= 2 ? p.b.values : null, labels: [] as string[], marks: {} as Record&lt;number, Tone&gt;, refs: [] as ChartLine[], chartSection: 2,
+      },
+      {
+        title: `${p.c.label} (${p.c.unit})`,
+        stats: [
+          { label: L.filtered, text: r.filtered ? `${r.filtered.length} su ${p.c.values.length}` : null, section: 3 },
+          { label: L.final, text: fmt(r.final, p.c.unit), section: 10 },
+        ] as Stat[],
+        values: d &gt;= 3 ? p.c.values : null, labels: [] as string[], marks: cMarks, refs: cRefs, chartSection: 3,
+      },
+      {
+        title: `Registro (${p.registry.unit})`,
+        stats: [{ label: L.key, text: fmt(r.key, p.registry.unit), section: 7 }] as Stat[],
+        values: d &gt;= 7 ? Object.values(p.registry.entries) : null, labels: keys, marks: dMarks, refs: [] as ChartLine[], chartSection: 7,
+      },
+    ];
+    return cards.filter((c) =&gt; c.chartSection &lt;= total).map((c) =&gt; ({ ...c, stats: c.stats.filter((s) =&gt; s.section &lt;= total) }));
+}
+&nbsp;</pre></td></tr></table></pre>
+
+                <div class='push'></div><!-- for sticky footer -->
+            </div><!-- /wrapper -->
+            <div class='footer quiet pad2 space-top1 center small'>
+                Code coverage generated by
+                <a href="https://istanbul.js.org/" target="_blank" rel="noopener noreferrer">istanbul</a>
+                at 2026-10-31T14:01:40.600Z
+            </div>
+        <script src="../../../prettify.js"></script>
+        <script>
+            window.onload = function () {
+                prettyPrint();
+            };
+        </script>
+        <script src="../../../sorter.js"></script>
+        <script src="../../../block-navigation.js"></script>
+    </body>
+</html>
+    
