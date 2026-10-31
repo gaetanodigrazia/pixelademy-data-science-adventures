@@ -25,3 +25,4 @@
 | E07 | US-07.2 Minigioco «Scaffale degli indici» | #48 | #108 | `docs/issues/US-07.2.md` | fatto |
 | E07 | US-07.3 Minigioco «Banco della lista» | #49 | #109 | `docs/issues/US-07.3.md` | fatto |
 | E07 | US-07.4 Minigioco «Nastro di filtraggio» | #50 | #110 | `docs/issues/US-07.4.md` | fatto |
+| E07 | US-07.5 Minigioco «Registro dell'accumulatore» | #51 | #111 | `docs/issues/US-07.5.md` | fatto |
