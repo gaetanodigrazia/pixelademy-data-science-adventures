@@ -12,18 +12,26 @@ describe('mapLayout', () => {
     expect(l.height).toBe(490);
   });
 
-  it('telefono: tela 400, 2 blocchi per riga a serpentina, blocchi più grandi, tela più alta', () => {
+  it('telefono: tela 600, 3 blocchi per riga a serpentina, blocchi più grandi, righe più basse', () => {
     const l = mapLayout(10, true);
-    expect([l.w, l.node, l.perRow]).toEqual([400, 56, 2]);
-    expect(l.nodes.slice(0, 5)).toEqual([{ x: 100, y: 120 }, { x: 300, y: 120 }, { x: 300, y: 270 }, { x: 100, y: 270 }, { x: 100, y: 420 }]);
-    expect(l.height).toBe(830);
+    expect([l.w, l.node, l.perRow]).toEqual([600, 84, 3]);
+    expect(l.nodes.slice(0, 5)).toEqual([{ x: 100, y: 130 }, { x: 300, y: 130 }, { x: 500, y: 130 }, { x: 500, y: 250 }, { x: 300, y: 250 }]);
+    expect(l.height).toBe(130 + 3 * 120 + 90);
     expect(l.nodes.every((n) => n.x - l.node / 2 >= 0 && n.x + l.node / 2 <= l.w)).toBe(true); // nessun blocco taglia il bordo
   });
 
+  it('su un telefono da 360 px la mappa di 10 missioni è bassa (~330 px), non una colonna enorme', () => {
+    const l = mapLayout(10, true);
+    const cssHeight = (l.height * 344) / l.w;
+    expect(cssHeight).toBeLessThanOrEqual(340);
+    expect(cssHeight).toBeLessThan(640 * 0.55); // poco più di metà schermo
+  });
+
   it('un percorso breve resta alto almeno 360; senza missioni non si rompe', () => {
-    expect(mapLayout(3, true).height).toBe(Math.max(360, 120 + 150 + 110));
+    expect(mapLayout(3, true).height).toBe(280);
     expect(mapLayout(0, true).nodes).toEqual([]);
     expect(mapLayout(0, false).height).toBe(360);
+    expect(mapLayout(0, true).height).toBe(280);
   });
 
   it('i blocchi sono continui: ogni blocco è a un passo (una colonna o una riga) dal precedente', () => {
@@ -40,6 +48,7 @@ describe('mapLayout', () => {
     const l = mapLayout(10, true);
     const scale = 344 / l.w;
     expect(l.node * scale).toBeGreaterThanOrEqual(MIN_NODE_PX);
+    expect(l.node * (312 / l.w)).toBeGreaterThanOrEqual(MIN_NODE_PX - 4); // anche su un telefono da 320 px il blocco è ~44 px
     expect(hitRadius(l.node, scale) * scale).toBeGreaterThanOrEqual(28);
     // con una tela molto piccola il raggio cresce per mantenere 28 px
     expect(hitRadius(40, 0.1) * 0.1).toBeCloseTo(28);
@@ -92,9 +101,9 @@ describe('WorldMap su telefono', () => {
     f.canvas.dispatchEvent(new MouseEvent('click', { clientX: x, clientY: y, bubbles: true }));
   }
 
-  it('usa la tela da telefono: 400 di larghezza e altezza per tutte le missioni', () => {
+  it('usa la tela da telefono: 600 di larghezza e altezza per tutte le missioni', () => {
     const { canvas } = mount();
-    expect(canvas.width).toBe(400);
+    expect(canvas.width).toBe(600);
     expect(canvas.height).toBe(mapLayout(6, true).height);
   });
 
@@ -102,8 +111,8 @@ describe('WorldMap su telefono', () => {
     const m = mount();
     m.f.componentInstance.missionSelected.subscribe(m.selected);
     m.f.componentInstance.missionEntered.subscribe(m.entered);
-    const s = 344 / 400;
-    const node1 = { x: 100 * s, y: 120 * s };
+    const s = 344 / 600;
+    const node1 = { x: 100 * s, y: 130 * s };
     tap(m, node1.x + 30, node1.y + 10); // blocco 1, già selezionato: si entra
     expect(m.entered).toHaveBeenCalledWith(missions[0].id);
     expect(m.selected).not.toHaveBeenCalled();
@@ -113,8 +122,8 @@ describe('WorldMap su telefono', () => {
     const m = mount();
     m.f.componentInstance.missionSelected.subscribe(m.selected);
     m.f.componentInstance.missionEntered.subscribe(m.entered);
-    const s = 344 / 400;
-    tap(m, 300 * s, 120 * s); // blocco 2: bloccato
+    const s = 344 / 600;
+    tap(m, 300 * s, 130 * s); // blocco 2: bloccato
     tap(m, 200 * s, 40 * s); // vuoto
     expect(m.selected).not.toHaveBeenCalled();
     expect(m.entered).not.toHaveBeenCalled();
@@ -125,14 +134,14 @@ describe('WorldMap su telefono', () => {
     m.f.componentRef.setInput('statuses', ['completed', 'available', 'locked', 'locked', 'locked', 'locked']);
     m.f.detectChanges();
     m.f.componentInstance.missionSelected.subscribe(m.selected);
-    const s = 344 / 400;
-    tap(m, 300 * s, 120 * s);
+    const s = 344 / 600;
+    tap(m, 300 * s, 130 * s);
     expect(m.selected).toHaveBeenCalledWith(missions[1].id);
   });
 
   it('se lo schermo si allarga (o si ruota) passa al layout largo senza ricaricare, e viceversa', () => {
     const { f, canvas } = mount();
-    expect(canvas.width).toBe(400);
+    expect(canvas.width).toBe(600);
     matches = false;
     listeners.forEach((l) => l());
     f.detectChanges();
@@ -141,7 +150,7 @@ describe('WorldMap su telefono', () => {
     matches = true;
     listeners.forEach((l) => l());
     f.detectChanges();
-    expect(canvas.width).toBe(400);
+    expect(canvas.width).toBe(600);
   });
 
   it('senza telefono (matchMedia non vero) usa il layout largo; alla distruzione si toglie l\'ascolto', () => {

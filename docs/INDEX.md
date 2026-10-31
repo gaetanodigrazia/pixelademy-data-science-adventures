@@ -79,3 +79,4 @@
 | E12 | IMP-03 PO Improvement — Internazionalizzazione (it/en) | #82 | #161 | `docs/issues/IMP-03.md` | **parziale** (issue aperta: vedi `docs/issues/IMP-03.md`) |
 | E11 | US-11.8 Contributor di un percorso | #165 | #166 | `docs/issues/US-11.8.md` | fatto |
 | E05 | BUG-05.1 Mappa troppo piccola su telefono: le missioni non si toccano | #167 | #168 | `docs/issues/BUG-05.1.md` | fatto |
+| E05 | BUG-05.2 Mappa enorme su telefono e cataloghi che non scorrono | #169 | #170 | `docs/issues/BUG-05.2.md` | fatto |

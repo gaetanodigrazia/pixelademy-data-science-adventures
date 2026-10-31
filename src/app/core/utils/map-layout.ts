@@ -4,7 +4,7 @@ export interface MapNode {
   y: number;
 }
 
-/** Misure della mappa: tela larga 800 con 4 blocchi per riga, oppure (telefono) larga 400 con 2 per riga e blocchi più grandi. */
+/** Misure della mappa: tela larga 800 con 4 blocchi per riga, oppure (telefono) larga 600 con 3 per riga, righe più basse e blocchi più grandi. */
 export interface MapLayout {
   /** Larghezza e altezza della tela, in unità. */
   w: number;
@@ -24,17 +24,21 @@ export const MIN_NODE_PX = 44;
 
 /** I blocchi si dispongono a serpentina: la riga dispari va da destra a sinistra, così il percorso è continuo. */
 export function mapLayout(count: number, compact: boolean): MapLayout {
-  const perRow = compact ? 2 : 4;
-  const rowGap = compact ? 150 : 130;
+  const perRow = compact ? 3 : 4;
+  const rowGap = compact ? 120 : 130;
+  // su telefono il primo blocco sta più in basso: sopra c'è il titolo della missione e, sopra il blocco, l'eroe
+  const top = compact ? 130 : 120;
   const nodes = Array.from({ length: count }, (_, i) => {
     const row = Math.floor(i / perRow);
     const col = row % 2 === 0 ? i % perRow : perRow - 1 - (i % perRow);
-    return { x: 100 + col * 200, y: 120 + row * rowGap };
+    return { x: 100 + col * 200, y: top + row * rowGap };
   });
+  const bottom = compact ? 90 : 110;
   return {
-    w: compact ? 400 : 800,
-    height: Math.max(360, ...nodes.map((n) => n.y + 110)),
-    node: compact ? 56 : 40,
+    w: compact ? 600 : 800,
+    height: Math.max(compact ? 280 : 360, ...nodes.map((n) => n.y + bottom)),
+    // 84 unità su una tela mostrata a ~344 px = 48 px sullo schermo (≥ 44 anche su telefoni da 320 px, con l'area di tocco allargata)
+    node: compact ? 84 : 40,
     perRow,
     nodes,
   };
