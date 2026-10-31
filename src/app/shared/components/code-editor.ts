@@ -1,3 +1,4 @@
+import { loadMonacoStyles } from '../../core/utils/monaco-styles';
 import { AfterViewInit, ChangeDetectionStrategy, Component, ElementRef, OnDestroy, effect, input, output, signal, viewChild } from '@angular/core';
 
 /** Editor Python basato su Monaco, con ripiego su textarea se Monaco non è disponibile. */
@@ -72,6 +73,7 @@ export class CodeEditor implements AfterViewInit, OnDestroy {
     try {
       const monaco = await import('monaco-editor/esm/vs/editor/editor.api.js');
       await import('monaco-editor/esm/vs/basic-languages/python/python.contribution.js');
+      await loadMonacoStyles(); // il CSS di Monaco è un file a parte (vedi monaco-styles.ts): senza, il testo esce dal riquadro
       if (!this.host().nativeElement.isConnected) return;
       // Telefono: carattere piccolo, margini ridotti e righe lunghe a capo, così il codice si legge senza scorrere di lato.
       const compact = typeof window.matchMedia === 'function' && window.matchMedia('(max-width: 600px)').matches;
