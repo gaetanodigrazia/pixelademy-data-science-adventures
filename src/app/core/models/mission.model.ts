@@ -74,4 +74,6 @@ export interface Mission {
   /** Scena di gioco del task: il risultato del programma muove il mondo di gioco (si affianca al minigioco della battaglia). */
   viz?: MissionViz;
   enemyId?: string;
+  /** Sfida: si apre direttamente sul task (niente teoria né battaglia), su un dataset. */
+  challenge?: boolean;
 }

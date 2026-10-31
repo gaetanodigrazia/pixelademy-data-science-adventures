@@ -5,3 +5,4 @@ dist/
 src/app/core/data/packs.generated.ts
 /public/condividi/
 /public/share/
+/public/pyodide/

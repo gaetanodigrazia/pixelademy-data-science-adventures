@@ -36,7 +36,7 @@ type Phase = 'teoria' | 'battaglia' | 'task';
           @if (projectPath()) {
             <button type="button" class="btn info" [title]="dashboardOn() ? 'Il progetto e la Dashboard' : 'Il progetto'" [attr.aria-label]="dashboardOn() ? 'Il progetto e la Dashboard' : 'Il progetto'" (click)="introOpen.set(true)">{{ dashboardOn() ? '📊' : '🧩' }} Progetto</button>
           }
-          @if (phase() !== 'teoria') {
+          @if (phase() !== 'teoria' && !m.challenge) {
             <button type="button" class="btn restart" title="Riparti dalla teoria" aria-label="Riparti dalla teoria" (click)="restart()">↺ Teoria</button>
           }
           <div class="title">
@@ -45,11 +45,13 @@ type Phase = 'teoria' | 'battaglia' | 'task';
           </div>
         </header>
 
+        @if (!m.challenge) {
         <ol class="steps" [class.in-task]="phase() === 'task'" aria-label="Fasi della missione">
           <li class="step" [class.current]="phase() === 'teoria'" [attr.aria-current]="phase() === 'teoria' ? 'step' : null">1 · Teoria</li>
           <li class="step" [class.current]="phase() === 'battaglia'" [attr.aria-current]="phase() === 'battaglia' ? 'step' : null">2 · Battaglia</li>
           <li class="step" [class.current]="phase() === 'task'" [attr.aria-current]="phase() === 'task' ? 'step' : null">3 · Task</li>
         </ol>
+        }
 
         @switch (phase()) {
           @case ('teoria') {
@@ -359,7 +361,7 @@ export class MissionDetail {
       untracked(() => {
         this.noteAbandoned();
         this.current = m?.id ?? null;
-        this.phase.set('teoria');
+        this.phase.set(m?.challenge ? 'task' : 'teoria');
         this.slide.set(0);
         this.battleWon.set(false);
         this.victoryOpen.set(false);
