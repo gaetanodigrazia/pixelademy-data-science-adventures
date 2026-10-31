@@ -121,3 +121,27 @@ describe('percorso «energia»', () => {
 
   quizCases('energia');
 });
+
+describe('percorso di statistica', () => {
+  it('bollettino: media, mediana, moda, campo, varianza e deviazione standard', () => {
+    expect(lines('statistica').slice(1)).toEqual([
+      'Altezza media: 5.0', 'Altezza mediana: 4.5', 'Altezza più frequente: 4', 'Campo di variazione: 7', 'Varianza: 4.0', 'Deviazione standard: 2.0',
+    ]);
+  });
+
+  it('6 missioni di difficoltà 1..6', () => {
+    const p = path('statistica');
+    expect(p.missions.map((m) => m.difficulty)).toEqual([1, 2, 3, 4, 5, 6]);
+  });
+
+  it('varianza e deviazione richiedono che le sezioni da cui dipendono vengano prima', () => {
+    expect(() => exercisesFor({ slug: 'x', missions: [1, 2], exercises: ['media', 'deviazione'] })).toThrow('richiede');
+    expect(() => exercisesFor({ slug: 'x', missions: [1, 2], exercises: ['media', 'varianza'] })).not.toThrow();
+  });
+
+  it('pyFloat stampa i float come Python', () => {
+    expect([5, 4.5, 2, 0.25].map(pyFloat)).toEqual(['5.0', '4.5', '2.0', '0.25']);
+  });
+
+  quizCases('statistica');
+});
