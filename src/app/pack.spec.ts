@@ -13,6 +13,7 @@ describe('pack «adventure-core»', () => {
     expect(pack.author).toBe('Pixelademy');
     expect(pack.characters.length).toBe(4);
     expect(pack.enemies.length).toBe(4);
+    expect(GAME_IDS[10]).toBe('adventure-quiz');
     expect(GAME_IDS.slice(0, 10)).toEqual([
       'adventure-index-rack', 'adventure-list-bench', 'adventure-filter-belt', 'adventure-accumulator', 'adventure-mean-calc',
       'adventure-branch-picker', 'adventure-dict-vault', 'adventure-extreme-duel', 'adventure-function-forge', 'adventure-pipeline-line',

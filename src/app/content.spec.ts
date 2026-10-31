@@ -45,12 +45,12 @@ describe('adventure-core pack', () => {
     }
   });
 
-  it('registra 10 minigiochi (uno per concetto; il quiz degli esercizi propri arriva con US-07.12) e li usa tutti', () => {
-    expect(pack.games.length).toBe(10);
-    expect(new Set(pack.games.map((g) => g.component)).size).toBe(10);
+  it('registra 11 minigiochi (10 standard + il quiz degli esercizi propri) e li usa tutti', () => {
+    expect(pack.games.length).toBe(11);
+    expect(new Set(pack.games.map((g) => g.component)).size).toBe(11);
     const used = new Set(missions.map((m) => m.game.type));
     for (const m of missions) expect(pack.games.some((g) => g.id === m.game.type)).toBe(true);
-    expect(used.size).toBe(10);
+    expect(used.size).toBe(10); // l'undicesimo (quiz) compare solo nei percorsi con esercizi propri (US-11.2…11.6)
   });
 
   it('ha una soluzione per ogni missione che non compare in starter code né hint', () => {

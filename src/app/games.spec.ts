@@ -1,7 +1,9 @@
 import { Type } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 import { r2 } from './shared/components/games/base-game';
-import { Game, mountGame } from './testing/game-harness';
+import { EXERCISES } from './content/adventure-core/exercises';
+import { Game, SAMPLE, mountGame } from './testing/game-harness';
+import { MINI_PACK } from './testing/mini-pack';
 import { IndexRack } from './shared/components/games/index-rack';
 import { ListBench } from './shared/components/games/list-bench';
 import { FilterBelt } from './shared/components/games/filter-belt';
@@ -12,6 +14,7 @@ import { DictVault } from './shared/components/games/dict-vault';
 import { ExtremeDuel } from './shared/components/games/extreme-duel';
 import { FunctionForge } from './shared/components/games/function-forge';
 import { PipelineLine } from './shared/components/games/pipeline-line';
+import { ExerciseQuiz } from './shared/components/games/exercise-quiz';
 // <<IMPORTS>>
 
 interface Case { id: string; index: number; component: Type<unknown>; solve: (g: Game) => void }
@@ -125,6 +128,25 @@ describe('minigiochi: si impara giocando', () => {
     g.run();
     expect(g.feedback().text).toContain('TypeError');
     expect(g.mistakes()).toBe(1);
+  });
+
+  it('quiz «esegui il codice a mano»: si vince scegliendo i risultati giusti, una sola volta; una svista è spiegata', () => {
+    const cleared = vi.fn();
+    const f = TestBed.createComponent(ExerciseQuiz);
+    f.componentRef.setInput('character', MINI_PACK.characters[0]);
+    f.componentRef.setInput('config', { level: 1, ...EXERCISES['delta'].gameConfig(SAMPLE) });
+    f.componentRef.setInput('onCleared', cleared);
+    f.detectChanges();
+    const g: Game = f.componentInstance;
+    const wrong = g.options().find((o: { label: string }) => o.label !== g.expected());
+    g.pick(wrong);
+    expect(g.mistakes()).toBe(1);
+    expect(cleared).not.toHaveBeenCalled();
+    for (let i = 0; i < 50 && !g.cleared; i++) g.pick(g.options().find((o: { label: string }) => o.label === g.expected()));
+    f.detectChanges();
+    expect(cleared).toHaveBeenCalledTimes(1);
+    g.win();
+    expect(cleared).toHaveBeenCalledTimes(1);
   });
 
   // <<EXTRA>>
