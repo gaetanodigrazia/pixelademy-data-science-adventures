@@ -70,5 +70,13 @@ describe('adventure-core pack', () => {
     }
   });
 
-  // «ha percorsi brevi» (>= 2 percorsi da 3 missioni, senza Dashboard) si riattiva con US-11.3, quando esistono Mobilità ed Energia.
+  it('ha percorsi brevi: almeno due con 3 missioni di difficoltà 1, 2, 3 e le stesse regole dei lunghi', () => {
+    const shorts = pack.paths.filter((p) => p.missions.length === 3);
+    expect(shorts.length).toBeGreaterThanOrEqual(2);
+    for (const p of shorts) {
+      expect(p.missions.map((m) => m.difficulty)).toEqual([1, 2, 3]);
+      expect(p.project).toBeDefined();
+      expect(p.dashboard).toBe(false); // esercizi propri: niente Dashboard (i riquadri seguono le 10 sezioni standard)
+    }
+  });
 });
