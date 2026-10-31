@@ -34,3 +34,4 @@
 | E07 | US-07.11 Minigioco «Linea di analisi» | #57 | #117 | `docs/issues/US-07.11.md` | fatto |
 | E02 | US-02.8 Pack «adventure-core» | #25 | #118 | `docs/issues/US-02.8.md` | fatto |
 | E04 | US-04.4 Modale privacy | #34 | #119 | `docs/issues/US-04.4.md` | fatto |
+| E05 | US-05.1 Navbar con profilo, livello e XP | #36 | #120 | `docs/issues/US-05.1.md` | fatto |
