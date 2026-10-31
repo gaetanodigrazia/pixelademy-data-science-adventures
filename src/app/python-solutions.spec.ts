@@ -1,5 +1,6 @@
 import { execFileSync, spawnSync } from 'node:child_process';
 import { PACKS } from './core/data/packs.generated';
+import { validateOutput } from './core/utils/validator';
 
 // Le soluzioni di riferimento si eseguono con un Python vero (lo stesso linguaggio che l'utente scriverà in Pyodide):
 // l'output deve essere esattamente il bollettino atteso, riga per riga. In CI (ubuntu) python3 c'è sempre.
@@ -15,10 +16,12 @@ describe('soluzioni con Python reale', () => {
     for (const path of pack.paths) {
       for (const m of path.missions) {
         it(`${m.id}: la soluzione stampa esattamente il bollettino atteso`, () => {
-          expect(m.validation.kind).toBe('lines');
-          const expected = (m.validation as { expected: string[] }).expected;
           const out = run(pack.solutions[m.id]);
-          expect(out.split('\n').map((l) => l.trim()).filter(Boolean)).toEqual(expected);
+          if (m.validation.kind === 'lines') {
+            expect(out.split('\n').map((l) => l.trim()).filter(Boolean)).toEqual(m.validation.expected);
+          } else {
+            expect(validateOutput(out, m.validation), out).toEqual({ ok: true, message: expect.any(String) });
+          }
         });
       }
     }

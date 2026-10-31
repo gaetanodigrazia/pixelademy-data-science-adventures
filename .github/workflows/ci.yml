@@ -13,5 +13,7 @@ jobs:
           node-version: 22
           cache: npm
       - run: npm ci
+      # le soluzioni delle sfide si verificano con pandas reale (python-solutions.spec.ts)
+      - run: pip install pandas
       - run: npm test -- --watch=false
       - run: npm run build -- --configuration development
