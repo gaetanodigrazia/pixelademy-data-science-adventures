@@ -42,3 +42,4 @@
 | E04 | US-04.5 Selezione di percorso ed eroe | #35 | #125 | `docs/issues/US-04.5.md` | fatto |
 | E11 | US-11.1 Percorso «Osservatorio delle Nuvole (10 missioni, standard)» | #69 | #126 | `docs/issues/US-11.1.md` | fatto |
 | E08 | US-08.1 Parsing dei risultati dal programma dell'utente | #59 | #127 | `docs/issues/US-08.1.md` | fatto |
+| E08 | US-08.3 Grafico a barre | #61 | #128 | `docs/issues/US-08.3.md` | fatto |
