@@ -145,3 +145,25 @@ describe('percorso di statistica', () => {
 
   quizCases('statistica');
 });
+
+describe('percorso «outlier»', () => {
+  it('bollettino', () => {
+    expect(lines('outlier').slice(1)).toEqual([
+      'Tempo medio di consegna: 17.0', 'Varianza dei tempi: 100.0', 'Deviazione standard: 10.0', 'Z-score del tempo massimo: 2.9', 'Consegne anomale: 1',
+    ]);
+  });
+
+  it('5 missioni di difficoltà 1..5, senza Dashboard, tutte con il quiz', () => {
+    const p = path('outlier');
+    expect(p.missions.map((m) => m.difficulty)).toEqual([1, 2, 3, 4, 5]);
+    expect(p.dashboard).toBe(false);
+    expect(p.missions.every((m) => m.game.type === 'adventure-quiz')).toBe(true);
+  });
+
+  it('z-score e outlier richiedono la deviazione (quindi media → varianza → deviazione prima)', () => {
+    expect(() => exercisesFor({ slug: 'x', missions: [1, 2], exercises: ['media', 'zscore'] })).toThrow('richiede');
+    expect(() => exercisesFor({ slug: 'x', missions: [1, 2], exercises: ['media', 'outlier'] })).toThrow('richiede');
+  });
+
+  quizCases('outlier');
+});
