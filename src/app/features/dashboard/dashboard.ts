@@ -8,6 +8,7 @@ import { GameStateService } from '../../core/services/game-state.service';
 import { MissionService } from '../../core/services/mission.service';
 import { MissionCard } from '../../shared/components/mission-card';
 import { TranslatePipe } from '../../core/i18n/translate.pipe';
+import { Leaderboard } from '../../shared/components/leaderboard';
 import { SpriteView } from '../../shared/components/sprite-view';
 import { WorldMap } from '../../shared/components/world-map';
 
@@ -15,7 +16,7 @@ type CatalogKind = 'paths' | 'heroes';
 
 @Component({
   selector: 'app-dashboard',
-  imports: [MissionCard, RouterLink, SpriteView, WorldMap, TranslatePipe],
+  imports: [Leaderboard, MissionCard, RouterLink, SpriteView, WorldMap, TranslatePipe],
   changeDetection: ChangeDetectionStrategy.OnPush,
   host: { '(document:keydown.escape)': 'closeCatalog()' },
   template: `
@@ -61,6 +62,9 @@ type CatalogKind = 'paths' | 'heroes';
             @if (path()!.dashboard !== false) {
               <a class="btn" [routerLink]="['/progetto', path()!.id]">{{ 'home.dashboard' | t: { done: missions.completedCount(path()!), total: path()!.missions.length } }}</a>
             }
+            @if (hasChallenges()) {
+              <button type="button" class="btn" (click)="leaderboardOpen.set(true)">{{ 'home.leaderboard' | t }}</button>
+            }
             <button type="button" class="btn primary" (click)="openCatalog('paths')">{{ 'home.changePath' | t: { n: registry.paths().length } }}</button>
           </section>
 
@@ -88,6 +92,8 @@ type CatalogKind = 'paths' | 'heroes';
         </div>
       }
     </main>
+
+    @if (leaderboardOpen() && path(); as p) { <app-leaderboard [path]="p" (closed)="leaderboardOpen.set(false)" /> }
 
     @if (catalog(); as kind) {
       <div class="backdrop" (click)="onBackdrop($event)">
@@ -222,6 +228,9 @@ export class Dashboard {
   /** Missione appena completata (se c'è): l'eroe la lascia e cammina verso la successiva. */
   protected readonly walkFrom = this.game.lastCompletedId();
   protected readonly catalog = signal<CatalogKind | null>(null);
+  protected readonly leaderboardOpen = signal(false);
+  /** Il percorso è fatto di sfide: ha una classifica locale. */
+  protected readonly hasChallenges = computed(() => !!this.path()?.missions.some((m) => m.challenge));
   protected readonly query = signal('');
   protected readonly foundPaths = computed(() => {
     const q = this.norm(this.query());

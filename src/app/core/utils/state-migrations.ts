@@ -1,7 +1,7 @@
 import { PlayerState } from '../models/player-state.model';
 
 /** Versione corrente dello stato salvato. Ogni cambio di forma incrementa il numero e aggiunge un passo in `STEPS`. */
-export const STATE_VERSION = 4;
+export const STATE_VERSION = 5;
 
 type Raw = Record<string, unknown>;
 
@@ -13,6 +13,8 @@ const STEPS: Record<number, (s: Raw) => Raw> = {
   2: (s) => ({ ...s, telemetry: false }),
   // v3 → v4: `locale` (facoltativo: senza scelta si usa la lingua del browser); nessun valore da aggiungere
   3: (s) => ({ ...s }),
+  // v4 → v5: la classifica locale delle sfide (vuota)
+  4: (s) => ({ ...s, records: typeof s['records'] === 'object' && s['records'] ? s['records'] : {} }),
 };
 
 /**

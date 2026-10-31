@@ -1,5 +1,5 @@
 import { Injectable, computed, inject, signal } from '@angular/core';
-import { ConsentStatus, PlayerState, RewardSummary } from '../models/player-state.model';
+import { ChallengeRecord, ConsentStatus, PlayerState, RewardSummary } from '../models/player-state.model';
 import { Mission } from '../models/mission.model';
 import { levelFromXp, xpForLevel } from '../utils/progress';
 import { STATE_VERSION, exportState, migrateState, parseExport } from '../utils/state-migrations';
@@ -74,6 +74,28 @@ export class GameStateService {
     this.update({ locale });
   }
 
+  /**
+   * Classifica locale: registra il risultato di una sfida se è il migliore (più XP; a parità, meno secondi).
+   * Ritorna `true` se è un nuovo record. Rigiocare una sfida può migliorare il record ma non dà altri XP.
+   */
+  recordResult(missionId: string, rec: ChallengeRecord): boolean {
+    const best = this.state().records[missionId];
+    if (best && (rec.xp < best.xp || (rec.xp === best.xp && rec.seconds >= best.seconds))) return false;
+    this.update({ records: { ...this.state().records, [missionId]: rec } });
+    return true;
+  }
+
+  /** Tiene solo i record ben formati di missioni che esistono. */
+  private validRecords(raw: unknown, ids: Set<string>): Record<string, ChallengeRecord> {
+    if (!raw || typeof raw !== 'object') return {};
+    const num = (v: unknown) => typeof v === 'number' && Number.isFinite(v) && v >= 0;
+    return Object.fromEntries(
+      Object.entries(raw as Record<string, Partial<ChallengeRecord>>).filter(
+        ([id, r]) => ids.has(id) && !!r && num(r.xp) && num(r.seconds) && num(r.errors) && num(r.at),
+      ),
+    ) as Record<string, ChallengeRecord>;
+  }
+
   resetProgress(): void {
     this.state.set(this.initialState());
     this.persist();
@@ -145,6 +167,7 @@ export class GameStateService {
       solvedCode: {},
       liked: false,
       telemetry: false,
+      records: {},
       selectedPathId: path?.id ?? '',
       selectedCharacterId: path?.defaultCharacterId ?? this.registry.characters()[0]?.id ?? '',
     };
@@ -168,6 +191,7 @@ export class GameStateService {
       ),
       liked: raw.liked === true,
       telemetry: raw.telemetry === true,
+      records: this.validRecords(raw.records, ids),
       ...(raw.locale === 'it' || raw.locale === 'en' ? { locale: raw.locale } : {}),
       selectedPathId: path?.id ?? base.selectedPathId,
       selectedCharacterId: this.registry.character(raw.selectedCharacterId ?? '')?.id ?? base.selectedCharacterId,

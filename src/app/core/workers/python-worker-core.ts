@@ -7,6 +7,8 @@ export type WorkerRequest = { type: 'init' } | { type: 'run'; id: number; code: 
 export type WorkerReply =
   | { type: 'ready' }
   | { type: 'init-error'; message: string }
+  /** I pacchetti sono pronti e il codice sta per partire: da qui conta il timeout (il download dei pacchetti no). */
+  | { type: 'started'; id: number }
   | { type: 'result'; id: number; output: string; error?: string };
 
 type Pyodide = any;
@@ -20,7 +22,7 @@ export const PYODIDE_BASE_URL = '/pyodide/';
 const shortError = (e: unknown): string => (e instanceof Error ? e.message : String(e)).trim().split('\n').slice(-4).join('\n');
 
 /** Esegue `code` in un namespace isolato e raccoglie stdout/stderr. */
-export async function runInPyodide(pyodide: Pyodide, code: string): Promise<{ output: string; error?: string }> {
+export async function runInPyodide(pyodide: Pyodide, code: string, onStart: () => void = () => undefined): Promise<{ output: string; error?: string }> {
   let out = '';
   let err = '';
   pyodide.setStdout({ batched: (s: string) => (out += s + '\n') });
@@ -28,7 +30,9 @@ export async function runInPyodide(pyodide: Pyodide, code: string): Promise<{ ou
   let error: string | undefined;
   const globals = pyodide.globals.get('dict')();
   try {
-    await pyodide.loadPackagesFromImports(code);
+    // I pacchetti (es. pandas) si scaricano qui; i messaggi «Loading…/Loaded…» di Pyodide non devono finire nell'output del programma
+    await pyodide.loadPackagesFromImports(code, { messageCallback: () => undefined, errorCallback: () => undefined });
+    onStart();
     await pyodide.runPythonAsync(code, { globals });
   } catch (e) {
     error = shortError(e);
@@ -56,7 +60,7 @@ export function createWorkerHandler(load: () => Promise<Pyodide>, post: (r: Work
     }
     try {
       const py = await (runtime ??= load());
-      post({ type: 'result', id: m.id, ...(await runInPyodide(py, m.code)) });
+      post({ type: 'result', id: m.id, ...(await runInPyodide(py, m.code, () => post({ type: 'started', id: m.id }))) });
     } catch (e) {
       runtime = undefined;
       post({ type: 'result', id: m.id, output: '', error: e instanceof Error ? e.message : String(e) });

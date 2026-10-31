@@ -1,6 +1,7 @@
 import { WorkerReply, createWorkerHandler, runInPyodide } from './core/workers/python-worker-core';
 
 /** Un Pyodide finto: l'esecuzione «stampa» ciò che il test decide e registra i namespace usati. */
+const loadOpts: unknown[] = [];
 function fakePyodide(program: (code: string, out: (s: string) => void, err: (s: string) => void) => void | Promise<void>) {
   let out: (s: string) => void = () => undefined;
   let err: (s: string) => void = () => undefined;
@@ -12,7 +13,7 @@ function fakePyodide(program: (code: string, out: (s: string) => void, err: (s: 
     setStdout: (o: { batched: (s: string) => void }) => (out = o.batched),
     setStderr: (o: { batched: (s: string) => void }) => (err = o.batched),
     globals: { get: () => () => { const g = { destroy: () => destroyed.push(g) }; namespaces.push(g); return g; } },
-    loadPackagesFromImports: async () => undefined,
+    loadPackagesFromImports: async (_code: string, opts?: { messageCallback?: unknown }) => { loadOpts.push(opts); },
     runPythonAsync: async (code: string) => { await program(code, (s) => out(s), (s) => err(s)); },
   };
 }
@@ -31,6 +32,16 @@ describe('runInPyodide', () => {
   it('se Python scrive solo su stderr senza eccezione, quello è l\'errore', async () => {
     const py = fakePyodide((_c, _o, err) => err('Warning: attenzione'));
     expect((await runInPyodide(py, 'x')).error).toBe('Warning: attenzione');
+  });
+
+  it('i pacchetti si caricano senza che i messaggi di Pyodide finiscano nell\'output; «started» arriva prima del codice', async () => {
+    loadOpts.length = 0;
+    const order: string[] = [];
+    const py = fakePyodide((_c, out) => { order.push('codice'); out('ciao'); });
+    const r = await runInPyodide(py, 'import pandas', () => order.push('started'));
+    expect(r.output).toBe('ciao\n');
+    expect(order).toEqual(['started', 'codice']);
+    expect(loadOpts[0]).toMatchObject({ messageCallback: expect.any(Function), errorCallback: expect.any(Function) });
   });
 
   it('ogni esecuzione ha il suo namespace, distrutto alla fine (le variabili non si trascinano)', async () => {
@@ -52,7 +63,7 @@ describe('createWorkerHandler', () => {
     await handle({ type: 'init' });
     await handle({ type: 'run', id: 7, code: 'print(1)' });
     expect(load).toHaveBeenCalledTimes(1);
-    expect(replies).toEqual([{ type: 'ready' }, { type: 'ready' }, { type: 'result', id: 7, output: 'ciao\n', error: undefined }]);
+    expect(replies).toEqual([{ type: 'ready' }, { type: 'ready' }, { type: 'started', id: 7 }, { type: 'result', id: 7, output: 'ciao\n', error: undefined }]);
   });
 
   it('se il caricamento fallisce risponde init-error e al tentativo dopo riprova', async () => {

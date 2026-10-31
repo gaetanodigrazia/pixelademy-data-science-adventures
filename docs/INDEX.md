@@ -75,5 +75,5 @@
 | E12 | IMP-07 PO Improvement — Performance e bundle | #86 | #157 | `docs/issues/IMP-07.md` | fatto |
 | E12 | IMP-02 PO Improvement — Pyodide self-hosted e modalità offline (PWA) | #81 | #158 | `docs/issues/IMP-02.md` | fatto |
 | E12 | IMP-08 PO Improvement — Telemetria privacy-first e feedback | #87 | #159 | `docs/issues/IMP-08.md` | fatto |
-| E12 | IMP-06 PO Improvement — Sfide in stile Kaggle (pandas) | #85 | #160 | `docs/issues/IMP-06.md` | **parziale** (issue aperta: vedi `docs/issues/IMP-06.md`) |
+| E12 | IMP-06 PO Improvement — Sfide in stile Kaggle (pandas) | #85 | #160 | `docs/issues/IMP-06.md` | fatto (PR #160 e #164) |
 | E12 | IMP-03 PO Improvement — Internazionalizzazione (it/en) | #82 | #161 | `docs/issues/IMP-03.md` | **parziale** (issue aperta: vedi `docs/issues/IMP-03.md`) |
