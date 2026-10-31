@@ -64,3 +64,4 @@
 | E11 | US-11.5 Percorso «Caccia agli Outlier (5 missioni)» | #73 | #146 | `docs/issues/US-11.5.md` | fatto |
 | E11 | US-11.6 Percorso «Probabilità con i Dadi (4 missioni)» | #74 | #147 | `docs/issues/US-11.6.md` | fatto |
 | E09 | US-09.1 Immagine di anteprima della Dashboard | #63 | #148 | `docs/issues/US-09.1.md` | fatto |
+| E09 | US-09.2 Modale di condivisione su LinkedIn | #64 | #149 | `docs/issues/US-09.2.md` | fatto |

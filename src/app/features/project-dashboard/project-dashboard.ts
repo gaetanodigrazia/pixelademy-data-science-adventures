@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, effect, inject, signal, untracked } from '@angular/core';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { ActivatedRoute, RouterLink } from '@angular/router';
 import { map } from 'rxjs';
@@ -7,6 +7,8 @@ import { GameStateService } from '../../core/services/game-state.service';
 import { buildDashboardCards } from '../../core/utils/dashboard-cards';
 import { BarChart } from '../../shared/components/bar-chart';
 import { ProjectModal } from '../../shared/components/project-modal';
+import { ShareModal } from '../../shared/components/share-modal';
+import { ShareImageInput } from '../../core/utils/share-image';
 
 /**
  * Dashboard dei risultati: i numeri che il bollettino dell'utente ha prodotto, in grafici e indicatori.
@@ -14,7 +16,7 @@ import { ProjectModal } from '../../shared/components/project-modal';
  */
 @Component({
   selector: 'app-project-dashboard',
-  imports: [RouterLink, BarChart, ProjectModal],
+  imports: [RouterLink, BarChart, ProjectModal, ShareModal],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <main>
@@ -25,6 +27,7 @@ import { ProjectModal } from '../../shared/components/project-modal';
             <h1>📊 {{ project()?.heading }}</h1>
             <p class="status">{{ p.title }} · {{ done() }}/{{ p.missions.length }} sezioni prodotte{{ done() === p.missions.length ? ' · progetto completo 🏆' : '' }}</p>
           </div>
+          @if (complete()) { <button type="button" class="btn share" (click)="shareOpen.set(true)">🔗 Condividi</button> }
           @if (done() > 0) { <button type="button" class="btn code" (click)="codeOpen.set(true)">&lt;/&gt; Codice</button> }
         </header>
         <div class="bar" role="progressbar" aria-label="Sezioni del bollettino prodotte" aria-valuemin="0" [attr.aria-valuemax]="p.missions.length" [attr.aria-valuenow]="done()">
@@ -61,6 +64,7 @@ import { ProjectModal } from '../../shared/components/project-modal';
         }
 
         @if (codeOpen()) { <app-project-modal [path]="p" (closed)="codeOpen.set(false)" /> }
+        @if (shareOpen() && shareData(); as sd) { <app-share-modal [data]="sd" [slug]="p.id" [pathId]="p.id" (closed)="shareOpen.set(false)" /> }
       } @else {
         <section class="panel"><h2>Percorso non trovato</h2><a routerLink="/" class="btn">Torna alla mappa</a></section>
       }
@@ -72,7 +76,8 @@ import { ProjectModal } from '../../shared/components/project-modal';
     .title { flex: 1; min-width: 0; }
     .title h1 { margin: 0; font-size: .8rem; overflow-wrap: anywhere; }
     .title .status { margin: 0; font-size: .5rem; }
-    .code { padding: 5px 9px; font-size: .55rem; }
+    .code, .share { padding: 5px 9px; font-size: .55rem; }
+    .share { border-color: var(--good); color: var(--good); }
     .grid { flex: 1; min-height: 0; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); grid-template-rows: repeat(var(--rows, 2), minmax(0, 1fr)); gap: 8px; }
     .grid .card:last-child:nth-child(odd) { grid-column: 1 / -1; }
     .card { display: flex; flex-direction: column; gap: 4px; min-height: 0; overflow: hidden; padding: 6px 10px; }
@@ -93,7 +98,7 @@ import { ProjectModal } from '../../shared/components/project-modal';
       .card { min-height: auto; overflow: visible; padding: 6px 8px; gap: 4px; }
       .chart { flex: none; height: 120px; min-height: 120px; }
       .locked-chart { flex: none; min-height: 60px; }
-      /* I pulsanti (Mappa, Codice) stanno su una riga e il titolo sotto, a tutta larghezza. */
+      /* I pulsanti (Mappa, Condividi, Codice) stanno su una riga e il titolo sotto, a tutta larghezza. */
       .top { gap: 6px; flex-wrap: wrap; }
       .title { flex: 1 1 100%; order: 3; }
       .title h1 { font-size: .55rem; }
@@ -109,6 +114,12 @@ export class ProjectDashboard {
   private readonly registry = inject(ContentRegistryService);
   private readonly game = inject(GameStateService);
 
+  constructor() {
+    effect(() => {
+      if (this.condividi() && this.complete()) untracked(() => this.shareOpen.set(true));
+    });
+  }
+
   private readonly id = toSignal(this.route.paramMap.pipe(map((p) => p.get('id') ?? '')), { initialValue: '' });
   /** Un percorso con `dashboard: false` non ha questa pagina: si comporta come un percorso inesistente. */
   protected readonly path = computed(() => {
@@ -117,6 +128,8 @@ export class ProjectDashboard {
   });
   protected readonly project = computed(() => this.path()?.project);
   protected readonly codeOpen = signal(false);
+  protected readonly shareOpen = signal(false);
+  private readonly condividi = toSignal(this.route.queryParamMap.pipe(map((q) => q.has('condividi'))), { initialValue: false });
 
   /** Missioni completate = sezioni del bollettino prodotte (si completano in ordine). */
   protected readonly done = computed(() => this.path()?.missions.filter((m) => this.game.isCompleted(m.id)).length ?? 0);
@@ -125,6 +138,17 @@ export class ProjectDashboard {
   private readonly lines = computed(() => {
     const last = this.path()?.missions[this.done() - 1];
     return last?.validation.kind === 'lines' ? last.validation.expected : [];
+  });
+
+  /** Tutte le sezioni sono prodotte: il progetto è completo e si può condividere. */
+  protected readonly complete = computed(() => !!this.path() && this.done() === this.path()!.missions.length);
+
+  /** I dati dell'immagine da condividere: gli stessi riquadri che si vedono nella Dashboard. */
+  protected readonly shareData = computed<ShareImageInput | undefined>(() => {
+    const p = this.path();
+    const project = this.project();
+    if (!p || !project || !this.complete()) return undefined;
+    return { heading: project.heading, pathTitle: p.title, done: this.done(), total: p.missions.length, cards: this.cards() };
   });
 
   protected readonly cards = computed(() => {
