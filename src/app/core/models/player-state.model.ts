@@ -1,4 +1,6 @@
 export interface PlayerState {
+  /** Versione dello schema salvato: permette di migrare i progressi senza perderli (vedi `state-migrations.ts`). */
+  schemaVersion: number;
   xp: number;
   level: number;
   completedMissionIds: string[];

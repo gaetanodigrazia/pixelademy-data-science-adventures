@@ -1,6 +1,7 @@
 import { TestBed } from '@angular/core/testing';
 import { PrivacyModal } from './shared/components/privacy-modal';
 import { GameStateService } from './core/services/game-state.service';
+import { ContentRegistryService } from './core/services/content-registry.service';
 import { useMiniPack } from './testing/mini-pack';
 
 describe('PrivacyModal', () => {
@@ -63,5 +64,36 @@ describe('PrivacyModal', () => {
     last.dispatchEvent(ev);
     expect(ev.defaultPrevented).toBe(true);
     expect(document.activeElement).toBe(buttons[0]);
+  });
+
+  it('esporta i progressi come file e li reimporta; un file non valido è segnalato senza cambiare nulla', async () => {
+    const { f, el, game } = mount();
+    let downloaded = '';
+    vi.stubGlobal('URL', { ...URL, createObjectURL: (b: Blob) => { void b.text().then((t) => (downloaded = t)); return 'blob:x'; }, revokeObjectURL: () => undefined });
+    vi.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(() => undefined);
+    game.completeMission(TestBed.inject(ContentRegistryService).missions()[0]);
+    btn(el, 'Esporta i progressi').click();
+    f.detectChanges();
+    expect(el.querySelector('[role=status]')!.textContent).toContain('scaricato');
+    await new Promise((r) => setTimeout(r));
+    expect(JSON.parse(downloaded)).toMatchObject({ app: 'pixelademy' });
+
+    const input = el.querySelector('input[type=file]') as HTMLInputElement;
+    const pick = async (text: string) => {
+      Object.defineProperty(input, 'files', { value: [new File([text], 'p.json')], configurable: true });
+      input.dispatchEvent(new Event('change'));
+      await new Promise((r) => setTimeout(r));
+      f.detectChanges();
+    };
+    game.resetProgress();
+    await pick(downloaded);
+    expect(el.querySelector('[role=status]')!.textContent).toContain('importati');
+    expect(game.xp()).toBeGreaterThan(0);
+    const xp = game.xp();
+    await pick('boh');
+    expect(el.querySelector('[role=status]')!.textContent).toContain('non è valido');
+    expect(game.xp()).toBe(xp);
+    vi.unstubAllGlobals();
+    vi.restoreAllMocks();
   });
 });
