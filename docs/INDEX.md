@@ -23,3 +23,4 @@
 | E02 | US-02.7 Personaggi, nemici e sprite | #24 | #106 | `docs/issues/US-02.7.md` | fatto |
 | E07 | US-07.1 Shell comune dei minigiochi | #47 | #107 | `docs/issues/US-07.1.md` | fatto |
 | E07 | US-07.2 Minigioco «Scaffale degli indici» | #48 | #108 | `docs/issues/US-07.2.md` | fatto |
+| E07 | US-07.3 Minigioco «Banco della lista» | #49 | #109 | `docs/issues/US-07.3.md` | fatto |
