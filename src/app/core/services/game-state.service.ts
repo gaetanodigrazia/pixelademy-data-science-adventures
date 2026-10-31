@@ -64,6 +64,11 @@ export class GameStateService {
     this.persist();
   }
 
+  /** Opt-in alle statistiche anonime (si può attivare solo con il salvataggio acconsentito). */
+  setTelemetry(on: boolean): void {
+    this.update({ telemetry: on && this.consent() === 'granted' });
+  }
+
   resetProgress(): void {
     this.state.set(this.initialState());
     this.persist();
@@ -134,6 +139,7 @@ export class GameStateService {
       completedMissionIds: [],
       solvedCode: {},
       liked: false,
+      telemetry: false,
       selectedPathId: path?.id ?? '',
       selectedCharacterId: path?.defaultCharacterId ?? this.registry.characters()[0]?.id ?? '',
     };
@@ -156,6 +162,7 @@ export class GameStateService {
         Object.entries(raw.solvedCode ?? {}).filter(([id, code]) => ids.has(id) && typeof code === 'string'),
       ),
       liked: raw.liked === true,
+      telemetry: raw.telemetry === true,
       selectedPathId: path?.id ?? base.selectedPathId,
       selectedCharacterId: this.registry.character(raw.selectedCharacterId ?? '')?.id ?? base.selectedCharacterId,
     };

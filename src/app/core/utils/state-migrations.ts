@@ -1,7 +1,7 @@
 import { PlayerState } from '../models/player-state.model';
 
 /** Versione corrente dello stato salvato. Ogni cambio di forma incrementa il numero e aggiunge un passo in `STEPS`. */
-export const STATE_VERSION = 2;
+export const STATE_VERSION = 3;
 
 type Raw = Record<string, unknown>;
 
@@ -9,6 +9,8 @@ type Raw = Record<string, unknown>;
 const STEPS: Record<number, (s: Raw) => Raw> = {
   // v1 (nessun `schemaVersion`) → v2: il campo di versione e i valori predefiniti dei campi aggiunti nel tempo
   1: (s) => ({ ...s, liked: s['liked'] === true, solvedCode: typeof s['solvedCode'] === 'object' && s['solvedCode'] ? s['solvedCode'] : {} }),
+  // v2 → v3: la scelta sulle statistiche anonime (sempre spenta finché l'utente non la attiva)
+  2: (s) => ({ ...s, telemetry: false }),
 };
 
 /**

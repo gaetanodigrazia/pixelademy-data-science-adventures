@@ -22,6 +22,12 @@ import { GameStateService } from '../../core/services/game-state.service';
             Il pulsante «Mi piace» è anonimo: invia una richiesta vuota che aumenta di 1 un contatore e non salva nulla di te
             (nessun nome, cookie o identificativo). Come per ogni sito, il servizio di hosting vede l'indirizzo IP della richiesta ma noi non lo leggiamo né lo salviamo.
           </p>
+          <p>
+            <label class="opt"><input type="checkbox" [checked]="game.state().telemetry" [disabled]="game.consent() !== 'granted'"
+              (change)="setTelemetry($any($event.target).checked)" />
+              Contribuisci con statistiche anonime (facoltativo)</label>
+          </p>
+          <p class="status">Se attivo (serve il salvataggio), per ogni missione contiamo soltanto quanti tentativi sono serviti e se è stata superata o lasciata: un contatore per missione, <strong>senza</strong> identificativi, cookie o dati personali. Ci aiuta a capire dove i contenuti sono troppo difficili.</p>
           <p class="status">Stato: <strong>{{ consentLabel() }}</strong></p>
           <div class="actions">
             <button type="button" class="btn primary" [disabled]="game.consent() === 'granted'" (click)="run(() => game.acceptSaving(), 'Salvataggio attivato.')">Accetta il salvataggio</button>
@@ -43,6 +49,7 @@ import { GameStateService } from '../../core/services/game-state.service';
     .dialog { width: 100%; max-width: 520px; margin: 0; max-height: 100%; overflow-y: auto; }
     .dialog:focus { outline: none; }
     .head { display: flex; justify-content: space-between; align-items: center; gap: 8px; }
+    .opt { display: flex; gap: 8px; align-items: center; cursor: pointer; }
     .actions { display: grid; gap: 8px; margin: 12px 0; }
     @media (min-width: 520px) { .actions { grid-template-columns: 1fr 1fr; } }
   `,
@@ -68,6 +75,11 @@ export class PrivacyModal {
         this.message.set('');
       });
     });
+  }
+
+  protected setTelemetry(on: boolean): void {
+    this.game.setTelemetry(on);
+    this.message.set(on ? 'Statistiche anonime attivate: grazie!' : 'Statistiche anonime disattivate.');
   }
 
   protected consentLabel(): string {

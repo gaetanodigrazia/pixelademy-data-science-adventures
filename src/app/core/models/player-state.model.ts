@@ -10,6 +10,8 @@ export interface PlayerState {
   selectedPathId: string;
   /** Ha già espresso il «Mi piace» al progetto (anonimo: conta solo il totale). */
   liked: boolean;
+  /** Ha scelto di contribuire con statistiche anonime e aggregate (opt-in, spento di default). */
+  telemetry: boolean;
 }
 
 export type ConsentStatus = 'unknown' | 'granted' | 'denied';
