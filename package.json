@@ -3,8 +3,12 @@
   "version": "0.0.0",
   "scripts": {
     "ng": "ng",
+    "packs": "node scripts/generate-packs.mjs",
+    "prestart": "npm run packs",
     "start": "ng serve",
+    "prebuild": "npm run packs",
     "build": "ng build",
+    "pretest": "npm run packs",
     "test": "ng test"
   },
   "private": true,
