@@ -167,3 +167,25 @@ describe('percorso «outlier»', () => {
 
   quizCases('outlier');
 });
+
+describe('percorso «probabilita»', () => {
+  it('bollettino', () => {
+    expect(lines('probabilita').slice(1)).toEqual([
+      'Frequenza del 4: 0.3', 'Valore atteso del dado: 3.5', 'Scostamento dal valore atteso: 0.2', 'Probabilità di fare 7 con due dadi: 0.1667',
+    ]);
+  });
+
+  it('4 missioni di difficoltà 1..4, senza Dashboard, tutte con il quiz', () => {
+    const p = path('probabilita');
+    expect(p.missions.map((m) => m.difficulty)).toEqual([1, 2, 3, 4]);
+    expect(p.dashboard).toBe(false);
+    expect(p.missions.every((m) => m.game.type === 'adventure-quiz')).toBe(true);
+  });
+
+  it('scostamento e somma dei dadi richiedono il valore atteso', () => {
+    expect(() => exercisesFor({ slug: 'x', missions: [1, 2], exercises: ['frequenza', 'scostamento'] })).toThrow('richiede');
+    expect(() => exercisesFor({ slug: 'x', missions: [1, 2], exercises: ['frequenza', 'valore-atteso'] })).not.toThrow();
+  });
+
+  quizCases('probabilita');
+});
