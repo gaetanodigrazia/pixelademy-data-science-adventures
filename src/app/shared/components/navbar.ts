@@ -1,6 +1,8 @@
 import { ChangeDetectionStrategy, Component, HostListener, inject, signal } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { GameStateService } from '../../core/services/game-state.service';
+import { SHARE_TEXT_COPIED, ShareService } from '../../core/services/share.service';
+import { levelShareText } from '../../core/utils/share-image';
 import { PrivacyModal } from './privacy-modal';
 import { SpriteView } from './sprite-view';
 
@@ -23,7 +25,7 @@ import { SpriteView } from './sprite-view';
         <div class="right">
         <div class="profile">
           <button type="button" class="btn profile-btn" aria-haspopup="true" [attr.aria-expanded]="profileOpen()"
-            aria-label="Profilo giocatore: livello {{ game.level() }}, {{ game.xp() }} XP" (click)="profileOpen.set(!profileOpen())">
+            aria-label="Profilo giocatore: livello {{ game.level() }}, {{ game.xp() }} XP" (click)="profileOpen.set(!profileOpen()); shareMessage.set('')">
             @if (game.selectedCharacter(); as c) { <app-sprite-view [sprite]="c.sprite" [scale]="2" [label]="c.name" /> }
             <span class="pname">{{ game.selectedCharacter()?.name }}</span>
             <span class="lv">Lv {{ game.level() }}</span> <span aria-hidden="true">{{ profileOpen() ? '▴' : '▾' }}</span>
@@ -35,6 +37,8 @@ import { SpriteView } from './sprite-view';
               <div class="bar" role="progressbar" [attr.aria-valuenow]="game.xpInto()" aria-valuemin="0" [attr.aria-valuemax]="game.xpSpan()"
                 [attr.aria-label]="game.xpInto() + ' su ' + game.xpSpan() + ' XP per il prossimo livello'"><span [style.width.%]="game.levelProgress()"></span></div>
               <p class="status">XP totali: {{ game.xp() }}</p>
+              <button type="button" class="btn share" (click)="shareProfile()">🔗 Condividi livello e XP</button>
+              <p class="status" role="status">{{ shareMessage() }}</p>
             </div>
           }
         </div>
@@ -76,6 +80,7 @@ import { SpriteView } from './sprite-view';
     .lv { background: #1b1b2f; color: var(--accent); padding: 0 6px; font-size: .55rem; }
     .menu { margin: 6px 0 0; background: #0b0b24; }
     .menu p { margin: 4px 0; }
+    .menu .share { width: 100%; margin-top: 4px; }
     .consent { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; padding: 10px 12px; background: var(--panel); border-bottom: 3px solid var(--accent); font-size: .55rem; }
     .consent span { flex: 1 1 100%; }
 
@@ -98,7 +103,25 @@ export class Navbar {
   protected readonly game = inject(GameStateService);
   protected readonly menuOpen = signal(false);
   protected readonly profileOpen = signal(false);
+  protected readonly shareMessage = signal('');
+  private readonly sharing = inject(ShareService);
   protected readonly privacyOpen = signal(false);
+
+  /**
+   * Condivide livello ed XP: il foglio di condivisione riceve il link al sito; il testo completo va negli appunti,
+   * perché LinkedIn non lo precompila.
+   */
+  protected async shareProfile(): Promise<void> {
+    this.shareMessage.set('');
+    const link = typeof location !== 'undefined' ? location.origin : '';
+    const body = levelShareText(this.game.level(), this.game.xp());
+    const r = await this.sharing.shareLink(link, body, `${body} ${link}`.trim());
+    if (r.kind === 'cancelled') return;
+    if (r.kind === 'composer') this.shareMessage.set('Ho aperto LinkedIn con il testo: il link mostrerà il tuo profilo come foto.');
+    else {
+      this.shareMessage.set(r.textCopied ? SHARE_TEXT_COPIED : 'Non è stato possibile copiare il testo.');
+    }
+  }
 
   protected toggleMenu(): void {
     this.menuOpen.update((v) => !v);
