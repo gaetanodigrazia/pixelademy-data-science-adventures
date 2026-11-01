@@ -1,6 +1,6 @@
 import { Directive, Input, OnDestroy, signal } from '@angular/core';
 import { Character, Enemy } from '../../../core/models/character.model';
-import { GameComponentInputs, GameConfig } from '../../../core/models/game.model';
+import { GameComponentInputs, GameConfig, GameResult } from '../../../core/models/game.model';
 
 export type FeedbackKind = 'info' | 'ok' | 'err';
 export interface Feedback {
@@ -23,7 +23,7 @@ export abstract class BaseGame implements GameComponentInputs, OnDestroy {
   @Input() character!: Character;
   @Input() enemy?: Enemy;
   @Input() config: GameConfig = {};
-  @Input() onCleared: () => void = () => undefined;
+  @Input() onCleared: (result?: GameResult) => void = () => undefined;
 
   protected cleared = false;
   protected readonly mistakes = signal(0);
@@ -113,12 +113,12 @@ export abstract class BaseGame implements GameComponentInputs, OnDestroy {
     this.intervals.clear();
   }
 
-  /** Segnala la vittoria: `onCleared` viene invocato una sola volta. */
+  /** Segnala la vittoria: `onCleared` viene invocato una sola volta, con gli errori commessi nel gioco. */
   protected win(): void {
     if (this.cleared) return;
     this.cleared = true;
     this.stopTimers();
-    this.onCleared();
+    this.onCleared({ mistakes: this.mistakes() });
   }
 
   ngOnDestroy(): void {
