@@ -42,9 +42,9 @@ const header = (p: ProjectSpec): string => `=== ${p.heading} ===`;
 /** Apertura del percorso «Le Variabili»: nessuna lista (non l'hanno ancora vista), solo il titolo del bollettino. */
 const openingVars = (p: ProjectSpec): string =>
   `# Bollettino automatico: ogni missione aggiunge una sezione.\n# Alla fine il programma stampa il bollettino completo.\n\nprint("=== ${p.heading} ===")\n\n`;
-/** Configurazione del quiz delle variabili: `th` è la soglia (\`alert\`), `k` la posizione della misura, `cut` il bonus. */
+/** Configurazione del quiz delle variabili: `th` è la soglia (`alert`), `k` la posizione della misura. */
 const varQuiz = (id: string, p: ProjectSpec): Record<string, unknown> => ({
-  exercise: id, name: 'misura', unit: p.a.unit, v: p.a.values, th: p.alert, thName: 'soglia', k: p.k, bonus: p.cut,
+  exercise: id, name: 'misura', unit: p.a.unit, v: p.a.values, th: p.alert, thName: 'soglia', k: p.k,
 });
 const quiz = (id: string, p: ProjectSpec): Record<string, unknown> => ({
   exercise: id, name: p.a.name, unit: p.a.unit, v: p.a.values, th: p.cut, thName: p.cutName, k: p.k,
@@ -658,34 +658,6 @@ const EXTRA: Exercise[] = [
     viz: (p) => ({
       kind: 'value', label: p.labels.count, name: 'differenza', unit: p.a.unit, values: [p.a.values[p.k], p.alert], expected: [r2(p.a.values[p.k] - p.alert)],
       note: 'Calcola misura − soglia (le due barre) e stampa la differenza.',
-    }),
-  },
-  {
-    id: 'var-cambia',
-    opening: false,
-    requires: ['var-assegna'],
-    game: QUIZ_GAME,
-    gameConfig: (p) => varQuiz('var-cambia', p),
-    concept: (p) => {
-      const m = p.a.values[p.k];
-      const body = (value: string) => `\n# 3. Una variabile può cambiare\n${p.cutName} = ${num(p.cut)}\nmisura = ${value}\nprint("${p.labels.filtered}:", misura)\n`;
-      return {
-        topic: 'Cambiare il valore di una variabile',
-        theory: [
-          { title: 'Riassegnare', body: 'Una variabile può cambiare valore: scrivendo di nuovo misura = …, il vecchio valore viene sostituito dal nuovo.' },
-          { title: 'Partire dal vecchio valore', body: 'A destra del = si può usare la variabile stessa: misura = misura + 10 prende il valore attuale, ci somma 10 e lo risalva nella stessa variabile.' },
-          { title: 'Le altre non cambiano', body: 'Cambia solo la variabile a sinistra del =: le altre variabili usate nel conto restano come erano.' },
-        ],
-        briefing: `Sezione 3. Dopo una passeggiata in più la variabile \`${p.cutName}\` vale ${num(p.cut)}. Riassegna \`misura\` sommandole \`${p.cutName}\`: misura = misura + ${p.cutName}. Il bollettino la stampa.`,
-        hint: `Metti misura sia a sinistra sia a destra del =: misura = misura + ${p.cutName}.`,
-        starter: body('None'),
-        solution: body(`misura + ${p.cutName}`),
-        lines: [`${p.labels.filtered}: ${num(m + p.cut)}`],
-      };
-    },
-    viz: (p) => ({
-      kind: 'value', label: p.labels.filtered, name: 'misura', unit: p.a.unit, values: [p.a.values[p.k], p.cut], expected: [r2(p.a.values[p.k] + p.cut)],
-      note: 'Riassegna misura sommandole il bonus (le due barre) e stampa il nuovo valore.',
     }),
   },
   {

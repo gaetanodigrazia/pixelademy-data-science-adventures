@@ -325,11 +325,11 @@ export const PATH_SEEDS: PathSeed[] = [
     characterSlug: 'nilo',
     enemySlug: 'ingorgo',
     // percorso base: esercizi propri sulle variabili, senza liste e senza Dashboard
-    exercises: ['var-assegna', 'var-calcola', 'var-cambia'],
+    exercises: ['var-assegna', 'var-calcola'],
     dashboard: false,
     project: {
       heading: 'BOLLETTINO DEL PASSAPAROLA',
-      // niente liste in questo percorso: `misura` vale a[k], `soglia` vale `alert`, il bonus vale `cut`
+      // niente liste in questo percorso: `misura` vale a[k], `soglia` vale `alert` (`cut` e le altre serie servono solo ai tipi)
       a: { name: 'passi', label: 'Passi della giornata', unit: 'passi', values: [4200, 5100, 6300, 7800, 9100, 6700, 5400] },
       b: { name: 'km', label: 'Chilometri', unit: 'km', values: [3, 4, 5, 6, 7, 5, 4] },
       c: { name: 'minuti', label: 'Minuti di cammino', unit: 'min', values: [40, 50, 60, 70, 80, 60, 50] },
@@ -349,7 +349,6 @@ export const PATH_SEEDS: PathSeed[] = [
     missions: [
       { title: 'Dai un nome al valore', story: 'Nilo registra i passi di oggi: il primo passo è dare un nome al valore con una variabile.' },
       { title: 'Conti con i nomi', story: 'L\'obiettivo giornaliero è già salvato in una variabile: quanto manca, o quanto avanza?' },
-      { title: 'Una variabile che cambia', story: 'Dopo una passeggiata in più i passi aumentano: Nilo aggiorna la stessa variabile con il bonus.' },
     ],
   },
   {

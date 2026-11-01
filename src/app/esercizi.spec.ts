@@ -192,12 +192,13 @@ describe('percorso «probabilita»', () => {
 
 describe('percorsi base: Le Variabili e Le Liste', () => {
   it('bollettini: il titolo, poi una riga per missione', () => {
-    expect(lines('variabili')).toEqual(['=== BOLLETTINO DEL PASSAPAROLA ===', 'Passi di oggi: 7800', "Passi oltre l'obiettivo: 1800", 'Passi con il bonus: 9300']);
+    expect(lines('variabili')).toEqual(['=== BOLLETTINO DEL PASSAPAROLA ===', 'Passi di oggi: 7800', "Passi oltre l'obiettivo: 1800"]);
     expect(lines('liste')).toEqual(['=== ELENCO DELLA SPESA ===', 'Prezzo del quarto articolo: 12', 'Articoli nel carrello: 5', 'Carrello aggiornato: [4, 6, 9, 2, 5, 7]']);
   });
-  it('3 missioni di difficoltà 1..3 ciascuno, senza Dashboard, con il quiz', () => {
+  it('Le Variabili (2 missioni) e Le Liste (3): difficoltà crescente, senza Dashboard, con il quiz', () => {
+    expect(path('variabili').missions.map((m) => m.difficulty)).toEqual([1, 2]);
+    expect(path('liste').missions.map((m) => m.difficulty)).toEqual([1, 2, 3]);
     for (const slug of ['variabili', 'liste']) {
-      expect(path(slug).missions.map((m) => m.difficulty)).toEqual([1, 2, 3]);
       expect(path(slug).dashboard).toBe(false);
     }
     // Le Liste riusano i minigiochi standard per leggere e contare, e il quiz per l'append
@@ -208,10 +209,9 @@ describe('percorsi base: Le Variabili e Le Liste', () => {
     const code = path('variabili').missions.at(-1)!.starterCode;
     expect(code).not.toMatch(/[\[\]]/);
   });
-  it('liste-aggiungi richiede la lista del carrello (std-2) e le variabili calcolano su var-assegna', () => {
+  it('liste-aggiungi richiede la lista del carrello (std-2) e var-calcola richiede var-assegna', () => {
     expect(EXERCISES['liste-aggiungi'].requires).toEqual(['std-2']);
     expect(EXERCISES['var-calcola'].requires).toEqual(['var-assegna']);
-    expect(EXERCISES['var-cambia'].requires).toEqual(['var-assegna']);
   });
 });
 describe('percorsi base: quiz', () => { quizCases('variabili'); });

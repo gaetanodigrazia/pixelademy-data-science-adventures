@@ -12,7 +12,7 @@ const page = await (await browser.newContext({ locale: 'it-IT', viewport: { widt
 const problems = [];
 const check = (ok, msg) => { if (!ok) problems.push(msg); };
 const ids = (slug, n) => Array.from({ length: n }, (_, i) => `adventure-core-${slug}-${String(i + 1).padStart(2, '0')}`);
-const all = () => [...ids('variabili', 3), ...ids('liste', 3), ...ids('mobilita', 3), ...ids('energia', 3), ...ids('statistica', 6), ...ids('outlier', 5), ...ids('probabilita', 4), 'challenges-pandas-01', 'challenges-pandas-02', 'challenges-pandas-03'];
+const all = () => [...ids('variabili', 2), ...ids('liste', 3), ...ids('mobilita', 3), ...ids('energia', 3), ...ids('statistica', 6), ...ids('outlier', 5), ...ids('probabilita', 4), 'challenges-pandas-01', 'challenges-pandas-02', 'challenges-pandas-03'];
 const save = (slugs) => page.evaluate((done) => localStorage.setItem('pixelademy.player.v1', JSON.stringify({ schemaVersion: 5, xp: 0, level: 1, completedMissionIds: done, solvedCode: {}, liked: false, records: {}, selectedPathId: 'adventure-core-variabili', selectedCharacterId: 'adventure-core-nilo' })), slugs);
 const catalog = async () => {
   await page.goto(`${base}/`);
@@ -40,13 +40,13 @@ await page.goto(`${base}/missione/adventure-core-mobilita-01`);
 await page.waitForTimeout(800);
 check(new URL(page.url()).pathname === '/', `una missione bloccata non rimanda alla home (${page.url()})`);
 
-await save(ids('variabili', 3));
+await save(ids('variabili', 2));
 rows = await catalog();
 check(!rows.find((r) => r.t === 'Le Liste').disabled, 'completate Le Variabili, Le Liste sono ancora bloccate');
 check(rows.find((r) => r.t === 'Centro Mobilità').disabled, 'Centro Mobilità si apre senza Le Liste');
 await page.keyboard.press('Escape');
 
-await save([...ids('variabili', 3), ...ids('liste', 3)]);
+await save([...ids('variabili', 2), ...ids('liste', 3)]);
 rows = await catalog();
 check(!rows.find((r) => r.t === 'Centro Mobilità').disabled, 'completati i percorsi base, Centro Mobilità è ancora bloccato');
 const obs = rows.find((r) => r.t === 'Osservatorio delle Nuvole');
