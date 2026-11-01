@@ -79,3 +79,92 @@ describe('Navbar', () => {
     expect(el.querySelector('#nav-items')!.classList.contains('open')).toBe(true);
   });
 });
+
+describe('Navbar: menu del profilo, chiusura con clic fuori', () => {
+  beforeEach(() => {
+    localStorage.clear();
+    TestBed.resetTestingModule();
+    TestBed.configureTestingModule({ providers: [provideRouter(routes)] });
+    useMiniPack();
+  });
+
+  async function mount() {
+    const f = TestBed.createComponent(App);
+    document.body.appendChild(f.nativeElement); // gli eventi devono arrivare al documento come in un browser vero
+    await TestBed.inject(Router).navigateByUrl('/');
+    f.detectChanges();
+    await f.whenStable();
+    f.detectChanges();
+    const el = f.nativeElement as HTMLElement;
+    const toggle = el.querySelector('.profile-btn') as HTMLButtonElement;
+    const menu = () => el.querySelector('.menu');
+    return { f, el, toggle, menu };
+  }
+
+  afterEach(() => document.body.innerHTML = '');
+
+  it('un clic fuori dal menu lo chiude', async () => {
+    const { f, el, toggle, menu } = await mount();
+    toggle.click();
+    f.detectChanges();
+    expect(menu()).not.toBeNull();
+    document.body.click();
+    f.detectChanges();
+    expect(menu()).toBeNull();
+    expect(toggle.getAttribute('aria-expanded')).toBe('false');
+    expect(el).toBeTruthy();
+  });
+
+  it('un clic su un altro punto della pagina (titolo, link, pulsante della barra) lo chiude', async () => {
+    const { f, el, toggle, menu } = await mount();
+    for (const target of [el.querySelector('.brand'), el.querySelector('a[href="/info"]'), el.querySelector('.privacy')] as HTMLElement[]) {
+      toggle.click();
+      f.detectChanges();
+      expect(menu()).not.toBeNull();
+      target.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true }));
+      f.detectChanges();
+      expect(menu(), target.className).toBeNull();
+    }
+  });
+
+  it('un clic dentro il menu non lo chiude', async () => {
+    const { f, toggle, menu } = await mount();
+    toggle.click();
+    f.detectChanges();
+    menu()!.querySelector('p')!.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+    menu()!.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+    f.detectChanges();
+    expect(menu()).not.toBeNull();
+  });
+
+  it('il pulsante del profilo lo chiude (e non lo riapre); Esc lo chiude; a menu chiuso un clic fuori non fa nulla', async () => {
+    const { f, el, toggle, menu } = await mount();
+    toggle.click();
+    f.detectChanges();
+    toggle.click();
+    f.detectChanges();
+    expect(menu()).toBeNull();
+
+    toggle.click();
+    f.detectChanges();
+    el.querySelector('app-navbar')!.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
+    f.detectChanges();
+    expect(menu()).toBeNull();
+
+    document.body.click();
+    f.detectChanges();
+    expect(menu()).toBeNull();
+    expect(toggle.getAttribute('aria-expanded')).toBe('false');
+  });
+
+  it('dopo la chiusura con un clic fuori si può riaprire', async () => {
+    const { f, toggle, menu } = await mount();
+    toggle.click();
+    f.detectChanges();
+    document.body.click();
+    f.detectChanges();
+    toggle.click();
+    f.detectChanges();
+    expect(menu()).not.toBeNull();
+  });
+});

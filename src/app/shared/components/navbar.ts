@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, HostListener, inject, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, ElementRef, HostListener, inject, signal } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { GameStateService } from '../../core/services/game-state.service';
 import { SHARE_TEXT_COPIED, ShareService } from '../../core/services/share.service';
@@ -112,6 +112,7 @@ import { SpriteView } from './sprite-view';
   `,
 })
 export class Navbar {
+  private readonly host = inject<ElementRef<HTMLElement>>(ElementRef);
   protected readonly game = inject(GameStateService);
   protected readonly i18n = inject(I18nService);
   protected readonly locales = LOCALES;
@@ -147,6 +148,15 @@ export class Navbar {
   protected openPrivacy(): void {
     this.closeMenu();
     this.privacyOpen.set(true);
+  }
+
+  /** Clic o tocco fuori dal menu del profilo (e dal suo pulsante): il menu si chiude. Dentro non lo chiude. */
+  @HostListener('document:click', ['$event'])
+  protected onDocumentClick(e: Event): void {
+    if (!this.profileOpen()) return;
+    const profile = this.host.nativeElement.querySelector('.profile');
+    if (profile && e.composedPath().includes(profile)) return;
+    this.profileOpen.set(false);
   }
 
   @HostListener('keydown.escape')
