@@ -223,3 +223,14 @@ describe('percorsi base: quiz di liste-modifica (append e pop)', () => {
     for (const st of quiz.steps) expect(st.traps.length).toBeGreaterThanOrEqual(2);
   });
 });
+
+describe('percorsi base: la teoria spiega ogni concetto usato nel quiz', () => {
+  it('«Togli e aggiungi» spiega append(), pop() e len(), che il quiz usa', () => {
+    const m = path('liste').missions[1];
+    const theory = m.theory.map((t) => `${t.title} ${t.body}`).join(' ');
+    for (const word of ['append()', 'pop()', 'len(']) expect(theory, word).toContain(word);
+    const quiz = quizFor(m.game.config as never);
+    const used = JSON.stringify(quiz).includes('len(');
+    expect(used).toBe(true);
+  });
+});
