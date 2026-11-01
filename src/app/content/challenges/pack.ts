@@ -115,6 +115,8 @@ const pack: ContentPack = {
       icon: '🐼',
       tags: ['pandas', 'dataset', 'data science'],
       missions,
+      // le sfide si aprono dopo i percorsi base (variabili e liste), come tutti gli altri
+      requires: ['adventure-core-variabili', 'adventure-core-liste'],
       dashboard: false,
       defaultCharacterId: 'adventure-core-teo',
       contributor: { name: 'Gaetano Di Grazia', url: 'https://github.com/gaetanodigrazia' },

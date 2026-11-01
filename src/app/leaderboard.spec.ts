@@ -95,7 +95,12 @@ describe('home: pulsante «Classifica»', () => {
   const btn = (el: HTMLElement, t: string) => Array.from(el.querySelectorAll('button')).find((b) => b.textContent?.includes(t)) as HTMLButtonElement;
 
   async function home(pathId: string) {
-    TestBed.inject(GameStateService).selectPath(pathId);
+    const game = TestBed.inject(GameStateService);
+    // i percorsi base (variabili, liste) sbloccano tutti gli altri
+    for (const p of TestBed.inject(ContentRegistryService).paths().filter((x) => ['adventure-core-variabili', 'adventure-core-liste'].includes(x.id))) {
+      for (const m of p.missions) game.completeMission(m, { xp: 0 });
+    }
+    game.selectPath(pathId);
     const f = TestBed.createComponent(Dashboard);
     f.detectChanges();
     await f.whenStable();

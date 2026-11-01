@@ -1,3 +1,4 @@
+import { byDependency } from '../../core/utils/path-lock';
 import { ChangeDetectionStrategy, Component, ElementRef, computed, effect, inject, signal, viewChild } from '@angular/core';
 import { Router, RouterLink } from '@angular/router';
 import { Character } from '../../core/models/character.model';
@@ -246,7 +247,7 @@ export class Dashboard {
   protected readonly query = signal('');
   protected readonly foundPaths = computed(() => {
     const q = this.norm(this.query());
-    return this.registry.paths().filter((p) => this.norm(`${p.title} ${p.description} ${p.tags.join(' ')}`).includes(q));
+    return byDependency(this.registry.paths()).filter((p) => this.norm(`${p.title} ${p.description} ${p.tags.join(' ')}`).includes(q));
   });
   protected readonly foundHeroes = computed(() => {
     const q = this.norm(this.query());

@@ -39,6 +39,13 @@ const opening = (p: ProjectSpec): string =>
   `# Bollettino automatico: ogni missione aggiunge una sezione.\n# Alla fine il programma stampa il bollettino completo.\n\n${data(p.a)}\nprint("=== ${p.heading} ===")\n\n`;
 
 const header = (p: ProjectSpec): string => `=== ${p.heading} ===`;
+/** Apertura del percorso «Le Variabili»: nessuna lista (non l'hanno ancora vista), solo il titolo del bollettino. */
+const openingVars = (p: ProjectSpec): string =>
+  `# Bollettino automatico: ogni missione aggiunge una sezione.\n# Alla fine il programma stampa il bollettino completo.\n\nprint("=== ${p.heading} ===")\n\n`;
+/** Configurazione del quiz delle variabili: `th` è la soglia (\`alert\`), `k` la posizione della misura, `cut` il bonus. */
+const varQuiz = (id: string, p: ProjectSpec): Record<string, unknown> => ({
+  exercise: id, name: 'misura', unit: p.a.unit, v: p.a.values, th: p.alert, thName: 'soglia', k: p.k, bonus: p.cut,
+});
 const quiz = (id: string, p: ProjectSpec): Record<string, unknown> => ({
   exercise: id, name: p.a.name, unit: p.a.unit, v: p.a.values, th: p.cut, thName: p.cutName, k: p.k,
 });
@@ -594,6 +601,119 @@ const EXTRA: Exercise[] = [
       kind: 'value', label: p.labels.total, name: p.a.name, unit: p.a.unit, values: p.a.values,
       expected: [Math.round((6 / 36) * 10000) / 10000],
       note: 'Conta in quanti modi due dadi sommano 7 su 36 coppie possibili e stampa la probabilità, arrotondata a 4 decimali.',
+    }),
+  },
+  // ───────────── Percorsi base: «Le Variabili» (var-*) e «Le Liste» (liste-aggiungi, dopo std-1 e std-2)
+  // Variabili: nessuna lista (non l'hanno ancora vista): i numeri vengono dal progetto, `misura` = a[k], `soglia` = alert, `bonus` = cut.
+  {
+    id: 'var-assegna',
+    opening: true,
+    game: QUIZ_GAME,
+    gameConfig: (p) => varQuiz('var-assegna', p),
+    concept: (p) => {
+      const m = p.a.values[p.k];
+      const body = (value: string) => `# 1. Crea la variabile\nmisura = ${value}\nprint("${p.labels.first}:", misura)\n`;
+      return {
+        topic: 'Creare una variabile',
+        theory: [
+          { title: 'Dare un nome a un valore', body: `Una variabile è un nome che ricorda un valore: misura = ${num(m)} crea la variabile misura e le dà il valore ${num(m)}. Il segno = significa «assegna», non «è uguale».` },
+          { title: 'Usare la variabile', body: `Dopo averla creata scrivi il nome al posto del valore: print(misura) mostra ${num(m)}. Il nome non va tra virgolette: tra virgolette sarebbe solo un testo.` },
+          { title: 'Nomi chiari', body: 'Scegli nomi che dicono cosa contengono (misura, soglia, totale): senza spazi, senza accenti e senza iniziare con un numero.' },
+        ],
+        briefing: `Inizia il bollettino. Crea la variabile \`misura\` con il valore ${num(m)} (${p.a.unit}) e lascia che il bollettino la stampi: ${p.labels.first.toLowerCase()}.`,
+        hint: 'Scrivi il nome della variabile, il segno = e il valore: misura = …',
+        starter: openingVars(p) + body('None'),
+        solution: openingVars(p) + body(num(m)),
+        lines: [header(p), `${p.labels.first}: ${num(m)}`],
+      };
+    },
+    viz: (p) => ({
+      kind: 'value', label: p.labels.first, name: 'misura', unit: p.a.unit, values: [p.a.values[p.k]], expected: [p.a.values[p.k]],
+      note: `Crea la variabile misura con il valore ${num(p.a.values[p.k])} e stampala: la barra si illumina.`,
+    }),
+  },
+  {
+    id: 'var-calcola',
+    opening: false,
+    requires: ['var-assegna'],
+    game: QUIZ_GAME,
+    gameConfig: (p) => varQuiz('var-calcola', p),
+    concept: (p) => {
+      const m = p.a.values[p.k];
+      const body = (value: string) => `\n# 2. Quanto manca all'obiettivo\nsoglia = ${num(p.alert)}\ndifferenza = ${value}\nprint("${p.labels.count}:", differenza)\n`;
+      return {
+        topic: 'Fare i conti con le variabili',
+        theory: [
+          { title: 'Operazioni', body: 'Python calcola con + (somma), - (differenza), * (prodotto) e / (divisione). Il risultato si può salvare in una nuova variabile: totale = 3 + 4.' },
+          { title: 'Variabili nei conti', body: 'Al posto dei numeri puoi usare i nomi delle variabili: differenza = misura - soglia usa i valori che misura e soglia hanno in quel momento.' },
+          { title: "L'ordine conta", body: 'Nella sottrazione l\'ordine cambia il segno: misura - soglia e soglia - misura danno risultati opposti.' },
+        ],
+        briefing: `Sezione 2. La variabile \`soglia\` è già pronta (${num(p.alert)} ${p.a.unit}). Calcola in \`differenza\` quanto \`misura\` supera \`soglia\`: misura − soglia. Il bollettino la stampa.`,
+        hint: 'Usa i nomi delle due variabili e il segno -, in questo ordine: misura - soglia.',
+        starter: body('None'),
+        solution: body('misura - soglia'),
+        lines: [`${p.labels.count}: ${num(m - p.alert)}`],
+      };
+    },
+    viz: (p) => ({
+      kind: 'value', label: p.labels.count, name: 'differenza', unit: p.a.unit, values: [p.a.values[p.k], p.alert], expected: [r2(p.a.values[p.k] - p.alert)],
+      note: 'Calcola misura − soglia (le due barre) e stampa la differenza.',
+    }),
+  },
+  {
+    id: 'var-cambia',
+    opening: false,
+    requires: ['var-assegna'],
+    game: QUIZ_GAME,
+    gameConfig: (p) => varQuiz('var-cambia', p),
+    concept: (p) => {
+      const m = p.a.values[p.k];
+      const body = (value: string) => `\n# 3. Una variabile può cambiare\n${p.cutName} = ${num(p.cut)}\nmisura = ${value}\nprint("${p.labels.filtered}:", misura)\n`;
+      return {
+        topic: 'Cambiare il valore di una variabile',
+        theory: [
+          { title: 'Riassegnare', body: 'Una variabile può cambiare valore: scrivendo di nuovo misura = …, il vecchio valore viene sostituito dal nuovo.' },
+          { title: 'Partire dal vecchio valore', body: 'A destra del = si può usare la variabile stessa: misura = misura + 10 prende il valore attuale, ci somma 10 e lo risalva nella stessa variabile.' },
+          { title: 'Le altre non cambiano', body: 'Cambia solo la variabile a sinistra del =: le altre variabili usate nel conto restano come erano.' },
+        ],
+        briefing: `Sezione 3. Dopo una passeggiata in più la variabile \`${p.cutName}\` vale ${num(p.cut)}. Riassegna \`misura\` sommandole \`${p.cutName}\`: misura = misura + ${p.cutName}. Il bollettino la stampa.`,
+        hint: `Metti misura sia a sinistra sia a destra del =: misura = misura + ${p.cutName}.`,
+        starter: body('None'),
+        solution: body(`misura + ${p.cutName}`),
+        lines: [`${p.labels.filtered}: ${num(m + p.cut)}`],
+      };
+    },
+    viz: (p) => ({
+      kind: 'value', label: p.labels.filtered, name: 'misura', unit: p.a.unit, values: [p.a.values[p.k], p.cut], expected: [r2(p.a.values[p.k] + p.cut)],
+      note: 'Riassegna misura sommandole il bonus (le due barre) e stampa il nuovo valore.',
+    }),
+  },
+  {
+    id: 'liste-aggiungi',
+    opening: false,
+    requires: ['std-2'],
+    game: QUIZ_GAME,
+    gameConfig: (p) => ({ exercise: 'liste-aggiungi', name: p.b.name, unit: p.b.unit, v: p.b.values, th: p.cut, thName: p.cutName, k: p.k }),
+    concept: (p) => {
+      const b = p.b.name;
+      const body = (code: string) => `\n# 3. Aggiungi un elemento\n${p.cutName} = ${num(p.cut)}\n${code}\nprint("${p.labels.filtered}:", ${b})\n`;
+      return {
+        topic: 'Aggiungere un elemento a una lista',
+        theory: [
+          { title: 'Le liste crescono', body: `Una lista non ha una lunghezza fissa: ${b}.append(valore) aggiunge un elemento in fondo e la lista diventa più lunga di 1.` },
+          { title: 'Cambia la lista stessa', body: `append() modifica la lista ${b}: non crea una copia e non restituisce nulla. Dopo ${b}.append(7), ${b} contiene anche 7 come ultimo elemento.` },
+          { title: 'Contare di nuovo', body: `len(${b}) dà sempre la lunghezza attuale: dopo un append è aumentata di 1.` },
+        ],
+        briefing: `Sezione 3. Nel carrello finisce un articolo nuovo: la variabile \`${p.cutName}\` vale ${num(p.cut)}. Aggiungila alla lista \`${b}\` con append() e lascia che il bollettino stampi la lista aggiornata.`,
+        hint: `Chiama il metodo append sulla lista, con la variabile tra parentesi: ${b}.append(${p.cutName}).`,
+        starter: body(`# scrivi qui l'istruzione che aggiunge ${p.cutName} a ${b}`),
+        solution: body(`${b}.append(${p.cutName})`),
+        lines: [`${p.labels.filtered}: ${list([...p.b.values, p.cut])}`],
+      };
+    },
+    viz: (p) => ({
+      kind: 'pick', label: p.labels.filtered, name: p.b.name, unit: p.b.unit, values: [...p.b.values, p.cut], expected: [...p.b.values, p.cut],
+      note: `Aggiungi ${num(p.cut)} alla lista e stampala: tutte le barre, compresa quella nuova, si illumineranno.`,
     }),
   },
 ];

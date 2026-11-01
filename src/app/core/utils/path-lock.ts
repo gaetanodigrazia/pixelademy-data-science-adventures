@@ -20,8 +20,19 @@ export function missingRequirements(path: LearningPath, paths: readonly Learning
 export const isPathUnlocked = (path: LearningPath, paths: readonly LearningPath[], completed: ReadonlySet<string>): boolean =>
   missingRequirements(path, paths, completed).length === 0;
 
+/** I percorsi in ordine di dipendenza (prima i base, poi quelli che li richiedono); a pari livello resta l'ordine dei contenuti. */
+export function byDependency(paths: readonly LearningPath[]): LearningPath[] {
+  const depth = (p: LearningPath, seen: ReadonlySet<string> = new Set()): number => {
+    if (seen.has(p.id)) return 0;
+    const next = new Set(seen).add(p.id);
+    return Math.max(-1, ...(p.requires ?? []).map((id) => paths.find((x) => x.id === id)).filter((x): x is LearningPath => !!x).map((x) => depth(x, next))) + 1;
+  };
+  return paths.map((p, i) => ({ p, i, d: depth(p) })).sort((a, b) => a.d - b.d || a.i - b.i).map((x) => x.p);
+}
+
 /** Il primo percorso sbloccato (quello con cui si parte). */
 export function firstUnlocked(paths: readonly LearningPath[], completed: ReadonlySet<string>): LearningPath | undefined {
+  paths = byDependency(paths);
   return paths.find((p) => isPathUnlocked(p, paths, completed)) ?? paths[0];
 }
 

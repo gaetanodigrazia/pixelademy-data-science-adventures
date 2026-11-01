@@ -9,16 +9,18 @@ describe('GameStateService', () => {
     TestBed.resetTestingModule();
   });
 
-  it('parte dal primo percorso sbloccato (Centro Mobilità: l\'Osservatorio richiede di averlo completato) con il suo personaggio predefinito', () => {
+  it('parte dal primo percorso sbloccato (Le Variabili: gli altri richiedono i percorsi base) con il suo personaggio predefinito', () => {
     const g = TestBed.inject(GameStateService);
-    const path = TestBed.inject(ContentRegistryService).paths().find((p) => p.id === 'adventure-core-mobilita')!;
+    const path = TestBed.inject(ContentRegistryService).paths().find((p) => p.id === 'adventure-core-variabili')!;
     expect(g.state().selectedPathId).toBe(path.id);
     expect(g.state().selectedCharacterId).toBe(path.defaultCharacterId);
   });
 
   it('selezionando un percorso sbloccato imposta il suo personaggio predefinito', () => {
     const g = TestBed.inject(GameStateService);
-    const path = TestBed.inject(ContentRegistryService).paths().find((p) => p.id === 'adventure-core-energia')!;
+    const reg = TestBed.inject(ContentRegistryService);
+    for (const m of reg.paths().find((p) => p.id === 'adventure-core-variabili')!.missions) g.completeMission(m, { xp: 0 });
+    const path = reg.paths().find((p) => p.id === 'adventure-core-liste')!;
     g.selectPath(path.id);
     expect(g.state().selectedCharacterId).toBe(path.defaultCharacterId);
   });
@@ -36,7 +38,7 @@ describe('GameStateService', () => {
     const reg = TestBed.inject(ContentRegistryService);
     const g = TestBed.inject(GameStateService);
     g.acceptSaving();
-    const path = reg.paths()[0];
+    const path = reg.paths().find((p) => p.id === 'adventure-core-nuvole')!;
     for (const m of path.missions) g.completeMission(m);
     expect(g.xp()).toBe(path.missions.reduce((s, m) => s + m.xp, 0));
     expect(g.level()).toBeGreaterThan(1);
@@ -66,7 +68,7 @@ describe('GameStateService', () => {
   it('sblocca le missioni in sequenza', () => {
     const g = TestBed.inject(GameStateService);
     const ms = TestBed.inject(MissionService);
-    const path = TestBed.inject(ContentRegistryService).paths().find((p) => p.id === 'adventure-core-mobilita')!;
+    const path = TestBed.inject(ContentRegistryService).paths().find((p) => p.id === 'adventure-core-variabili')!;
     expect(ms.status(path.missions[0])).toBe('available');
     expect(ms.status(path.missions[1])).toBe('locked');
     g.completeMission(path.missions[0]);
@@ -75,7 +77,7 @@ describe('GameStateService', () => {
 
   it('assegna gli XP calcolati e conserva il codice come pezzo di progetto', () => {
     const g = TestBed.inject(GameStateService);
-    const m = TestBed.inject(ContentRegistryService).paths()[0].missions[0];
+    const m = TestBed.inject(ContentRegistryService).paths().find((p) => p.id === 'adventure-core-nuvole')!.missions[0];
     const r = g.completeMission(m, { xp: 7, code: 'print(1)' });
     expect(r.gainedXp).toBe(7);
     expect(g.xp()).toBe(7);

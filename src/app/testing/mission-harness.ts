@@ -9,7 +9,8 @@ import { GameStateService } from '../core/services/game-state.service';
 import { PythonRunnerService } from '../core/services/python-runner.service';
 import { CodeEditor } from '../shared/components/code-editor';
 
-export const path = PACKS[0].paths[0];
+/** Il percorso con cui giocano i test: l'Osservatorio delle Nuvole (i percorsi base vengono prima nel catalogo). */
+export const path = PACKS[0].paths.find((p) => p.id === 'adventure-core-nuvole')!;
 
 export const btn = (el: HTMLElement, text: string) => Array.from(el.querySelectorAll('button')).find((b) => b.textContent?.includes(text)) as HTMLButtonElement;
 /** Un pulsante dentro la modale aperta (a differenza di `btn`, non confonde pulsanti omonimi della pagina sotto). */
@@ -22,8 +23,12 @@ export const dialogBtn = (el: HTMLElement, text: string) =>
  */
 export function unlockPaths(): void {
   const game = TestBed.inject(GameStateService);
-  const required = TestBed.inject(ContentRegistryService).paths().find((p) => p.id === 'adventure-core-mobilita')!;
-  for (const m of required.missions) game.completeMission(m, { xp: 0 });
+  const paths = TestBed.inject(ContentRegistryService).paths();
+  // i percorsi base (variabili, liste) sbloccano tutti gli altri; Centro Mobilità sblocca l'Osservatorio
+  for (const id of ['variabili', 'liste', 'mobilita']) {
+    for (const m of paths.find((p) => p.id === `adventure-core-${id}`)!.missions) game.completeMission(m, { xp: 0 });
+  }
+  game.selectPath('adventure-core-nuvole');
 }
 
 /** Prepara il TestBed con il router e un Python finto (nessun download dalla CDN). */

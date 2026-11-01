@@ -34,6 +34,8 @@ export interface QuizConfig {
   th: number;
   thName: string;
   k: number;
+  /** Un secondo valore (es. il bonus delle variabili). */
+  bonus?: number;
 }
 
 const GENERIC = 'Ricalcola con calma: il passo precedente ti dà i numeri che servono.';
@@ -804,6 +806,141 @@ function sommaDadi(): Quiz {
   };
 }
 
+function varAssegna(c: QuizConfig): Quiz {
+  const m = c.v[c.k];
+  const other = c.v.find((x) => x !== m) ?? m + 1;
+  return {
+    title: 'Crea una variabile',
+    goal: 'Esegui il codice a mano: scegli cosa contiene la variabile e cosa stampa il programma.',
+    code: [`misura = ${fmt(m)}`, `print("Misura:", misura)`],
+    steps: [
+      {
+        prompt: 'misura → ?', correct: fmt(m), line: 0,
+        traps: str([
+          { label: 'misura', why: 'Senza virgolette il nome indica la variabile: il programma usa il suo valore, non la parola.' },
+          { label: fmt(other), why: `La variabile vale quello che le assegni con =: qui ${fmt(m)}.` },
+          { label: '0', why: 'Una variabile parte da zero solo se le assegni 0: qui le assegni un altro valore.' },
+        ], fmt(m), near(m)),
+        hit: `misura = ${fmt(m)}: da ora il nome misura vale ${fmt(m)}.`,
+      },
+      {
+        prompt: 'print("Misura:", misura) → ?', correct: `Misura: ${fmt(m)}`, line: 1, vars: `misura = ${fmt(m)}`,
+        traps: str([
+          { label: 'Misura: misura', why: 'Il nome della variabile non è tra virgolette: print mostra il suo valore.' },
+          { label: `Misura ${fmt(m)}`, why: 'Il testo è "Misura:" con i due punti: print lo ripete uguale.' },
+          { label: fmt(m), why: 'print mostra anche il testo "Misura:" prima del valore.' },
+        ], `Misura: ${fmt(m)}`, near(m).map((x) => `Misura: ${x}`)),
+        hit: `print mostra il testo e poi il valore della variabile: Misura: ${fmt(m)}.`,
+      },
+    ],
+  };
+}
+
+function varCalcola(c: QuizConfig): Quiz {
+  const m = c.v[c.k];
+  const s = c.th;
+  const d = (m - s);
+  return {
+    title: 'Fai i conti con le variabili',
+    goal: 'Esegui il codice a mano: scegli il valore di ogni variabile, fino alla differenza.',
+    code: [`misura = ${fmt(m)}`, `soglia = ${fmt(s)}`, 'differenza = misura - soglia'],
+    steps: [
+      {
+        prompt: 'soglia → ?', correct: fmt(s), line: 1,
+        traps: str([
+          { label: fmt(m), why: 'Quello è il valore di misura: soglia ha un valore suo.' },
+          { label: fmt((m + s)), why: 'Quella è la somma delle due: la riga assegna solo il valore di soglia.' },
+        ], fmt(s), near(s)),
+        hit: `soglia = ${fmt(s)}: è il valore che la riga le assegna.`,
+      },
+      {
+        prompt: `differenza = ${fmt(m)} - ${fmt(s)} → ?`, correct: fmt(d), line: 2, vars: `misura = ${fmt(m)} · soglia = ${fmt(s)}`,
+        traps: str([
+          { label: fmt((s - m)), why: 'Così sottrai al contrario: serve misura − soglia, in quest\'ordine.' },
+          { label: fmt((m + s)), why: 'Hai sommato: qui c\'è il segno meno.' },
+          { label: fmt(m), why: 'Hai dimenticato di togliere soglia.' },
+        ], fmt(d), near(d)),
+        hit: `differenza = ${fmt(m)} - ${fmt(s)} → ${fmt(d)}: i nomi valgono i numeri che contengono.`,
+      },
+    ],
+  };
+}
+
+function varCambia(c: QuizConfig): Quiz {
+  const m = c.v[c.k];
+  const b = c.bonus ?? 5;
+  const r = (m + b);
+  return {
+    title: 'Cambia il valore di una variabile',
+    goal: 'Esegui il codice a mano: segui come cambia misura dopo la riassegnazione.',
+    code: [`misura = ${fmt(m)}`, `bonus = ${fmt(b)}`, 'misura = misura + bonus'],
+    steps: [
+      {
+        prompt: 'misura (prima della riga 3) → ?', correct: fmt(m), line: 0,
+        traps: str([
+          { label: fmt(r), why: 'Quello sarà il valore dopo la riga 3: per ora misura non è ancora cambiata.' },
+          { label: fmt(b), why: 'Quello è il valore di bonus, non di misura.' },
+        ], fmt(m), near(m)),
+        hit: `Fino alla riga 3 misura vale ${fmt(m)}.`,
+      },
+      {
+        prompt: `misura + bonus = ${fmt(m)} + ${fmt(b)} → ?`, correct: fmt(r), line: 2, vars: `misura = ${fmt(m)} · bonus = ${fmt(b)}`,
+        traps: str([
+          { label: fmt((m - b)), why: 'Qui c\'è il segno più: i due valori si sommano.' },
+          { label: fmt(m), why: 'Hai ignorato bonus: il conto usa entrambi i valori.' },
+          { label: fmt(b), why: 'Hai tenuto solo bonus: a sinistra del + c\'è anche misura.' },
+        ], fmt(r), near(r)),
+        hit: `${fmt(m)} + ${fmt(b)} → ${fmt(r)}: Python calcola il lato destro con i valori attuali.`,
+      },
+      {
+        prompt: 'misura (dopo la riga 3) → ?', correct: fmt(r), line: 2, vars: `misura = ${fmt(m)} · bonus = ${fmt(b)}`,
+        traps: str([
+          { label: fmt(m), why: 'Il vecchio valore è stato sostituito: la riassegnazione salva il nuovo risultato.' },
+          { label: fmt(b), why: 'bonus non cambia, ma misura sì: ora vale la somma.' },
+        ], fmt(r), near(r)),
+        hit: `Ora misura vale ${fmt(r)}: la riassegnazione ha sostituito ${fmt(m)}.`,
+      },
+    ],
+  };
+}
+
+function listeAggiungi(c: QuizConfig): Quiz {
+  const { name: n, v } = c;
+  const x = c.th;
+  const after = [...v, x];
+  return {
+    title: 'Aggiungi un elemento',
+    goal: 'Esegui il codice a mano: segui la lista prima e dopo append().',
+    code: [`${n} = ${list(v)}`, `${c.thName} = ${fmt(x)}`, `${n}.append(${c.thName})`],
+    steps: [
+      {
+        prompt: `len(${n}) (prima di append) → ?`, correct: String(v.length), line: 0,
+        traps: str([
+          { label: String(v.length + 1), why: "Quella sarà la lunghezza dopo append(): per ora l'elemento non c'è." },
+          { label: String(v.length - 1), why: "len() conta tutti gli elementi: nessuno è escluso." },
+        ], String(v.length), [String(v.length + 2)]),
+        hit: `len(${n}) → ${v.length}: gli elementi della lista.`,
+      },
+      {
+        prompt: `${n}[-1] (dopo append) → ?`, correct: fmt(x), line: 2, vars: `${c.thName} = ${fmt(x)}`,
+        traps: str([
+          { label: fmt(v[v.length - 1]), why: "Quello era l'ultimo prima: append() aggiunge in fondo, quindi ora l'ultimo è il nuovo." },
+          { label: fmt(v[0]), why: "append() non aggiunge all'inizio ma in fondo." },
+        ], fmt(x), near(x)),
+        hit: `append() mette ${fmt(x)} in fondo: ${n}[-1] → ${fmt(x)}.`,
+      },
+      {
+        prompt: `len(${n}) (dopo append) → ?`, correct: String(after.length), line: 2,
+        traps: str([
+          { label: String(v.length), why: 'append() modifica la lista: ora ha un elemento in più.' },
+          { label: String(after.length + 1), why: 'append() aggiunge un solo elemento.' },
+        ], String(after.length), [String(after.length - 2)]),
+        hit: `len(${n}) → ${after.length}: la lista è cresciuta di 1.`,
+      },
+    ],
+  };
+}
+
 /** Il quiz di un esercizio: codice mostrato e passi (domanda, risposta giusta, sviste spiegate). */
 export function quizFor(c: QuizConfig): Quiz {
   switch (c.exercise) {
@@ -825,6 +962,10 @@ export function quizFor(c: QuizConfig): Quiz {
     case 'valore-atteso': return valoreAtteso();
     case 'scostamento': return scostamento(c);
     case 'somma-dadi': return sommaDadi();
+    case 'var-assegna': return varAssegna(c);
+    case 'var-calcola': return varCalcola(c);
+    case 'var-cambia': return varCambia(c);
+    case 'liste-aggiungi': return listeAggiungi(c);
     default: throw new Error(`Esercizio sconosciuto per il minigioco: ${c.exercise}`);
   }
 }
