@@ -1,5 +1,7 @@
-import { ChangeDetectionStrategy, Component, ElementRef, HostListener, inject, signal } from '@angular/core';
-import { RouterLink } from '@angular/router';
+import { ChangeDetectionStrategy, Component, computed, ElementRef, HostListener, inject, signal } from '@angular/core';
+import { toSignal } from '@angular/core/rxjs-interop';
+import { NavigationEnd, Router, RouterLink } from '@angular/router';
+import { filter, map } from 'rxjs';
 import { GameStateService } from '../../core/services/game-state.service';
 import { SHARE_TEXT_COPIED, ShareService } from '../../core/services/share.service';
 import { levelShareText } from '../../core/utils/share-image';
@@ -20,7 +22,7 @@ import { SpriteView } from './sprite-view';
 
       <div id="nav-items" class="items" [class.open]="menuOpen()">
         <div class="links">
-          <a routerLink="/" class="btn home" (click)="closeMenu()">{{ 'nav.home' | t }}</a>
+          @if (!onHome()) { <a routerLink="/" class="btn home" (click)="closeMenu()">{{ 'nav.home' | t }}</a> }
           <a routerLink="/info" class="btn info" (click)="closeMenu()">{{ 'nav.project' | t }}</a>
         </div>
 
@@ -113,6 +115,10 @@ import { SpriteView } from './sprite-view';
 })
 export class Navbar {
   private readonly host = inject<ElementRef<HTMLElement>>(ElementRef);
+  private readonly router = inject(Router);
+  /** Sulla home il pulsante «Home» non serve. */
+  private readonly url = toSignal(this.router.events.pipe(filter((e) => e instanceof NavigationEnd), map(() => this.router.url)), { initialValue: this.router.url });
+  protected readonly onHome = computed(() => (this.url() ?? '/').split(/[?#]/)[0] === '/');
   protected readonly game = inject(GameStateService);
   protected readonly i18n = inject(I18nService);
   protected readonly locales = LOCALES;

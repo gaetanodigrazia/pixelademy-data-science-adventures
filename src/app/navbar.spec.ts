@@ -168,3 +168,22 @@ describe('Navbar: menu del profilo, chiusura con clic fuori', () => {
     expect(menu()).not.toBeNull();
   });
 });
+
+describe('Navbar: pulsante Home', () => {
+  it('non c\'è sulla home, compare nelle altre pagine', async () => {
+    const { TestBed: TB } = await import('@angular/core/testing');
+    const { Router, provideRouter } = await import('@angular/router');
+    const { App } = await import('./app');
+    const { routes } = await import('./app.routes');
+    localStorage.clear(); sessionStorage.clear();
+    TB.resetTestingModule();
+    TB.configureTestingModule({ providers: [provideRouter(routes)] });
+    const f = TB.createComponent(App);
+    const go = async (u: string) => { await TB.inject(Router).navigateByUrl(u); f.detectChanges(); await f.whenStable(); f.detectChanges(); };
+    await go('/');
+    expect(f.nativeElement.querySelector('.btn.home')).toBeNull();
+    expect(f.nativeElement.querySelector('.brand')).not.toBeNull();
+    await go('/info');
+    expect(f.nativeElement.querySelector('.btn.home')).not.toBeNull();
+  });
+});
