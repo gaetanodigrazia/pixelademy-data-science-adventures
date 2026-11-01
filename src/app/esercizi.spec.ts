@@ -193,7 +193,7 @@ describe('percorso «probabilita»', () => {
 describe('percorsi base: Le Variabili e Le Liste', () => {
   it('bollettini: il titolo, poi una riga per missione', () => {
     expect(lines('variabili')).toEqual(['=== BOLLETTINO DEL PASSAPAROLA ===', 'Passi di oggi: 7800', "Passi oltre l'obiettivo: 1800"]);
-    expect(lines('liste')).toEqual(['=== ELENCO DELLA SPESA ===', 'Prezzo del quarto articolo: 12', 'Articoli nel carrello: 5', 'Carrello aggiornato: [4, 6, 9, 2, 5, 7]']);
+    expect(lines('liste')).toEqual(['=== ELENCO DELLA SPESA ===', 'Prezzo del quarto articolo: 12', 'Carrello aggiornato: [4, 6, 9, 2, 7]', 'Articoli nel carrello: 5']);
   });
   it('Le Variabili (2 missioni) e Le Liste (3): difficoltà crescente, senza Dashboard, con il quiz', () => {
     expect(path('variabili').missions.map((m) => m.difficulty)).toEqual([1, 2]);
@@ -201,25 +201,25 @@ describe('percorsi base: Le Variabili e Le Liste', () => {
     for (const slug of ['variabili', 'liste']) {
       expect(path(slug).dashboard).toBe(false);
     }
-    // Le Liste riusano i minigiochi standard per leggere e contare, e il quiz per l'append
+    // Le Liste riusano i minigiochi standard per leggere e contare, e il quiz per append e pop
     for (const m of path('variabili').missions) expect(m.game.type).toBe(QUIZ_GAME);
-    expect(path('liste').missions.map((m) => m.game.type === QUIZ_GAME)).toEqual([false, false, true]);
+    expect(path('liste').missions.map((m) => m.game.type === QUIZ_GAME)).toEqual([false, true, false]);
   });
   it('Le Variabili non usano ancora le liste (niente parentesi quadre nel codice)', () => {
     const code = path('variabili').missions.at(-1)!.starterCode;
     expect(code).not.toMatch(/[\[\]]/);
   });
-  it('liste-aggiungi richiede la lista del carrello (std-2) e var-calcola richiede var-assegna', () => {
-    expect(EXERCISES['liste-aggiungi'].requires).toEqual(['std-2']);
+  it('liste-modifica non richiede altro (ha i suoi dati) e var-calcola richiede var-assegna', () => {
+    expect(EXERCISES['liste-modifica'].requires).toBeUndefined();
     expect(EXERCISES['var-calcola'].requires).toEqual(['var-assegna']);
   });
 });
 describe('percorsi base: quiz', () => { quizCases('variabili'); });
-describe('percorsi base: quiz di liste-aggiungi', () => {
-  const m = path('liste').missions[2];
+describe('percorsi base: quiz di liste-modifica (append e pop)', () => {
+  const m = path('liste').missions[1];
   it(`${m.id}: passi con risposta giusta e almeno 2 sviste spiegate`, () => {
     const quiz = quizFor(m.game.config as never);
-    expect(quiz.steps.length).toBe(3);
+    expect(quiz.steps.length).toBe(4);
     for (const st of quiz.steps) expect(st.traps.length).toBeGreaterThanOrEqual(2);
   });
 });

@@ -603,7 +603,7 @@ const EXTRA: Exercise[] = [
       note: 'Conta in quanti modi due dadi sommano 7 su 36 coppie possibili e stampa la probabilità, arrotondata a 4 decimali.',
     }),
   },
-  // ───────────── Percorsi base: «Le Variabili» (var-*) e «Le Liste» (liste-aggiungi, dopo std-1 e std-2)
+  // ───────────── Percorsi base: «Le Variabili» (var-*) e «Le Liste» (liste-modifica, dopo std-1 e std-2)
   // Variabili: nessuna lista (non l'hanno ancora vista): i numeri vengono dal progetto, `misura` = a[k], `soglia` = alert, `bonus` = cut.
   {
     id: 'var-assegna',
@@ -661,31 +661,32 @@ const EXTRA: Exercise[] = [
     }),
   },
   {
-    id: 'liste-aggiungi',
+    id: 'liste-modifica',
     opening: false,
-    requires: ['std-2'],
     game: QUIZ_GAME,
-    gameConfig: (p) => ({ exercise: 'liste-aggiungi', name: p.b.name, unit: p.b.unit, v: p.b.values, th: p.cut, thName: p.cutName, k: p.k }),
+    gameConfig: (p) => ({ exercise: 'liste-modifica', name: p.b.name, unit: p.b.unit, v: p.b.values, th: p.cut, thName: p.cutName, k: p.k }),
     concept: (p) => {
       const b = p.b.name;
-      const body = (code: string) => `\n# 3. Aggiungi un elemento\n${p.cutName} = ${num(p.cut)}\n${code}\nprint("${p.labels.filtered}:", ${b})\n`;
+      const last = p.b.values[p.b.values.length - 1];
+      const final = [...p.b.values.slice(0, -1), p.cut];
+      const body = (code: string) => `\n# 2. Aggiungi e togli elementi\n${data(p.b)}\n${p.cutName} = ${num(p.cut)}\n${code}\nprint("${p.labels.filtered}:", ${b})\n`;
       return {
-        topic: 'Aggiungere un elemento a una lista',
+        topic: 'Aggiungere e togliere elementi: append() e pop()',
         theory: [
-          { title: 'Le liste crescono', body: `Una lista non ha una lunghezza fissa: ${b}.append(valore) aggiunge un elemento in fondo e la lista diventa più lunga di 1.` },
-          { title: 'Cambia la lista stessa', body: `append() modifica la lista ${b}: non crea una copia e non restituisce nulla. Dopo ${b}.append(7), ${b} contiene anche 7 come ultimo elemento.` },
-          { title: 'Contare di nuovo', body: `len(${b}) dà sempre la lunghezza attuale: dopo un append è aumentata di 1.` },
+          { title: 'append(): aggiunge in coda', body: `${b}.append(valore) mette un elemento in fondo alla lista, che diventa più lunga di 1. Modifica la lista stessa: non crea una copia e non restituisce nulla.` },
+          { title: 'pop(): toglie l\'ultimo', body: `${b}.pop() toglie l'ultimo elemento e lo restituisce: rimosso = ${b}.pop() salva in rimosso il valore tolto (qui ${num(last)}) e la lista diventa più corta di 1. Su una lista vuota dà errore.` },
+          { title: 'Cambia la lista, non la riga prima', body: `Dopo append() e pop() la lista ha un contenuto nuovo: ogni istruzione lavora sulla lista com'è in quel momento, nell'ordine in cui le scrivi.` },
         ],
-        briefing: `Sezione 3. Nel carrello finisce un articolo nuovo: la variabile \`${p.cutName}\` vale ${num(p.cut)}. Aggiungila alla lista \`${b}\` con append() e lascia che il bollettino stampi la lista aggiornata.`,
-        hint: `Chiama il metodo append sulla lista, con la variabile tra parentesi: ${b}.append(${p.cutName}).`,
-        starter: body(`# scrivi qui l'istruzione che aggiunge ${p.cutName} a ${b}`),
-        solution: body(`${b}.append(${p.cutName})`),
-        lines: [`${p.labels.filtered}: ${list([...p.b.values, p.cut])}`],
+        briefing: `Sezione 2. Un articolo viene tolto dal carrello e un altro viene aggiunto. Con pop() togli l'ultimo elemento di \`${b}\` (salvalo in \`rimosso\`), poi aggiungi con append() la variabile \`${p.cutName}\` (${num(p.cut)} ${p.b.unit}). Il bollettino stampa la lista aggiornata.`,
+        hint: `Due istruzioni, in quest'ordine: rimosso = ${b}.pop() e poi ${b}.append(${p.cutName}).`,
+        starter: body(`rimosso = None   # togli l'ultimo elemento con pop()\n# aggiungi ${p.cutName} in coda con append()`),
+        solution: body(`rimosso = ${b}.pop()\n${b}.append(${p.cutName})`),
+        lines: [`${p.labels.filtered}: ${list(final)}`],
       };
     },
     viz: (p) => ({
-      kind: 'pick', label: p.labels.filtered, name: p.b.name, unit: p.b.unit, values: [...p.b.values, p.cut], expected: [...p.b.values, p.cut],
-      note: `Aggiungi ${num(p.cut)} alla lista e stampala: tutte le barre, compresa quella nuova, si illumineranno.`,
+      kind: 'pick', label: p.labels.filtered, name: p.b.name, unit: p.b.unit, values: [...p.b.values, p.cut], expected: [...p.b.values.slice(0, -1), p.cut],
+      note: `Togli l'ultimo elemento, aggiungi ${num(p.cut)} e stampa la lista: si illuminano le barre rimaste e quella nuova.`,
     }),
   },
 ];
