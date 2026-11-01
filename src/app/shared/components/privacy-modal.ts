@@ -20,12 +20,6 @@ import { GameStateService } from '../../core/services/game-state.service';
           </header>
           <p>{{ 'privacy.p1' | t }}</p>
           <p>{{ 'privacy.p2' | t }}</p>
-          <p>
-            <label class="opt"><input type="checkbox" [checked]="game.state().telemetry" [disabled]="game.consent() !== 'granted'"
-              (change)="setTelemetry($any($event.target).checked)" />
-              {{ 'privacy.optin' | t }}</label>
-          </p>
-          <p class="status">{{ 'privacy.optinInfo' | t }}</p>
           <p class="status">{{ 'privacy.state' | t }} <strong>{{ consentLabel() }}</strong></p>
           <div class="actions">
             <button type="button" class="btn primary" [disabled]="game.consent() === 'granted'" (click)="run(() => game.acceptSaving(), 'privacy.msgAccepted')">{{ 'privacy.accept' | t }}</button>
@@ -47,7 +41,6 @@ import { GameStateService } from '../../core/services/game-state.service';
     .dialog { width: 100%; max-width: 520px; margin: 0; max-height: 100%; overflow-y: auto; }
     .dialog:focus { outline: none; }
     .head { display: flex; justify-content: space-between; align-items: center; gap: 8px; }
-    .opt { display: flex; gap: 8px; align-items: center; cursor: pointer; }
     .actions { display: grid; gap: 8px; margin: 12px 0; }
     @media (min-width: 520px) { .actions { grid-template-columns: 1fr 1fr; } }
   `,
@@ -74,11 +67,6 @@ export class PrivacyModal {
         this.message.set('');
       });
     });
-  }
-
-  protected setTelemetry(on: boolean): void {
-    this.game.setTelemetry(on);
-    this.message.set(this.i18n.t(on ? 'privacy.msgTelemOn' : 'privacy.msgTelemOff'));
   }
 
   protected consentLabel(): string {

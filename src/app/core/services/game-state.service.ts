@@ -36,7 +36,10 @@ export class GameStateService {
   constructor() {
     const consent = this.read(CONSENT_KEY);
     if (consent === 'granted' || consent === 'denied') this.consent.set(consent);
-    if (consent === 'granted') this.state.set(this.normalize(this.readState()));
+    if (consent === 'granted') {
+      this.state.set(this.normalize(this.readState()));
+      this.persist(); // il salvataggio si riscrive subito nella versione corrente (campi vecchi scartati, dati rovinati riparati)
+    }
   }
 
   acceptSaving(): void {
@@ -63,11 +66,6 @@ export class GameStateService {
   markLiked(): void {
     this.state.update((s) => ({ ...s, liked: true }));
     this.persist();
-  }
-
-  /** Opt-in alle statistiche anonime (si può attivare solo con il salvataggio acconsentito). */
-  setTelemetry(on: boolean): void {
-    this.update({ telemetry: on && this.consent() === 'granted' });
   }
 
   /** Ricorda la lingua scelta (si salva solo con il consenso, come il resto). */
@@ -167,7 +165,6 @@ export class GameStateService {
       completedMissionIds: [],
       solvedCode: {},
       liked: false,
-      telemetry: false,
       records: {},
       selectedPathId: path?.id ?? '',
       selectedCharacterId: path?.defaultCharacterId ?? this.registry.characters()[0]?.id ?? '',
@@ -194,7 +191,6 @@ export class GameStateService {
         Object.entries(raw.solvedCode ?? {}).filter(([id, code]) => ids.has(id) && typeof code === 'string'),
       ),
       liked: raw.liked === true,
-      telemetry: raw.telemetry === true,
       records: this.validRecords(raw.records, ids),
       ...(raw.locale === 'it' || raw.locale === 'en' ? { locale: raw.locale } : {}),
       selectedPathId: path?.id ?? base.selectedPathId,

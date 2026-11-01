@@ -14,7 +14,7 @@ const ids = (n) => Array.from({ length: n }, (_, i) => `adventure-core-nuvole-${
 await page.goto(base);
 await page.evaluate((done) => {
   localStorage.setItem('pixelademy.consent.v1', 'granted');
-  localStorage.setItem('pixelademy.player.v1', JSON.stringify({ schemaVersion: 5, xp: 20, level: 1, completedMissionIds: done, solvedCode: {}, liked: false, telemetry: false, records: {}, selectedPathId: 'adventure-core-nuvole', selectedCharacterId: 'adventure-core-aura' }));
+  localStorage.setItem('pixelademy.player.v1', JSON.stringify({ schemaVersion: 5, xp: 20, level: 1, completedMissionIds: done, solvedCode: {}, liked: false, records: {}, selectedPathId: 'adventure-core-nuvole', selectedCharacterId: 'adventure-core-aura' }));
   sessionStorage.clear();
 }, ids(2));
 

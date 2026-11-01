@@ -25,8 +25,6 @@ export const IT = {
   'privacy.close': 'Chiudi',
   'privacy.p1': 'Pixelademy non ha server né account. Se lo consenti, XP, livello, missioni e scelte vengono salvati solo in questo browser (localStorage). Non raccogliamo dati personali.',
   'privacy.p2': 'Il pulsante «Mi piace» è anonimo: invia una richiesta vuota che aumenta di 1 un contatore e non salva nulla di te (nessun nome, cookie o identificativo). Come per ogni sito, il servizio di hosting vede l\'indirizzo IP della richiesta ma noi non lo leggiamo né lo salviamo.',
-  'privacy.optin': 'Contribuisci con statistiche anonime (facoltativo)',
-  'privacy.optinInfo': 'Se attivo (serve il salvataggio), per ogni missione contiamo soltanto quanti tentativi sono serviti e se è stata superata o lasciata: un contatore per missione, senza identificativi, cookie o dati personali. Ci aiuta a capire dove i contenuti sono troppo difficili.',
   'privacy.state': 'Stato:',
   'privacy.granted': 'salvataggio attivo',
   'privacy.denied': 'uso senza salvataggio',
@@ -45,8 +43,6 @@ export const IT = {
   'privacy.msgExported': 'File dei progressi scaricato.',
   'privacy.msgImported': 'Progressi importati.',
   'privacy.msgInvalid': 'Il file non è valido: nessun dato è stato cambiato.',
-  'privacy.msgTelemOn': 'Statistiche anonime attivate: grazie!',
-  'privacy.msgTelemOff': 'Statistiche anonime disattivate.',
   // home
   'home.emptyTitle': 'Nessun contenuto disponibile',
   'home.emptyText': 'Non ci sono percorsi installati. Aggiungi un pack in src/app/content/ ed esegui npm run packs.',

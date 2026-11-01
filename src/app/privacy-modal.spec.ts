@@ -98,42 +98,20 @@ describe('PrivacyModal', () => {
   });
 });
 
-describe('PrivacyModal: statistiche anonime (opt-in)', () => {
+describe('PrivacyModal: nessuna raccolta di statistiche', () => {
   beforeEach(() => {
     localStorage.clear();
     TestBed.resetTestingModule();
   });
 
-  function mount() {
+  it('non c\'è nessuna casella né testo sulle statistiche anonime: solo il salvataggio locale', () => {
     useMiniPack();
     const f = TestBed.createComponent(PrivacyModal);
     f.componentRef.setInput('open', true);
     f.detectChanges();
-    return { f, el: f.nativeElement as HTMLElement, game: TestBed.inject(GameStateService) };
-  }
-  const box = (el: HTMLElement) => el.querySelector('input[type=checkbox]') as HTMLInputElement;
-
-  it('è spenta di default, spiega cosa si conta e non si può attivare senza il consenso al salvataggio', () => {
-    const { el } = mount();
-    expect(box(el).checked).toBe(false);
-    expect(box(el).disabled).toBe(true);
-    expect(el.textContent).toContain('senza');
-    expect(el.textContent).toContain('identificativi, cookie o dati personali');
-  });
-
-  it('con il consenso si attiva e si disattiva dalla casella, con messaggio', () => {
-    const { f, el, game } = mount();
-    game.acceptSaving();
-    f.detectChanges();
-    expect(box(el).disabled).toBe(false);
-    box(el).checked = true;
-    box(el).dispatchEvent(new Event('change'));
-    f.detectChanges();
-    expect(game.state().telemetry).toBe(true);
-    expect(el.querySelector('[role=status]')!.textContent).toContain('attivate');
-    box(el).checked = false;
-    box(el).dispatchEvent(new Event('change'));
-    f.detectChanges();
-    expect(game.state().telemetry).toBe(false);
+    const el = f.nativeElement as HTMLElement;
+    expect(el.querySelector('input[type=checkbox]')).toBeNull();
+    expect(el.textContent).not.toMatch(/statistic|contribuisci|tentativi|abbandon/i);
+    expect(el.textContent).toContain('Non raccogliamo dati personali');
   });
 });

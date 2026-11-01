@@ -19,8 +19,6 @@ export interface PlayerState {
   selectedPathId: string;
   /** Ha già espresso il «Mi piace» al progetto (anonimo: conta solo il totale). */
   liked: boolean;
-  /** Ha scelto di contribuire con statistiche anonime e aggregate (opt-in, spento di default). */
-  telemetry: boolean;
   /** Lingua dell'interfaccia scelta dall'utente (se manca si usa quella del browser). */
   locale?: 'it' | 'en';
   /** Classifica locale: il miglior risultato di ogni sfida, per id di missione. */
