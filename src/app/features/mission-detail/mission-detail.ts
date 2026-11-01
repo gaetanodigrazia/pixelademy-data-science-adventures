@@ -113,6 +113,7 @@ type Phase = 'teoria' | 'battaglia' | 'task';
                     (pointerdown)="$event.preventDefault()" (mousedown)="$event.preventDefault()" (click)="ed.toggleKeyboard()">⌨ {{ ed.typing() ? 'Chiudi' : 'Scrivi' }}</button>
                 </div>
                 @if (showHint()) { <span class="status">{{ m.hint }}</span> }
+                @if (solutionViewed() && !reward()) { <span class="zeroed" role="status">⚠ XP di questa missione azzerati</span> }
                 <span class="meter" aria-label="Cronometro ed errori">
                   <span [class.late]="seconds() > par()" [title]="'Tempo di riferimento: ' + par() + ' s'">⏱ {{ clock() }}</span>
                   <span [class.late]="errors() > 0">✘ {{ errors() }}</span>
@@ -163,8 +164,9 @@ type Phase = 'teoria' | 'battaglia' | 'task';
           @if (rewardOpen()) {
             <app-modal title="Missione completata!" (closed)="rewardOpen.set(false)">
               @if (w.gainedXp > 0) { <p class="ok">+{{ w.gainedXp }} XP!</p> }
+              @if (w.firstTime && w.gainedXp === 0) { <p class="err">0 XP: hai aperto la soluzione prima di superare il task.</p> }
               @if (score(); as sc) {
-                @if (w.gainedXp > 0) {
+                @if (w.firstTime) {
                   <table class="breakdown" aria-label="Calcolo degli XP">
                     <tr><td>XP della missione</td><td>{{ sc.baseXp }}</td></tr>
                     <tr><td>Tempo ({{ sc.seconds }} s, rif. {{ par() }} s)</td><td>×{{ sc.timeFactor.toFixed(2) }}</td></tr>
@@ -176,7 +178,7 @@ type Phase = 'teoria' | 'battaglia' | 'task';
                   </table>
                 }
               }
-              @if (w.gainedXp > 0) { <p>🧩 Sezione del bollettino aggiunta: {{ projectProgress() }}</p>
+              @if (w.firstTime) { <p>🧩 Sezione del bollettino aggiunta: {{ projectProgress() }}</p>
                 @if (!nextMission()) { <p class="ok">🏆 Progetto completato!{{ dashboardOn() ? ' Apri la dashboard per vedere i risultati che hai prodotto.' : ' Il tuo programma stampa il bollettino completo.' }}</p> } }
               @if (unlockedPaths().length) { <p class="ok">🔓 Percorso sbloccato: {{ unlockedPaths().join(', ') }}</p> }
               @if (newRecord(); as r) { <p class="ok">🏆 {{ r.xp }} XP in {{ r.seconds }} s: nuovo record!</p> }
@@ -192,6 +194,16 @@ type Phase = 'teoria' | 'battaglia' | 'task';
               </div>
             </app-modal>
           }
+        }
+        @if (confirmSolutionOpen()) {
+          <app-modal title="Aprire la soluzione?" (closed)="confirmSolutionOpen.set(false)">
+            <p class="err">Se apri la soluzione gli XP di questa missione saranno azzerati.</p>
+            <p>Potrai comunque completarla e sbloccare la successiva, ma con 0 XP. Se vuoi guadagnarli, riprova prima da solo.</p>
+            <div class="row">
+              <button type="button" class="btn" (click)="confirmSolutionOpen.set(false)">Annulla</button>
+              <button type="button" class="btn danger" (click)="confirmSolution()">OK, mostra la soluzione</button>
+            </div>
+          </app-modal>
         }
         @if (showSolution()) {
           <app-modal title="Soluzione di questa sezione" [wide]="true" (closed)="showSolution.set(false)">
@@ -227,6 +239,7 @@ type Phase = 'teoria' | 'battaglia' | 'task';
     .slide .btn { padding: 5px 9px; font-size: .55rem; }
     .meter { display: flex; gap: 10px; margin-left: auto; color: var(--accent-2); white-space: nowrap; }
     .meter .late { color: var(--bad); }
+    .zeroed { color: var(--bad); }
     .breakdown { width: 100%; border-collapse: collapse; font-size: .55rem; }
     .breakdown td { padding: 2px 4px; border-bottom: 1px solid var(--line); }
     .breakdown td:last-child { text-align: right; }
@@ -303,6 +316,8 @@ export class MissionDetail {
   protected readonly showAll = signal(false);
   protected readonly showHint = signal(false);
   protected readonly showSolution = signal(false);
+  /** L'avviso «aprendo la soluzione gli XP si azzerano», prima di aprirla. */
+  protected readonly confirmSolutionOpen = signal(false);
   protected readonly running = signal(false);
   protected readonly output = signal('');
   /** La parte di bollettino che la missione corrente aggiunge: la scena di gioco legge solo quella, senza le sezioni precedenti. */
@@ -402,6 +417,7 @@ export class MissionDetail {
         this.introOpen.set(!!m && m.prerequisites.length === 0 && !this.game.isCompleted(m.id) && !!this.registry.path(m.pathId)?.project && !this.introSeen());
         this.showHint.set(false);
         this.showSolution.set(false);
+        this.confirmSolutionOpen.set(false);
         this.output.set('');
         this.error.set('');
         this.result.set(null);
@@ -431,8 +447,22 @@ export class MissionDetail {
     });
   }
 
+  /**
+   * «Confronta con la soluzione». Prima di aver superato il task costa gli XP di questa missione: serve un avviso e una conferma
+   * (una volta sola: poi la soluzione si riapre liberamente). Dopo aver superato il task non costa nulla.
+   */
   protected openSolution(): void {
-    if (!this.reward()) this.solutionViewed.set(true);
+    const m = this.mission();
+    if (this.reward() || this.solutionViewed() || (m && this.game.isCompleted(m.id))) {
+      this.showSolution.set(true); // già superata (ora o in passato) o già confermata: non c'è più nulla da perdere / da riavvisare
+      return;
+    }
+    this.confirmSolutionOpen.set(true);
+  }
+
+  protected confirmSolution(): void {
+    this.confirmSolutionOpen.set(false);
+    this.solutionViewed.set(true);
     this.showSolution.set(true);
   }
 
@@ -527,7 +557,7 @@ export class MissionDetail {
           this.newRecord.set(this.game.recordResult(m.id, rec) ? rec : null);
         }
         this.reward.set(this.game.completeMission(m, { xp: score.xp, code: full }));
-        if (this.reward()!.gainedXp > 0) this.unlockedPaths.set(newlyUnlocked(this.registry.paths(), new Set(this.game.state().completedMissionIds), m.id).map((p) => p.title));
+        if (this.reward()!.firstTime) this.unlockedPaths.set(newlyUnlocked(this.registry.paths(), new Set(this.game.state().completedMissionIds), m.id).map((p) => p.title));
         this.rewardOpen.set(true);
       } else {
         this.errors.update((e) => e + 1);

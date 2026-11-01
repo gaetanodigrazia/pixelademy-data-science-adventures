@@ -2,7 +2,7 @@ import { TestBed } from '@angular/core/testing';
 import { ContentRegistryService } from './core/services/content-registry.service';
 import { GameStateService } from './core/services/game-state.service';
 import { stripBase } from './core/utils/scoring';
-import { btn, expectedOutput, goToTask, openMission, path, runCode, setup } from './testing/mission-harness';
+import { btn, dialogBtn, expectedOutput, goToTask, openMission, path, runCode, setup } from './testing/mission-harness';
 
 describe('pagina missione: suggerimento e soluzione', () => {
   let run: ReturnType<typeof setup>['run'];
@@ -34,6 +34,8 @@ describe('pagina missione: suggerimento e soluzione', () => {
     await runCode(f, 'x');
     btn(el, 'Confronta con la soluzione').click();
     f.detectChanges();
+    dialogBtn(el, 'OK, mostra la soluzione').click(); // l'avviso chiede conferma prima di aprirla
+    f.detectChanges();
     const d = el.querySelector('[role=dialog]')!;
     expect(d.textContent).toContain('Soluzione di questa sezione');
     const reference = TestBed.inject(ContentRegistryService).solution(m1.id)!;
@@ -41,7 +43,7 @@ describe('pagina missione: suggerimento e soluzione', () => {
     f.destroy();
   });
 
-  it('aprire la soluzione prima di superare il task dimezza gli XP e lo dice nel calcolo', async () => {
+  it('aprire la soluzione prima di superare il task azzera gli XP e lo dice nel calcolo', async () => {
     const finish = async (peek: boolean) => {
       ({ run } = setup());
       const { f, el } = await task();
@@ -49,6 +51,8 @@ describe('pagina missione: suggerimento e soluzione', () => {
         run.mockResolvedValue({ output: 'boh\n' });
         await runCode(f, 'x');
         btn(el, 'Confronta con la soluzione').click();
+        f.detectChanges();
+        dialogBtn(el, 'OK, mostra la soluzione').click();
         f.detectChanges();
         el.querySelector<HTMLButtonElement>('[role=dialog] button[aria-label=Chiudi]')!.click();
         f.detectChanges();
@@ -63,8 +67,9 @@ describe('pagina missione: suggerimento e soluzione', () => {
     const peeked = await finish(true);
     expect(clean.table).not.toContain('Soluzione aperta prima');
     expect(peeked.table).toContain('Soluzione aperta prima');
-    expect(peeked.table).toContain('×0.50');
-    expect(peeked.xp).toBeLessThan(clean.xp);
+    expect(peeked.table).toContain('×0.00');
+    expect(peeked.xp).toBe(0);
+    expect(clean.xp).toBeGreaterThan(0);
   });
 
   it('aprire la soluzione DOPO aver superato il task non toglie XP', async () => {

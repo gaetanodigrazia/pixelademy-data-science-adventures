@@ -88,3 +88,4 @@
 | E12 | CHORE-12.1 Rimuovere le statistiche anonime (opzione, testo, raccolta) | #181 | #182 | `docs/issues/CHORE-12.1.md` | fatto |
 | E05 | BUG-05.3 Il menu del profilo non si chiude cliccando fuori | #184 | #188 | `docs/issues/BUG-05.3.md` | fatto |
 | E06 | UX-06.3 «Esegui codice» e «Ripristina» accanto a Suggerimento e Scena; editor più alto | #185 | #189 | `docs/issues/UX-06.3.md` | fatto |
+| E06 | UX-06.2 «Confronta con la soluzione» avvisa e azzera gli XP della missione | #183 | #190 | `docs/issues/UX-06.2.md` | fatto |
