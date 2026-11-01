@@ -95,3 +95,4 @@
 | E11 | US-11.10 L'Osservatorio delle Nuvole si sblocca dopo tutti gli altri percorsi | #194 | #193 | `docs/issues/US-11.10.md` | fatto |
 | E12 | DOC-01.1 Contributi aperti: CODEOWNERS, CONTRIBUTING e template di PR | #197 | #198 | `docs/issues/DOC-01.1.md` | fatto |
 | E11 | US-11.11 «Le Variabili»: il terzo passo è ridondante | #199 | #201 | `docs/issues/US-11.11.md` | fatto |
+| E12 | DOC-01.2 Skill «crea-percorso»: i percorsi nuovi si sbloccano dopo Variabili e Liste | #200 | #202 | `docs/issues/DOC-01.2.md` | fatto |
