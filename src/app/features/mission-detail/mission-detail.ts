@@ -14,6 +14,7 @@ import { baseLineCount, composeProject, editorSection, neededContext, shiftError
 import { projectCode } from '../../core/utils/project-code';
 import { vizLine } from '../../core/utils/viz';
 import { ScoreBreakdown, parSeconds, scoreAttempt, stripBase } from '../../core/utils/scoring';
+import { DifficultyStars } from '../../shared/components/difficulty-stars';
 import { CodeEditor } from '../../shared/components/code-editor';
 import { CodeWorld } from '../../shared/components/code-world';
 import { CompilerLoader } from '../../shared/components/compiler-loader';
@@ -30,7 +31,7 @@ type Phase = 'teoria' | 'battaglia' | 'task';
 
 @Component({
   selector: 'app-mission-detail',
-  imports: [NgComponentOutlet, RouterLink, CodeEditor, CodeWorld, CompilerLoader, Modal, ProjectIntro],
+  imports: [NgComponentOutlet, RouterLink, CodeEditor, CodeWorld, CompilerLoader, Modal, ProjectIntro, DifficultyStars],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <main>
@@ -45,7 +46,7 @@ type Phase = 'teoria' | 'battaglia' | 'task';
           }
           <div class="title">
             <h1>{{ m.title }}</h1>
-            <p class="status"><span class="stars" [attr.aria-label]="'Difficoltà ' + m.difficulty + ' su 10'">{{ '★'.repeat(m.difficulty) }}{{ '☆'.repeat(10 - m.difficulty) }}</span> {{ m.topic }} · {{ m.xp }} XP</p>
+            <p class="status"><app-difficulty-stars class="stars" [value]="m.difficulty" /> {{ m.topic }} · {{ m.xp }} XP</p>
           </div>
         </header>
 
