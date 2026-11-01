@@ -1,3 +1,4 @@
+import { forwardTouchScroll } from '../../core/utils/touch-scroll';
 import { loadMonacoStyles } from '../../core/utils/monaco-styles';
 import { AfterViewInit, ChangeDetectionStrategy, Component, ElementRef, OnDestroy, effect, input, output, signal, viewChild } from '@angular/core';
 
@@ -58,6 +59,7 @@ export class CodeEditor implements AfterViewInit, OnDestroy {
   private readonly ta = viewChild<ElementRef<HTMLTextAreaElement>>('ta');
   /** L'editor ha il fuoco (la tastiera del telefono è aperta o sta per aprirsi). */
   readonly typing = signal(false);
+  private stopTouchScroll?: () => void;
   private editor?: {
     getValue(): string; setValue(v: string): void; dispose(): void; focus(): void;
     onDidFocusEditorText(cb: () => void): unknown; onDidBlurEditorText(cb: () => void): unknown;
@@ -90,6 +92,8 @@ export class CodeEditor implements AfterViewInit, OnDestroy {
         fontSize: compact ? 11 : 14,
         lineHeight: compact ? 16 : undefined,
         scrollBeyondLastLine: false,
+        // la rotella/il trackpad scorrono la pagina quando l'editor non ha altro da scorrere (invece di restare «catturati»)
+        scrollbar: { alwaysConsumeMouseWheel: false },
         tabSize: 4,
         ariaLabel: 'Editor di codice Python',
         ...(compact
@@ -99,10 +103,12 @@ export class CodeEditor implements AfterViewInit, OnDestroy {
               lineDecorationsWidth: 4,
               glyphMargin: false,
               folding: false,
-              scrollbar: { verticalScrollbarSize: 6, horizontalScrollbarSize: 6 },
+              scrollbar: { verticalScrollbarSize: 6, horizontalScrollbarSize: 6, alwaysConsumeMouseWheel: false },
             }
           : {}),
       });
+      // da telefono un trascinamento verticale che parte dall'editor scorre la pagina (Monaco lo catturerebbe)
+      this.stopTouchScroll = forwardTouchScroll(this.host().nativeElement);
       this.editor.onDidFocusEditorText(() => this.typing.set(true));
       this.editor.onDidBlurEditorText(() => this.typing.set(false));
       this.editor.onDidPaste((e) => this.pasted.emit(this.editor?.getModel()?.getValueInRange(e.range).length ?? 0));
@@ -140,6 +146,7 @@ export class CodeEditor implements AfterViewInit, OnDestroy {
   }
 
   ngOnDestroy(): void {
+    this.stopTouchScroll?.();
     this.editor?.dispose();
   }
 }

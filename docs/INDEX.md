@@ -101,3 +101,4 @@
 | E05 | UX-06.5 Tooltip sulle stelle: «Difficoltà N su 10» | #207 | #209 | `docs/issues/UX-06.5.md` | fatto |
 | E11 | US-11.12 «Le Liste»: una missione a parte per append() e pop() | #208 | #210 | `docs/issues/US-11.12.md` | fatto |
 | E11 | BUG-11.13 «Togli e aggiungi»: il quiz usa len() senza spiegarlo | #211 | #212 | `docs/issues/BUG-11.13.md` | fatto |
+| E05 | BUG-05.4 Da mobile non si scorre la pagina toccando dentro il compilatore | #213 | #214 | `docs/issues/BUG-05.4.md` | fatto |
