@@ -149,6 +149,7 @@ describe('pagina missione: gli errori della battaglia contano negli XP', () => {
   });
 
   it('una sfida (senza battaglia) conta solo gli errori del task', async () => {
+    ({ run } = setup(true));
     const { f, el } = await openMission('challenges-pandas-01');
     run.mockResolvedValue({ output: 'sbagliato\n' });
     await runCode(f, 'x');

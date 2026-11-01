@@ -122,7 +122,7 @@ describe('home: pulsante «Classifica»', () => {
 
 describe('pagina sfida: il record', () => {
   let run: ReturnType<typeof setup>['run'];
-  beforeEach(() => ({ run } = setup()));
+  beforeEach(() => ({ run } = setup(true)));
 
   async function solveChallenge1() {
     run.mockResolvedValue({ output: '11.83\n' });

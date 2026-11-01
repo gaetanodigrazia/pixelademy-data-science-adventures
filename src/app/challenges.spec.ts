@@ -38,7 +38,7 @@ describe('sfide in stile Kaggle (pandas)', () => {
 
 describe('pagina di una sfida', () => {
   let run: ReturnType<typeof setup>['run'];
-  beforeEach(() => ({ run } = setup()));
+  beforeEach(() => ({ run } = setup(true)));
   const m1 = path.missions[0];
 
   it('si apre direttamente sul task: niente teoria, battaglia, fasi né «↺ Teoria»', async () => {

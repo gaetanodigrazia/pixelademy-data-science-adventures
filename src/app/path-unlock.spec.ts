@@ -22,6 +22,7 @@ const liste = paths.find((p) => p.id === 'adventure-core-liste')!;
 
 const mk = (id: string, n: number, requires?: string[]): LearningPath => ({ id, title: id, description: '', icon: '', tags: [], requires, missions: Array.from({ length: n }, (_, i) => ({ id: `${id}-${i}` }) as never) });
 const done = (...ids: string[]) => new Set(ids);
+const finishAllButNuvole = (g: GameStateService) => paths.filter((p) => p.id !== nuvole.id).forEach((p) => p.missions.forEach((m) => g.completeMission(m, { xp: 0 })));
 
 describe('path-lock (funzioni pure)', () => {
   const a = mk('a', 2);
@@ -69,10 +70,17 @@ describe('contenuti: percorsi base (Variabili, Liste) e Osservatorio dopo Centro
     }
   });
 
-  it('il seed dell\'Osservatorio richiede anche Centro Mobilità e il pack lo traduce in id di percorso', () => {
-    expect(PATH_SEEDS.find((s) => s.slug === 'nuvole')!.requires).toEqual(['variabili', 'liste', 'mobilita']);
-    expect(nuvole.requires).toEqual([variabili.id, liste.id, mobilita.id]);
-    expect(paths.filter((p) => ![nuvole.id, variabili.id, liste.id].includes(p.id)).every((p) => p.requires?.join() === `${variabili.id},${liste.id}`)).toBe(true);
+  it('l\'Osservatorio richiede tutti gli altri percorsi (anche le sfide pandas, di un altro pack)', () => {
+    const others = paths.filter((p) => p.id !== nuvole.id).map((p) => p.id);
+    expect(others.length).toBeGreaterThanOrEqual(8);
+    expect([...(nuvole.requires ?? [])].sort()).toEqual([...others].sort());
+    expect(PATH_SEEDS.find((s) => s.slug === 'nuvole')!.requires).toContain('challenges-pandas');
+  });
+
+  it('gli altri percorsi (tranne i due base) richiedono Le Variabili e Le Liste', () => {
+    for (const p of paths.filter((x) => ![nuvole.id, variabili.id, liste.id].includes(x.id))) {
+      expect(p.requires?.join(), p.id).toBe(`${variabili.id},${liste.id}`);
+    }
   });
 
   it('i percorsi base hanno missioni, e il catalogo li ordina prima degli altri', () => {
@@ -129,7 +137,7 @@ describe('stato e missioni', () => {
     g.completeMission(mobilita.missions[0], { xp: 0 });
     g.selectPath(nuvole.id);
     expect(g.state().selectedPathId).not.toBe(nuvole.id); // 1 missione su 3: non basta
-    finish(g, mobilita);
+    finishAllButNuvole(g);
     g.selectPath(nuvole.id);
     expect(g.state().selectedPathId).toBe(nuvole.id);
   });
@@ -139,10 +147,11 @@ describe('stato e missioni', () => {
     const ms = TestBed.inject(MissionService);
     expect(ms.status(nuvole.missions[0])).toBe('locked');
     expect(ms.pathUnlocked(nuvole)).toBe(false);
-    expect(ms.missingFor(nuvole).map((p) => p.title)).toEqual(['Le Variabili', 'Le Liste', 'Centro Mobilità']);
+    expect(ms.missingFor(nuvole).length).toBe(paths.length - 1);
     finishBase(g);
-    expect(ms.missingFor(nuvole).map((p) => p.title)).toEqual(['Centro Mobilità']);
-    finish(g, mobilita);
+    expect(ms.missingFor(nuvole).map((p) => p.title)).not.toContain('Le Liste');
+    expect(ms.missingFor(nuvole).map((p) => p.title)).toContain('Centro Mobilità');
+    finishAllButNuvole(g);
     expect(ms.status(nuvole.missions[0])).toBe('available');
     expect(ms.status(nuvole.missions[1])).toBe('locked');
     g.completeMission(nuvole.missions[0], { xp: 0 });
@@ -213,7 +222,7 @@ describe('pagine', () => {
 
   it('catalogo: completato Centro Mobilità, l\'Osservatorio si può scegliere', async () => {
     const g = TestBed.inject(GameStateService);
-    for (const p of [variabili, liste, mobilita]) p.missions.forEach((m) => g.completeMission(m, { xp: 0 }));
+    finishAllButNuvole(g);
     const { f, el } = await go('/');
     btn(el, 'Cambia / cerca').click();
     f.detectChanges();
@@ -241,7 +250,7 @@ describe('pagine', () => {
     const solution = (m: LearningPath['missions'][number]) => TestBed.inject(ContentRegistryService).solution(m.id)!;
     const out = (m: LearningPath['missions'][number]) => (m.validation as { expected: string[] }).expected.join('\n') + '\n';
     const g = TestBed.inject(GameStateService);
-    for (const p of [variabili, liste]) p.missions.forEach((m) => g.completeMission(m, { xp: 0 }));
+    for (const p of paths.filter((x) => ![nuvole.id, mobilita.id].includes(x.id))) p.missions.forEach((m) => g.completeMission(m, { xp: 0 }));
     let last = '';
     for (const [i, m] of mobilita.missions.entries()) {
       const { f, el } = await go(`/missione/${m.id}`);

@@ -21,18 +21,19 @@ export const dialogBtn = (el: HTMLElement, text: string) =>
  * «Osservatorio delle Nuvole» si apre solo dopo «Centro Mobilità»: i test che giocano l'Osservatorio da uno stato nuovo
  * completano prima (a 0 XP, così non cambiano i conti) il percorso richiesto.
  */
-export function unlockPaths(): void {
+export function unlockPaths(keepChallenges = false): void {
   const game = TestBed.inject(GameStateService);
   const paths = TestBed.inject(ContentRegistryService).paths();
-  // i percorsi base (variabili, liste) sbloccano tutti gli altri; Centro Mobilità sblocca l'Osservatorio
-  for (const id of ['variabili', 'liste', 'mobilita']) {
-    for (const m of paths.find((p) => p.id === `adventure-core-${id}`)!.missions) game.completeMission(m, { xp: 0 });
+  // i percorsi base sbloccano tutti gli altri; l'Osservatorio si apre dopo tutti gli altri percorsi
+  for (const p of paths.filter((x) => x.id !== 'adventure-core-nuvole' && !(keepChallenges && x.id.startsWith('challenges-')))) {
+    for (const m of p.missions) game.completeMission(m, { xp: 0 });
   }
   game.selectPath('adventure-core-nuvole');
 }
 
 /** Prepara il TestBed con il router e un Python finto (nessun download dalla CDN). */
-export function setup() {
+/** `keepChallenges`: lascia da fare le sfide (l'Osservatorio resta bloccato: serve ai test delle sfide). */
+export function setup(keepChallenges = false) {
   localStorage.clear();
   sessionStorage.clear();
   TestBed.resetTestingModule();
@@ -40,7 +41,7 @@ export function setup() {
   const python = TestBed.inject(PythonRunnerService);
   vi.spyOn(python, 'loadRuntime').mockResolvedValue(undefined);
   const run = vi.spyOn(python, 'run').mockResolvedValue({ output: '' });
-  unlockPaths();
+  unlockPaths(keepChallenges);
   return { run };
 }
 
