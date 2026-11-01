@@ -92,3 +92,4 @@
 | E04 | US-04.6 Gli errori della missione contano nel calcolo degli XP (anche quelli della battaglia) | #187 | #191 | `docs/issues/US-04.6.md` | fatto |
 | E11 | US-11.9 Percorsi base «Le Variabili» e «Le Liste» che bloccano tutti gli altri | #186 | #192 | `docs/issues/US-11.9.md` | fatto |
 | E05 | UX-06.4 Il pulsante Home non ha senso quando si è già sulla home | #193 | #193 | `docs/issues/UX-06.4.md` | fatto |
+| E11 | US-11.10 L'Osservatorio delle Nuvole si sblocca dopo tutti gli altri percorsi | #194 | #193 | `docs/issues/US-11.10.md` | fatto |
