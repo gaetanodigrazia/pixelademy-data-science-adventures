@@ -98,3 +98,4 @@
 | E12 | DOC-01.2 Skill «crea-percorso»: i percorsi nuovi si sbloccano dopo Variabili e Liste | #200 | #202 | `docs/issues/DOC-01.2.md` | fatto |
 | E12 | DOC-01.3 Nuove skill «crea-personaggio» e «crea-missione» | #203 | #204 | `docs/issues/DOC-01.3.md` | fatto |
 | E12 | DOC-01.4 Skill «crea-personaggio» e «crea-missione»: correzioni dal collaudo | #205 | #206 | `docs/issues/DOC-01.4.md` | fatto |
+| E05 | UX-06.5 Tooltip sulle stelle: «Difficoltà N su 10» | #207 | #209 | `docs/issues/UX-06.5.md` | fatto |

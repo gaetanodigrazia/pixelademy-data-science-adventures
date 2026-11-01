@@ -1,18 +1,19 @@
-import { ChangeDetectionStrategy, Component, computed, input } from '@angular/core';
+import { ChangeDetectionStrategy, Component, input } from '@angular/core';
+import { DifficultyStars } from './difficulty-stars';
 import { RouterLink } from '@angular/router';
 import { Mission } from '../../core/models/mission.model';
 import { MissionStatus } from '../../core/services/mission.service';
 
 @Component({
   selector: 'app-mission-card',
-  imports: [RouterLink],
+  imports: [RouterLink, DifficultyStars],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <a class="card" [class.locked]="status() === 'locked'" [class.completed]="status() === 'completed'"
       [routerLink]="status() === 'locked' ? null : ['/missione', mission().id]">
       <div class="head">
-        <span class="diff" [attr.aria-label]="'Difficoltà ' + mission().difficulty + ' su 10'" [title]="'Difficoltà ' + mission().difficulty + ' su 10'">
-          <span aria-hidden="true">{{ stars() }}</span>
+        <span class="diff">
+          <app-difficulty-stars [value]="mission().difficulty" />
           <span class="num">{{ mission().difficulty }}/10</span>
         </span>
         @if (status() === 'completed') { <span aria-label="Completata">✅</span> }
@@ -45,5 +46,4 @@ import { MissionStatus } from '../../core/services/mission.service';
 export class MissionCard {
   readonly mission = input.required<Mission>();
   readonly status = input.required<MissionStatus>();
-  protected readonly stars = computed(() => '★'.repeat(this.mission().difficulty) + '☆'.repeat(10 - this.mission().difficulty));
 }
