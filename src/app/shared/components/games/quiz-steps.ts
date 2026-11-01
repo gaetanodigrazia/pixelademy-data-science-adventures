@@ -34,8 +34,6 @@ export interface QuizConfig {
   th: number;
   thName: string;
   k: number;
-  /** Un secondo valore (es. il bonus delle variabili). */
-  bonus?: number;
 }
 
 const GENERIC = 'Ricalcola con calma: il passo precedente ti dà i numeri che servono.';
@@ -866,44 +864,6 @@ function varCalcola(c: QuizConfig): Quiz {
   };
 }
 
-function varCambia(c: QuizConfig): Quiz {
-  const m = c.v[c.k];
-  const b = c.bonus ?? 5;
-  const r = (m + b);
-  return {
-    title: 'Cambia il valore di una variabile',
-    goal: 'Esegui il codice a mano: segui come cambia misura dopo la riassegnazione.',
-    code: [`misura = ${fmt(m)}`, `bonus = ${fmt(b)}`, 'misura = misura + bonus'],
-    steps: [
-      {
-        prompt: 'misura (prima della riga 3) → ?', correct: fmt(m), line: 0,
-        traps: str([
-          { label: fmt(r), why: 'Quello sarà il valore dopo la riga 3: per ora misura non è ancora cambiata.' },
-          { label: fmt(b), why: 'Quello è il valore di bonus, non di misura.' },
-        ], fmt(m), near(m)),
-        hit: `Fino alla riga 3 misura vale ${fmt(m)}.`,
-      },
-      {
-        prompt: `misura + bonus = ${fmt(m)} + ${fmt(b)} → ?`, correct: fmt(r), line: 2, vars: `misura = ${fmt(m)} · bonus = ${fmt(b)}`,
-        traps: str([
-          { label: fmt((m - b)), why: 'Qui c\'è il segno più: i due valori si sommano.' },
-          { label: fmt(m), why: 'Hai ignorato bonus: il conto usa entrambi i valori.' },
-          { label: fmt(b), why: 'Hai tenuto solo bonus: a sinistra del + c\'è anche misura.' },
-        ], fmt(r), near(r)),
-        hit: `${fmt(m)} + ${fmt(b)} → ${fmt(r)}: Python calcola il lato destro con i valori attuali.`,
-      },
-      {
-        prompt: 'misura (dopo la riga 3) → ?', correct: fmt(r), line: 2, vars: `misura = ${fmt(m)} · bonus = ${fmt(b)}`,
-        traps: str([
-          { label: fmt(m), why: 'Il vecchio valore è stato sostituito: la riassegnazione salva il nuovo risultato.' },
-          { label: fmt(b), why: 'bonus non cambia, ma misura sì: ora vale la somma.' },
-        ], fmt(r), near(r)),
-        hit: `Ora misura vale ${fmt(r)}: la riassegnazione ha sostituito ${fmt(m)}.`,
-      },
-    ],
-  };
-}
-
 function listeAggiungi(c: QuizConfig): Quiz {
   const { name: n, v } = c;
   const x = c.th;
@@ -964,7 +924,6 @@ export function quizFor(c: QuizConfig): Quiz {
     case 'somma-dadi': return sommaDadi();
     case 'var-assegna': return varAssegna(c);
     case 'var-calcola': return varCalcola(c);
-    case 'var-cambia': return varCambia(c);
     case 'liste-aggiungi': return listeAggiungi(c);
     default: throw new Error(`Esercizio sconosciuto per il minigioco: ${c.exercise}`);
   }

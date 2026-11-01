@@ -84,7 +84,7 @@ describe('contenuti: percorsi base (Variabili, Liste) e Osservatorio dopo Centro
   });
 
   it('i percorsi base hanno missioni, e il catalogo li ordina prima degli altri', () => {
-    expect(variabili.missions.length).toBe(3);
+    expect(variabili.missions.length).toBe(2);
     expect(liste.missions.length).toBe(3);
     const order = byDependency(paths).map((p) => p.id);
     expect(order.slice(0, 2)).toEqual([variabili.id, liste.id]);
