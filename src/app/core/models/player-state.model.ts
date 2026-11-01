@@ -29,5 +29,7 @@ export type ConsentStatus = 'unknown' | 'granted' | 'denied';
 
 export interface RewardSummary {
   gainedXp: number;
+  /** È la prima volta che la missione viene superata (anche con 0 XP): la missione si completa e il progetto avanza. */
+  firstTime: boolean;
   newLevel: number | null;
 }

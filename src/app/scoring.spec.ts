@@ -29,12 +29,16 @@ describe('scoring', () => {
     expect(far.xp).toBeLessThan(scoreAttempt(base).xp);
   });
 
-  it('dimezza gli XP se la soluzione è stata aperta prima di superare il task', () => {
-    expect(scoreAttempt({ ...base, solutionViewed: true }).xp).toBe(50);
+  it('azzera gli XP se la soluzione è stata aperta prima di superare il task (e il fattore lo dice)', () => {
+    const r = scoreAttempt({ ...base, solutionViewed: true });
+    expect(r.xp).toBe(0);
+    expect(r.viewedFactor).toBe(0);
+    expect(scoreAttempt({ ...base, baseXp: 500, seconds: 0, solutionViewed: true }).xp).toBe(0); // qualunque base, tempo o somiglianza
+    expect(scoreAttempt(base).viewedFactor).toBe(1);
   });
 
-  it('non scende mai sotto 1 XP', () => {
-    expect(scoreAttempt({ ...base, baseXp: 1, errors: 9, solutionViewed: true }).xp).toBe(1);
+  it('senza la soluzione non scende mai sotto 1 XP', () => {
+    expect(scoreAttempt({ ...base, baseXp: 1, errors: 9, seconds: 9999, code: 'tutto diverso' }).xp).toBe(1);
   });
 });
 

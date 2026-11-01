@@ -10,8 +10,8 @@ export const SCORING = {
   errorFloor: 0.5,
   /** Somiglianza con la soluzione: da 0,7 (molto diverso) a 1 (identico). */
   similarityBase: 0.7,
-  /** Soluzione aperta prima di superare il task. */
-  viewedFactor: 0.5,
+  /** Soluzione aperta prima di superare il task: gli XP della missione si azzerano (0). */
+  viewedFactor: 0,
   /** Anti-incolla: troppo codice incollato, quasi identico alla soluzione, in pochi secondi. */
   paste: { minChars: 40, minSimilarity: 0.9, maxSeconds: 5, factor: 0.6 },
 } as const;

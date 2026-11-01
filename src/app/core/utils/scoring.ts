@@ -60,7 +60,7 @@ export function codeSimilarity(a: string, b: string): number {
  * - tempo: 1 entro il tempo di riferimento, poi scende fino a 0,7 a tre volte il riferimento;
  * - errori: −10% per ogni esecuzione fallita (minimo 0,5);
  * - somiglianza: da 0,7 (codice molto diverso) a 1 (identico alla soluzione di riferimento);
- * - soluzione: dimezza se è stata aperta prima di superare il task;
+ * - soluzione: **azzera** gli XP se è stata aperta prima di superare il task;
  * - incolla: ×0,6 se il codice è stato incollato (≥ 40 caratteri), quasi identico alla soluzione, entro 5 secondi.
  * I parametri sono in `scoring-config.ts`.
  */
@@ -78,7 +78,8 @@ export function scoreAttempt(i: ScoreInput): ScoreBreakdown {
   const similarityFactor = SCORING.similarityBase + (1 - SCORING.similarityBase) * similarity;
   const viewedFactor = i.solutionViewed ? SCORING.viewedFactor : 1;
   const pasteFactor = isSuspiciousPaste(i, similarity) ? SCORING.paste.factor : 1;
-  const xp = Math.max(1, Math.round(i.baseXp * timeFactor * errorFactor * similarityFactor * viewedFactor * pasteFactor));
+  // soluzione vista prima di superare il task: 0 XP; altrimenti almeno 1
+  const xp = i.solutionViewed ? 0 : Math.max(1, Math.round(i.baseXp * timeFactor * errorFactor * similarityFactor * viewedFactor * pasteFactor));
   return { baseXp: i.baseXp, seconds: i.seconds, errors: i.errors, timeFactor, errorFactor, similarity, similarityFactor, viewedFactor, pasteFactor, xp };
 }
 

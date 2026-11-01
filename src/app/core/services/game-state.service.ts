@@ -137,7 +137,7 @@ export class GameStateService {
   /** `opts.xp` sostituisce gli XP base (tempo, errori, somiglianza); `opts.code` è il pezzo di progetto. */
   completeMission(mission: Mission, opts: { xp?: number; code?: string } = {}): RewardSummary {
     const s = this.state();
-    if (s.completedMissionIds.includes(mission.id)) return { gainedXp: 0, newLevel: null };
+    if (s.completedMissionIds.includes(mission.id)) return { gainedXp: 0, newLevel: null, firstTime: false };
     const gainedXp = opts.xp ?? mission.xp;
     const xp = s.xp + gainedXp;
     const level = levelFromXp(xp);
@@ -148,7 +148,7 @@ export class GameStateService {
       solvedCode: opts.code ? { ...s.solvedCode, [mission.id]: opts.code } : s.solvedCode,
     });
     this.lastCompletedId.set(mission.id);
-    return { gainedXp, newLevel: level > s.level ? level : null };
+    return { gainedXp, newLevel: level > s.level ? level : null, firstTime: true };
   }
 
   private update(patch: Partial<PlayerState>): void {
