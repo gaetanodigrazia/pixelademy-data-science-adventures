@@ -864,38 +864,51 @@ function varCalcola(c: QuizConfig): Quiz {
   };
 }
 
-function listeAggiungi(c: QuizConfig): Quiz {
+function listeModifica(c: QuizConfig): Quiz {
   const { name: n, v } = c;
   const x = c.th;
-  const after = [...v, x];
+  const last = v[v.length - 1];
+  const popped = v.slice(0, -1);
+  const final = [...popped, x];
   return {
-    title: 'Aggiungi un elemento',
-    goal: 'Esegui il codice a mano: segui la lista prima e dopo append().',
-    code: [`${n} = ${list(v)}`, `${c.thName} = ${fmt(x)}`, `${n}.append(${c.thName})`],
+    title: 'Aggiungi e togli',
+    goal: 'Esegui il codice a mano: segui la lista dopo pop() e dopo append().',
+    code: [`${n} = ${list(v)}`, `${c.thName} = ${fmt(x)}`, `rimosso = ${n}.pop()`, `${n}.append(${c.thName})`],
     steps: [
       {
-        prompt: `len(${n}) (prima di append) → ?`, correct: String(v.length), line: 0,
+        prompt: 'rimosso → ?', correct: fmt(last), line: 2,
         traps: str([
-          { label: String(v.length + 1), why: "Quella sarà la lunghezza dopo append(): per ora l'elemento non c'è." },
-          { label: String(v.length - 1), why: "len() conta tutti gli elementi: nessuno è escluso." },
-        ], String(v.length), [String(v.length + 2)]),
-        hit: `len(${n}) → ${v.length}: gli elementi della lista.`,
+          { label: fmt(v[0]), why: "pop() toglie l'ultimo elemento, non il primo." },
+          { label: list(popped), why: 'pop() restituisce il valore tolto, non la lista che resta.' },
+          { label: fmt(x), why: `Quello è ${c.thName}: viene aggiunto dopo, con append().` },
+        ], fmt(last), near(last)),
+        hit: `pop() toglie l'ultimo elemento e lo restituisce: rimosso → ${fmt(last)}.`,
       },
       {
-        prompt: `${n}[-1] (dopo append) → ?`, correct: fmt(x), line: 2, vars: `${c.thName} = ${fmt(x)}`,
+        prompt: `${n} (dopo pop) → ?`, correct: list(popped), line: 2, vars: `rimosso = ${fmt(last)}`,
         traps: str([
-          { label: fmt(v[v.length - 1]), why: "Quello era l'ultimo prima: append() aggiunge in fondo, quindi ora l'ultimo è il nuovo." },
-          { label: fmt(v[0]), why: "append() non aggiunge all'inizio ma in fondo." },
-        ], fmt(x), near(x)),
-        hit: `append() mette ${fmt(x)} in fondo: ${n}[-1] → ${fmt(x)}.`,
+          { label: list(v), why: 'pop() modifica la lista: ora ha un elemento in meno.' },
+          { label: list(v.slice(1)), why: "pop() toglie l'ultimo elemento, non il primo." },
+          { label: list([...popped, x]), why: `${c.thName} non è ancora stato aggiunto: succede alla riga dopo.` },
+        ], list(popped), [list(popped.slice(1))]),
+        hit: `Dopo pop() la lista è ${list(popped)}: ${fmt(last)} è stato tolto.`,
       },
       {
-        prompt: `len(${n}) (dopo append) → ?`, correct: String(after.length), line: 2,
+        prompt: `len(${n}) (dopo pop) → ?`, correct: String(popped.length), line: 2,
         traps: str([
-          { label: String(v.length), why: 'append() modifica la lista: ora ha un elemento in più.' },
-          { label: String(after.length + 1), why: 'append() aggiunge un solo elemento.' },
-        ], String(after.length), [String(after.length - 2)]),
-        hit: `len(${n}) → ${after.length}: la lista è cresciuta di 1.`,
+          { label: String(v.length), why: 'pop() ha tolto un elemento: len() è diminuita di 1.' },
+          { label: String(v.length + 1), why: 'pop() toglie, non aggiunge.' },
+        ], String(popped.length), [String(popped.length - 1)]),
+        hit: `len(${n}) → ${popped.length}: un elemento in meno.`,
+      },
+      {
+        prompt: `${n} (dopo append) → ?`, correct: list(final), line: 3, vars: `${c.thName} = ${fmt(x)}`,
+        traps: str([
+          { label: list([x, ...popped]), why: 'append() aggiunge in coda, non in testa.' },
+          { label: list([...v, x]), why: "Il valore tolto da pop() non torna: l'ultimo elemento di prima non c'è più." },
+          { label: list(popped), why: `append() aggiunge ${c.thName}: la lista non resta uguale.` },
+        ], list(final), [list(popped.slice(1))]),
+        hit: `append() mette ${fmt(x)} in coda: ${list(final)}.`,
       },
     ],
   };
@@ -924,7 +937,7 @@ export function quizFor(c: QuizConfig): Quiz {
     case 'somma-dadi': return sommaDadi();
     case 'var-assegna': return varAssegna(c);
     case 'var-calcola': return varCalcola(c);
-    case 'liste-aggiungi': return listeAggiungi(c);
+    case 'liste-modifica': return listeModifica(c);
     default: throw new Error(`Esercizio sconosciuto per il minigioco: ${c.exercise}`);
   }
 }

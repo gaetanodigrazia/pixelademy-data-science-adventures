@@ -361,8 +361,8 @@ export const PATH_SEEDS: PathSeed[] = [
     tags: ['python', 'base', 'liste'],
     characterSlug: 'teo',
     enemySlug: 'dispersione',
-    // percorso base: leggere un elemento, contare, aggiungere (append)
-    exercises: ['std-1', 'std-2', 'liste-aggiungi'],
+    // percorso base: leggere un elemento, aggiungere e togliere (append e pop), contare (len)
+    exercises: ['std-1', 'liste-modifica', 'std-2'],
     dashboard: false,
     project: {
       heading: 'ELENCO DELLA SPESA',
@@ -384,8 +384,8 @@ export const PATH_SEEDS: PathSeed[] = [
     },
     missions: [
       { title: 'Il quarto prezzo', story: 'Teo apre l\'elenco della spesa: legge il prezzo del quarto articolo con il suo indice.' },
-      { title: 'Quanti articoli?', story: 'Al banco serve sapere quanti articoli ci sono nel carrello: Teo li conta.' },
-      { title: 'Un articolo in più', story: 'Teo trova un altro articolo: lo aggiunge in fondo alla lista con append().' },
+      { title: 'Togli e aggiungi', story: 'Un cliente ci ripensa: Teo toglie l\'ultimo articolo con pop() e ne aggiunge uno nuovo in fondo con append().' },
+      { title: 'Quanti articoli?', story: 'Al banco serve sapere quanti articoli ci sono nel carrello: Teo li conta con len().' },
     ],
   },
 ];

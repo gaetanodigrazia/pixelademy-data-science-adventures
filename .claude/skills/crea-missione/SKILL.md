@@ -18,7 +18,7 @@ Leggi la voce del percorso e il suo `project`. Ogni missione **aggiunge una sezi
 
 ## Passi
 ### 1. Scegli l'esercizio
-- **Esiste già** in `exercises.ts` (es. `percentuale`, `mediana`, `liste-aggiungi`)? Se è adatto, usalo; controlla `requires` (esercizi che devono comparire prima nel percorso) e che, se `opening: true`, stia al primo posto: l'apertura è consentita **solo come prima missione**.
+- **Esiste già** in `exercises.ts` (es. `percentuale`, `mediana`, `liste-modifica`)? Se è adatto, usalo; controlla `requires` (esercizi che devono comparire prima nel percorso) e che, se `opening: true`, stia al primo posto: l'apertura è consentita **solo come prima missione**.
 - **Non esiste?** È una piccola nuova funzionalità: definiscilo in `EXTRA` con `concept(p)` (topic, `theory` a 2–3 slide, `briefing`, `hint`, `starter`, `solution`, `lines`), `gameConfig(p)` (config del quiz), `viz(p)` (scena `value` o `pick`) e `game: QUIZ_GAME`. Poi:
   - aggiungi la funzione dei passi in `src/app/shared/components/games/quiz-steps.ts` e il `case` in `quizFor` (ogni passo: risposta giusta, 2–3 sviste spiegate, `hit`);
   - **verifica la soluzione con Python reale** (`python-solutions.spec.ts` lo fa per tutte le soluzioni).
@@ -32,7 +32,7 @@ Ogni esercizio scrive la sua riga con **una chiave di etichetta** (`labels.<chia
 |---|---|
 | `first` | `std-1`, `delta`, `conversione`, `media`, `frequenza`, `var-assegna` |
 | `count` | `std-2`, `ordina`, `posizione`, `mediana`, `valore-atteso`, `var-calcola` |
-| `filtered` | `std-3`, `percentuale`, `somma-sopra`, `moda`, `scostamento`, `liste-aggiungi` |
+| `filtered` | `std-3`, `percentuale`, `somma-sopra`, `moda`, `scostamento`, `liste-modifica` |
 | `total` | `std-4`, `campo`, `somma-dadi` |
 | `mean` | `std-5`, `varianza` |
 | `alert` | `std-6`, `zscore` |
