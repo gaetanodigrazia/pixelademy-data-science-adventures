@@ -3,11 +3,16 @@ import { Character, Enemy } from './character.model';
 
 export type GameConfig = Record<string, unknown>;
 
+/** Com'è andata la battaglia: gli errori commessi (contano nel calcolo degli XP della missione). */
+export interface GameResult {
+  mistakes: number;
+}
+
 export interface GameComponentInputs {
   character: Character;
   enemy?: Enemy;
   config: GameConfig;
-  onCleared: () => void;
+  onCleared: (result?: GameResult) => void;
 }
 
 export interface GameDefinition {

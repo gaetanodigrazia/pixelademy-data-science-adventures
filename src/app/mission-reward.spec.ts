@@ -25,7 +25,7 @@ describe('pagina missione: ricompensa e avanzamento', () => {
     const rows = Array.from(d.querySelectorAll('table.breakdown tr')).map((r) => r.textContent ?? '');
     expect(rows[0]).toContain(`XP della missione${path.missions[0].xp}`);
     expect(rows.some((r) => r.startsWith('Tempo'))).toBe(true);
-    expect(rows.some((r) => r.startsWith('Errori (0)'))).toBe(true);
+    expect(rows.some((r) => r.startsWith('Errori (battaglia 0 + task 0)'))).toBe(true);
     expect(rows.some((r) => r.startsWith('Vicinanza alla soluzione'))).toBe(true);
     expect(rows.at(-1)).toContain('Totale');
     expect(d.textContent).toContain('Sezione del bollettino aggiunta: 1/10');

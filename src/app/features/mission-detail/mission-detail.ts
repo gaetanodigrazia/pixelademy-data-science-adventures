@@ -23,6 +23,8 @@ import { Modal } from '../../shared/components/modal';
 const INTRO_KEY = 'pixelademy.intro.v1';
 /** La fase di ogni missione (battaglia/task) per la sessione del browser: ricaricando la pagina non si rifanno teoria e battaglia. */
 const PHASE_KEY = 'pixelademy.phase.v1';
+/** Gli errori della battaglia di ogni missione (per la sessione): ricaricando al task contano ancora. */
+const BATTLE_KEY = 'pixelademy.battle.v1';
 
 type Phase = 'teoria' | 'battaglia' | 'task';
 
@@ -170,7 +172,7 @@ type Phase = 'teoria' | 'battaglia' | 'task';
                   <table class="breakdown" aria-label="Calcolo degli XP">
                     <tr><td>XP della missione</td><td>{{ sc.baseXp }}</td></tr>
                     <tr><td>Tempo ({{ sc.seconds }} s, rif. {{ par() }} s)</td><td>×{{ sc.timeFactor.toFixed(2) }}</td></tr>
-                    <tr><td>Errori ({{ sc.errors }})</td><td>×{{ sc.errorFactor.toFixed(2) }}</td></tr>
+                    <tr><td>Errori (battaglia {{ sc.battleErrors }} + task {{ sc.errors }})</td><td>×{{ sc.errorFactor.toFixed(2) }}</td></tr>
                     <tr><td>Vicinanza alla soluzione ({{ (sc.similarity * 100).toFixed(0) }}%)</td><td>×{{ sc.similarityFactor.toFixed(2) }}</td></tr>
                     @if (sc.pasteFactor < 1) { <tr><td>Codice incollato quasi identico alla soluzione</td><td>×{{ sc.pasteFactor.toFixed(2) }}</td></tr> }
                     @if (sc.viewedFactor < 1) { <tr><td>Soluzione aperta prima</td><td>×{{ sc.viewedFactor.toFixed(2) }}</td></tr> }
@@ -309,6 +311,8 @@ export class MissionDetail {
   protected readonly sceneOpen = signal(typeof window === 'undefined' || typeof window.matchMedia !== 'function' || !window.matchMedia('(max-width: 600px)').matches);
   protected readonly slide = signal(0);
   protected readonly battleWon = signal(false);
+  /** Errori commessi nel minigioco della battaglia (contano negli XP insieme a quelli del task). */
+  protected readonly battleErrors = signal(0);
   protected readonly victoryOpen = signal(false);
   protected readonly rewardOpen = signal(false);
   protected readonly introOpen = signal(false);
@@ -391,8 +395,9 @@ export class MissionDetail {
       character: this.game.selectedCharacter(),
       enemy: this.registry.enemy(m?.enemyId),
       config: m?.game.config ?? {},
-      onCleared: () => {
+      onCleared: (result?: { mistakes: number }) => {
         this.battleWon.set(true);
+        this.setBattleErrors(Math.max(0, Math.floor(result?.mistakes ?? 0)));
         this.victoryOpen.set(true);
       },
     };
@@ -411,6 +416,7 @@ export class MissionDetail {
         this.phase.set(m?.challenge ? 'task' : saved ?? 'teoria');
         this.slide.set(0);
         this.battleWon.set(saved === 'task');
+        this.battleErrors.set(saved === 'task' && m ? this.savedBattleErrors(m.id) : 0);
         this.victoryOpen.set(false);
         this.rewardOpen.set(false);
         // Prima missione di un progetto, non ancora completata: si presenta il progetto (una volta per sessione).
@@ -503,6 +509,29 @@ export class MissionDetail {
     }
   }
 
+  /** Registra gli errori della battaglia e li ricorda per la sessione. */
+  private setBattleErrors(n: number): void {
+    this.battleErrors.set(n);
+    const id = this.current;
+    if (!id) return;
+    try {
+      const all = JSON.parse(sessionStorage.getItem(BATTLE_KEY) ?? '{}') as Record<string, number>;
+      all[id] = n;
+      sessionStorage.setItem(BATTLE_KEY, JSON.stringify(all));
+    } catch {
+      /* senza storage gli errori della battaglia si perdono ricaricando: non è un problema */
+    }
+  }
+
+  private savedBattleErrors(id: string): number {
+    try {
+      const n = (JSON.parse(sessionStorage.getItem(BATTLE_KEY) ?? '{}') as Record<string, unknown>)[id];
+      return typeof n === 'number' && Number.isFinite(n) && n >= 0 ? Math.floor(n) : 0;
+    } catch {
+      return 0;
+    }
+  }
+
   private savedPhase(id: string): Phase | null {
     try {
       const p = (JSON.parse(sessionStorage.getItem(PHASE_KEY) ?? '{}') as Record<string, unknown>)[id];
@@ -546,6 +575,7 @@ export class MissionDetail {
           difficulty: m.difficulty,
           seconds: this.seconds(),
           errors: this.errors(),
+          battleErrors: this.battleErrors(),
           code: stripBase(full, this.starterBase()),
           reference: stripBase(this.solution(), m.projectBase ?? ''),
           solutionViewed: this.solutionViewed(),
