@@ -7,6 +7,8 @@ Il progetto replica [`pixelademy-2`](https://github.com/gaetanodigrazia/pixelade
 (issue, milestone e board GitHub): ogni issue è sviluppata in un branch dedicato, mergiata su `main` e documentata in `docs/issues/`.
 Indice di tracciabilità: [`docs/INDEX.md`](docs/INDEX.md). Linee guida per i testi: [`docs/CONTENUTI.md`](docs/CONTENUTI.md).
 
+Contributi benvenuti: vedi [`CONTRIBUTING.md`](CONTRIBUTING.md).
+
 ## Comandi
 ```bash
 npm ci
