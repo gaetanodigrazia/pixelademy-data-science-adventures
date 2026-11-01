@@ -43,8 +43,8 @@ export const PATH_SEEDS: PathSeed[] = [
   {
     slug: 'nuvole',
     contributor: OWNER,
-    // il percorso lungo (10 missioni) si apre dopo il breve (3 missioni)
-    requires: ['variabili', 'liste', 'mobilita'],
+    // il percorso lungo (10 missioni) è il traguardo: si apre dopo tutti gli altri percorsi (anche le sfide pandas, di un altro pack)
+    requires: ['variabili', 'liste', 'mobilita', 'energia', 'statistica', 'outlier', 'probabilita', 'challenges-pandas'],
     title: 'Osservatorio delle Nuvole',
     description: 'Costruisci il bollettino meteo dell\'osservatorio: temperatura, pioggia e vento, una sezione per missione.',
     icon: '☁️',

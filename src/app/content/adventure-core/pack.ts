@@ -47,7 +47,8 @@ const paths: LearningPath[] = PATH_SEEDS.map((p) => {
     dashboard: p.dashboard !== false,
     defaultCharacterId: `${PACK_ID}-${p.characterSlug}`,
     contributor: p.contributor,
-    requires: p.requires?.map((slug) => `${PACK_ID}-${slug}`),
+    // uno slug con il trattino è già l'id di un percorso di un altro pack (es. `challenges-pandas`)
+    requires: p.requires?.map((slug) => (slug.includes('-') ? slug : `${PACK_ID}-${slug}`)),
   };
 });
 
