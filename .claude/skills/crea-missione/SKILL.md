@@ -25,6 +25,21 @@ Leggi la voce del percorso e il suo `project`. Ogni missione **aggiunge una sezi
   Il modello da copiare è un esercizio simile già presente (es. `percentuale`, `posizione`).
 - La soluzione deve usare **solo i dati del progetto** (`p.a`, `p.b`, `p.c`, `p.k`, `p.cut`, `p.alert`…) e variabili con nomi nuovi, non quelli già usati; `lines` è la riga che la sezione stampa, nel formato `Etichetta: valore` (float Python con `pyFloat`).
 
+### Attenzione: ogni esercizio stampa un'etichetta fissa
+Ogni esercizio scrive la sua riga con **una chiave di etichetta** (`labels.<chiave>` del `project`), e la Dashboard e le scene leggono quella riga per chiave. **Due esercizi dello stesso percorso non possono usare la stessa chiave**: la scena della seconda missione leggerebbe il valore della prima (test che falliscono: «la scena è coerente con la validazione», «la soluzione vince»). Le chiavi sono 10 (`first, count, filtered, total, mean, alert, key, extreme, range, final`), da qui il massimo di 10 missioni.
+
+| Chiave | Esercizi che la usano |
+|---|---|
+| `first` | `std-1`, `delta`, `conversione`, `media`, `frequenza`, `var-assegna` |
+| `count` | `std-2`, `ordina`, `posizione`, `mediana`, `valore-atteso`, `var-calcola` |
+| `filtered` | `std-3`, `percentuale`, `somma-sopra`, `moda`, `scostamento`, `liste-aggiungi` |
+| `total` | `std-4`, `campo`, `somma-dadi` |
+| `mean` | `std-5`, `varianza` |
+| `alert` | `std-6`, `zscore` |
+| `key` / `extreme` / `range` / `final` | `std-7` / `std-8` + `outlier` / `std-9` / `std-10` + `deviazione` |
+
+Prima di scegliere l'esercizio guarda quali chiavi usano già le missioni del percorso e prendine uno con una chiave **libera**. Il testo della chiave (es. `count` = «Valore atteso del dado») appartiene al percorso e deve avere senso per la nuova riga: se non ce l'ha, o non c'è una chiave libera adatta, serve un **esercizio nuovo** che usi una chiave libera (e magari un'etichetta in più nel `project`).
+
 ### 2. Aggiungi la missione al percorso
 In `curriculum.ts`, nella voce del percorso:
 - aggiungi l'id in `exercises: [..., 'nuovo-id']` (se la lista esiste) e `{ title, story }` in `missions`, **in fondo**;
@@ -32,7 +47,7 @@ In `curriculum.ts`, nella voce del percorso:
 - `labels` (nel `project`): aggiungi/usa una etichetta **non ripetuta** per la nuova riga; niente `:` nel testo.
 
 ### 3. Aggiorna i test
-I test «per percorso» (`games`, `viz`, `content`, `validator`, `python-solutions`) girano da soli sulla nuova missione. Aggiorna invece quelli che hanno **numeri e bollettini attesi per quel percorso**, tipicamente in `esercizi.spec.ts` (le righe del bollettino e il numero di missioni) e, se tocchi la sequenza, in `path-unlock.spec.ts`. Se hai creato un esercizio nuovo, aggiungi il suo caso di quiz con gli helper del file (`quizCases`).
+I test «per percorso» (`games`, `viz`, `content`, `validator`, `python-solutions`) girano da soli sulla nuova missione. Aggiorna invece quelli che hanno **numeri e bollettini attesi per quel percorso**, tipicamente in `esercizi.spec.ts` (le righe del bollettino, il numero e la difficoltà delle missioni, e il test «ogni missione ha una scena coerente») e, se tocchi la sequenza, in `path-unlock.spec.ts`. Se hai creato un esercizio nuovo, aggiungi il suo caso di quiz con gli helper del file (`quizCases`).
 
 ### 4. Verifica (obbligatoria)
 1. `npm test -- --watch=false` e `npm run build -- --configuration development` verdi.

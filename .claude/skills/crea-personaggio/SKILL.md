@@ -49,7 +49,7 @@ In `curriculum.ts`, nella voce del percorso (`PathSeed`):
 Se l'utente vuole solo un nuovo eroe «scegliibile» senza assegnarlo, salta questo passo: comparirà comunque nella selezione (se sbloccato).
 
 ## 5. Aggiorna i test
-`src/app/characters.spec.ts` contiene i conteggi e i nomi attesi (`['Aura', 'Nilo', 'Cora', 'Teo']`, `ENEMIES.length`): aggiornali con il nuovo personaggio. Il test degli sprite e quello degli id (unici, prefissati `adventure-core-`) girano da soli sui nuovi sprite. Se `unlockLevel` > 1, aggiungi un test che verifichi che il personaggio è bloccato a livello 1 e sbloccato al livello giusto (modello in `selection.spec.ts`).
+I conteggi e i nomi attesi sono scritti a mano in **due** file: `src/app/characters.spec.ts` (`['Aura', 'Nilo', 'Cora', 'Teo']`, `ENEMIES.length`, titolo del test) e `src/app/content.spec.ts` (`pack.characters.length`, e per i nemici il numero corrispondente). Aggiornali entrambi con il nuovo personaggio; con `npm test` vedrai fallire quelli che mancano. Il test degli sprite e quello degli id (unici, prefissati `adventure-core-`) girano da soli sui nuovi sprite. Se `unlockLevel` > 1, aggiungi un test che verifichi che il personaggio è bloccato a livello 1 e sbloccato al livello giusto (modello in `selection.spec.ts`).
 
 ## 6. Verifica (obbligatoria)
 1. `npm test -- --watch=false` e `npm run build -- --configuration development` verdi.
