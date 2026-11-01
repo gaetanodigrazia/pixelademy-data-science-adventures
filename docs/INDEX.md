@@ -74,7 +74,7 @@
 | E12 | IMP-01 PO Improvement — Esecuzione Python in Web Worker | #80 | #156 | `docs/issues/IMP-01.md` | fatto |
 | E12 | IMP-07 PO Improvement — Performance e bundle | #86 | #157 | `docs/issues/IMP-07.md` | fatto |
 | E12 | IMP-02 PO Improvement — Pyodide self-hosted e modalità offline (PWA) | #81 | #158 | `docs/issues/IMP-02.md` | fatto |
-| E12 | IMP-08 PO Improvement — Telemetria privacy-first e feedback | #87 | #159 | `docs/issues/IMP-08.md` | fatto |
+| E12 | IMP-08 PO Improvement — Telemetria privacy-first e feedback | #87 | #159 | `docs/issues/IMP-08.md` | fatto, poi **rimossa** con #181 |
 | E12 | IMP-06 PO Improvement — Sfide in stile Kaggle (pandas) | #85 | #160 | `docs/issues/IMP-06.md` | fatto (PR #160 e #164) |
 | E12 | IMP-03 PO Improvement — Internazionalizzazione (it/en) | #82 | #161 | `docs/issues/IMP-03.md` | **parziale** (issue aperta: vedi `docs/issues/IMP-03.md`) |
 | E11 | US-11.8 Contributor di un percorso | #165 | #166 | `docs/issues/US-11.8.md` | fatto |
@@ -85,3 +85,4 @@
 | E01 | US-01.6 Favicon di Pixelademy al posto di quella di Angular | #175 | #176 | `docs/issues/US-01.6.md` | fatto |
 | E06 | UX-06.1 Pagina missione: testo di vittoria, scroll del task e ripresa dopo il ricaricamento | #177 | #178 | `docs/issues/UX-06.1.md` | fatto |
 | E05 | US-05.5 Sblocco dei percorsi: l'Osservatorio delle Nuvole dopo Centro Mobilità | #179 | #180 | `docs/issues/US-05.5.md` | fatto |
+| E12 | CHORE-12.1 Rimuovere le statistiche anonime (opzione, testo, raccolta) | #181 | #182 | `docs/issues/CHORE-12.1.md` | fatto |

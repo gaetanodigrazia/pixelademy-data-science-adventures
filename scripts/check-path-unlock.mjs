@@ -36,7 +36,7 @@ await page.waitForTimeout(500);
 check((await page.locator('main').innerText()).includes('Percorso non trovato'), 'la Dashboard del percorso bloccato esiste');
 
 // completando Centro Mobilità (stato salvato come lo scriverebbe l'app) l'Osservatorio si apre
-await page.evaluate(() => localStorage.setItem('pixelademy.player.v1', JSON.stringify({ schemaVersion: 5, xp: 90, level: 2, completedMissionIds: ['adventure-core-mobilita-01', 'adventure-core-mobilita-02', 'adventure-core-mobilita-03'], solvedCode: {}, liked: false, telemetry: false, records: {}, selectedPathId: 'adventure-core-mobilita', selectedCharacterId: 'adventure-core-nilo' })));
+await page.evaluate(() => localStorage.setItem('pixelademy.player.v1', JSON.stringify({ schemaVersion: 5, xp: 90, level: 2, completedMissionIds: ['adventure-core-mobilita-01', 'adventure-core-mobilita-02', 'adventure-core-mobilita-03'], solvedCode: {}, liked: false, records: {}, selectedPathId: 'adventure-core-mobilita', selectedCharacterId: 'adventure-core-nilo' })));
 await page.goto(`${base}/`);
 await page.click('button:has-text("Cambia / cerca")');
 await page.waitForSelector('.result');

@@ -23,3 +23,7 @@
 - **Given** l'utente acconsente, **When** completa o abbandona una missione, **Then** si registra solo un evento aggregato anonimo (nessun ID, IP o cookie).
 
 Controlli eseguiti prima della PR: `npm test -- --watch=false` (passati) e `npm run build -- --configuration development` (riuscita).
+
+
+## Rimozione
+Le statistiche anonime sono state **rimosse** con la issue #181: nessuna schermata le mostrava (si leggevano solo con `GET /api/eventi`) e la scrittura era aperta a chiunque, quindi i numeri non erano affidabili; chiedere all'utente di attivarle non aveva senso. Tolti funzione Netlify, servizio, contatori, opzione e testo nella modale «Privacy e dati», campo `telemetry` dello stato (migrazione v5 → v6) e `docs/MISURE.md`.

@@ -1,7 +1,7 @@
 import { PlayerState } from '../models/player-state.model';
 
 /** Versione corrente dello stato salvato. Ogni cambio di forma incrementa il numero e aggiunge un passo in `STEPS`. */
-export const STATE_VERSION = 5;
+export const STATE_VERSION = 6;
 
 type Raw = Record<string, unknown>;
 
@@ -9,12 +9,17 @@ type Raw = Record<string, unknown>;
 const STEPS: Record<number, (s: Raw) => Raw> = {
   // v1 (nessun `schemaVersion`) → v2: il campo di versione e i valori predefiniti dei campi aggiunti nel tempo
   1: (s) => ({ ...s, liked: s['liked'] === true, solvedCode: typeof s['solvedCode'] === 'object' && s['solvedCode'] ? s['solvedCode'] : {} }),
-  // v2 → v3: la scelta sulle statistiche anonime (sempre spenta finché l'utente non la attiva)
-  2: (s) => ({ ...s, telemetry: false }),
+  // v2 → v3: (storico) aveva aggiunto la scelta sulle statistiche anonime, poi rimossa: vedi v5 → v6
+  2: (s) => ({ ...s }),
   // v3 → v4: `locale` (facoltativo: senza scelta si usa la lingua del browser); nessun valore da aggiungere
   3: (s) => ({ ...s }),
   // v4 → v5: la classifica locale delle sfide (vuota)
   4: (s) => ({ ...s, records: typeof s['records'] === 'object' && s['records'] ? s['records'] : {} }),
+  // v5 → v6: le statistiche anonime sono state rimosse: il campo `telemetry` dei salvataggi vecchi si scarta
+  5: (s) => {
+    const { telemetry: _scartato, ...rest } = s;
+    return rest;
+  },
 };
 
 /**
