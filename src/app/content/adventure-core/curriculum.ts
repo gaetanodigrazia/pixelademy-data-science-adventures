@@ -44,7 +44,7 @@ export const PATH_SEEDS: PathSeed[] = [
     slug: 'nuvole',
     contributor: OWNER,
     // il percorso lungo (10 missioni) si apre dopo il breve (3 missioni)
-    requires: ['mobilita'],
+    requires: ['variabili', 'liste', 'mobilita'],
     title: 'Osservatorio delle Nuvole',
     description: 'Costruisci il bollettino meteo dell\'osservatorio: temperatura, pioggia e vento, una sezione per missione.',
     icon: '☁️',
@@ -91,6 +91,7 @@ export const PATH_SEEDS: PathSeed[] = [
   {
     slug: 'mobilita',
     contributor: OWNER,
+    requires: ['variabili', 'liste'],
     title: 'Centro Mobilità',
     description: 'Costruisci il rapporto della linea 7: variazione delle attese, le attese più brevi e la percentuale di attese lunghe.',
     icon: '🚲',
@@ -134,6 +135,7 @@ export const PATH_SEEDS: PathSeed[] = [
   {
     slug: 'energia',
     contributor: OWNER,
+    requires: ['variabili', 'liste'],
     title: 'Officina dell\'Energia',
     description: 'Costruisci il registro della centrale: il costo di una lettura, la posizione del picco e la somma dei consumi alti.',
     icon: '🔋',
@@ -177,6 +179,7 @@ export const PATH_SEEDS: PathSeed[] = [
   {
     slug: 'statistica',
     contributor: OWNER,
+    requires: ['variabili', 'liste'],
     title: 'Statistica dei Segnali',
     description: 'Le basi della matematica per la data science: media, mediana, moda, campo di variazione, varianza e deviazione standard, sui segnali delle boe.',
     icon: '📊',
@@ -223,6 +226,7 @@ export const PATH_SEEDS: PathSeed[] = [
   {
     slug: 'outlier',
     contributor: OWNER,
+    requires: ['variabili', 'liste'],
     title: 'Caccia agli Outlier',
     description: 'Impara a riconoscere i valori anomali: media, varianza, deviazione standard e z-score, sui tempi di consegna di un servizio.',
     icon: '🔍',
@@ -268,6 +272,7 @@ export const PATH_SEEDS: PathSeed[] = [
   {
     slug: 'probabilita',
     contributor: OWNER,
+    requires: ['variabili', 'liste'],
     title: 'Probabilità con i Dadi',
     description: 'I primi concetti di probabilità: frequenza osservata, valore atteso e probabilità di un evento, con i lanci di un dado.',
     icon: '🎲',
@@ -307,6 +312,81 @@ export const PATH_SEEDS: PathSeed[] = [
       { title: 'Cosa ci aspettiamo', story: 'Prima dei lanci c\'è la teoria: Aura calcola il valore atteso di un dado a sei facce.' },
       { title: 'Dati contro teoria', story: 'La media dei lanci reali è vicina al valore atteso? Aura ne misura lo scostamento.' },
       { title: 'Due dadi, somma 7', story: 'Ultima sezione: con due dadi, quanto è probabile fare 7? Aura conta tutte le coppie. Il rapporto è completo!' },
+    ],
+  },
+  // percorsi base (in fondo al file per non spostare gli altri; il catalogo li mostra per primi, in ordine di dipendenza)
+  {
+    slug: 'variabili',
+    contributor: OWNER,
+    title: 'Le Variabili',
+    description: 'Il primo passo con Python: dai un nome ai valori, fai i conti con i nomi e cambia il loro contenuto. Sblocca tutti gli altri percorsi.',
+    icon: '🏷️',
+    tags: ['python', 'base', 'variabili'],
+    characterSlug: 'nilo',
+    enemySlug: 'ingorgo',
+    // percorso base: esercizi propri sulle variabili, senza liste e senza Dashboard
+    exercises: ['var-assegna', 'var-calcola', 'var-cambia'],
+    dashboard: false,
+    project: {
+      heading: 'BOLLETTINO DEL PASSAPAROLA',
+      // niente liste in questo percorso: `misura` vale a[k], `soglia` vale `alert`, il bonus vale `cut`
+      a: { name: 'passi', label: 'Passi della giornata', unit: 'passi', values: [4200, 5100, 6300, 7800, 9100, 6700, 5400] },
+      b: { name: 'km', label: 'Chilometri', unit: 'km', values: [3, 4, 5, 6, 7, 5, 4] },
+      c: { name: 'minuti', label: 'Minuti di cammino', unit: 'min', values: [40, 50, 60, 70, 80, 60, 50] },
+      k: 3,
+      cut: 1500,
+      cutName: 'bonus',
+      alert: 6000,
+      registry: { name: 'giorni', entries: { lun: 4200, mar: 5100, mer: 6300, gio: 7800 }, key: 'mer', unit: 'passi' },
+      extreme: 'max',
+      labels: {
+        first: 'Passi di oggi',
+        count: 'Passi oltre l\'obiettivo',
+        filtered: 'Passi con il bonus',
+        total: 'Totale', mean: 'Media', alert: 'Allerta', key: 'Chiave', extreme: 'Massimo', range: 'Escursione', final: 'Finale',
+      },
+    },
+    missions: [
+      { title: 'Dai un nome al valore', story: 'Nilo registra i passi di oggi: il primo passo è dare un nome al valore con una variabile.' },
+      { title: 'Conti con i nomi', story: 'L\'obiettivo giornaliero è già salvato in una variabile: quanto manca, o quanto avanza?' },
+      { title: 'Una variabile che cambia', story: 'Dopo una passeggiata in più i passi aumentano: Nilo aggiorna la stessa variabile con il bonus.' },
+    ],
+  },
+  {
+    slug: 'liste',
+    contributor: OWNER,
+    requires: ['variabili'],
+    title: 'Le Liste',
+    description: 'Leggi, conta e aggiungi elementi a una lista: il secondo percorso base. Sblocca tutti gli altri percorsi.',
+    icon: '📋',
+    tags: ['python', 'base', 'liste'],
+    characterSlug: 'teo',
+    enemySlug: 'dispersione',
+    // percorso base: leggere un elemento, contare, aggiungere (append)
+    exercises: ['std-1', 'std-2', 'liste-aggiungi'],
+    dashboard: false,
+    project: {
+      heading: 'ELENCO DELLA SPESA',
+      a: { name: 'prezzi', label: 'Prezzi degli articoli', unit: '€', values: [3, 8, 5, 12, 7, 4, 9] },
+      b: { name: 'carrello', label: 'Articoli nel carrello', unit: '€', values: [4, 6, 9, 2, 5] },
+      c: { name: 'sconti', label: 'Sconti', unit: '€', values: [1, 2, 1, 3, 2, 1, 2] },
+      k: 3,
+      cut: 7,
+      cutName: 'nuovo_articolo',
+      alert: 6,
+      registry: { name: 'reparti', entries: { frutta: 12, latte: 8, pane: 5, pasta: 9 }, key: 'pane', unit: '€' },
+      extreme: 'max',
+      labels: {
+        first: 'Prezzo del quarto articolo',
+        count: 'Articoli nel carrello',
+        filtered: 'Carrello aggiornato',
+        total: 'Totale', mean: 'Media', alert: 'Allerta', key: 'Chiave', extreme: 'Massimo', range: 'Escursione', final: 'Finale',
+      },
+    },
+    missions: [
+      { title: 'Il quarto prezzo', story: 'Teo apre l\'elenco della spesa: legge il prezzo del quarto articolo con il suo indice.' },
+      { title: 'Quanti articoli?', story: 'Al banco serve sapere quanti articoli ci sono nel carrello: Teo li conta.' },
+      { title: 'Un articolo in più', story: 'Teo trova un altro articolo: lo aggiunge in fondo alla lista con append().' },
     ],
   },
 ];
