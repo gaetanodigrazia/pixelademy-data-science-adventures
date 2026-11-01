@@ -87,3 +87,4 @@
 | E05 | US-05.5 Sblocco dei percorsi: l'Osservatorio delle Nuvole dopo Centro Mobilità | #179 | #180 | `docs/issues/US-05.5.md` | fatto |
 | E12 | CHORE-12.1 Rimuovere le statistiche anonime (opzione, testo, raccolta) | #181 | #182 | `docs/issues/CHORE-12.1.md` | fatto |
 | E05 | BUG-05.3 Il menu del profilo non si chiude cliccando fuori | #184 | #188 | `docs/issues/BUG-05.3.md` | fatto |
+| E06 | UX-06.3 «Esegui codice» e «Ripristina» accanto a Suggerimento e Scena; editor più alto | #185 | #189 | `docs/issues/UX-06.3.md` | fatto |

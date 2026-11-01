@@ -163,14 +163,14 @@ describe('pagina missione: scroll del task', () => {
     f.destroy();
   });
 
-  it('in modalità scroll l\'editor tiene almeno 260 px e a riposo almeno 150 (non si schiaccia fino a sparire)', () => {
+  it('in modalità scroll l\'editor tiene almeno 260 px e a riposo almeno 200 (non si schiaccia fino a sparire)', () => {
     const css = readFileSync('src/app/features/mission-detail/mission-detail.ts', 'utf8');
     const rule = /\.task\.scrolls \.editor \{([^}]*)\}/.exec(css)?.[1] ?? '';
     expect(rule).toMatch(/flex:\s*1 0 auto/);
     expect(rule).toMatch(/min-height:\s*260px/);
     expect(/\.task\.scrolls \{([^}]*)\}/.exec(css)?.[1]).toMatch(/overflow-y:\s*auto/);
-    // a riposo l'editor ha comunque un'altezza minima (a 680 px di schermo era schiacciato a 74) e il riquadro scorre se manca spazio
-    expect(/\n    \.editor \{([^}]*)\}/.exec(css)?.[1]).toMatch(/min-height:\s*150px/);
+    // a riposo l'editor ha comunque un'altezza minima (a 680 px di schermo era schiacciato a 74; senza la riga di pulsanti sotto ora è 200) e il riquadro scorre se manca spazio
+    expect(/\n    \.editor \{([^}]*)\}/.exec(css)?.[1]).toMatch(/min-height:\s*200px/);
     expect(/\n    \.task \{([^}]*)\}/.exec(css)?.[1]).toMatch(/overflow-y:\s*auto/);
   });
 });
