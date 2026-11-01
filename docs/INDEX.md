@@ -100,3 +100,4 @@
 | E12 | DOC-01.4 Skill «crea-personaggio» e «crea-missione»: correzioni dal collaudo | #205 | #206 | `docs/issues/DOC-01.4.md` | fatto |
 | E05 | UX-06.5 Tooltip sulle stelle: «Difficoltà N su 10» | #207 | #209 | `docs/issues/UX-06.5.md` | fatto |
 | E11 | US-11.12 «Le Liste»: una missione a parte per append() e pop() | #208 | #210 | `docs/issues/US-11.12.md` | fatto |
+| E11 | BUG-11.13 «Togli e aggiungi»: il quiz usa len() senza spiegarlo | #211 | #212 | `docs/issues/BUG-11.13.md` | fatto |
