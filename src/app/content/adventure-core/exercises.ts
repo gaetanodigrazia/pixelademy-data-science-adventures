@@ -675,9 +675,9 @@ const EXTRA: Exercise[] = [
         theory: [
           { title: 'append(): aggiunge in coda', body: `${b}.append(valore) mette un elemento in fondo alla lista, che diventa più lunga di 1. Modifica la lista stessa: non crea una copia e non restituisce nulla.` },
           { title: 'pop(): toglie l\'ultimo', body: `${b}.pop() toglie l'ultimo elemento e lo restituisce: rimosso = ${b}.pop() salva in rimosso il valore tolto (qui ${num(last)}) e la lista diventa più corta di 1. Su una lista vuota dà errore.` },
-          { title: 'Cambia la lista, non la riga prima', body: `Dopo append() e pop() la lista ha un contenuto nuovo: ogni istruzione lavora sulla lista com'è in quel momento, nell'ordine in cui le scrivi.` },
+          { title: 'len(): quanti elementi', body: `len(${b}) restituisce quanti elementi ha la lista in quel momento: se ${b} ne ha ${p.b.values.length}, len(${b}) vale ${p.b.values.length}. Dopo un pop() vale 1 in meno, dopo un append() 1 in più: è il modo più rapido per controllare l'effetto.` },
         ],
-        briefing: `Sezione 2. Un articolo viene tolto dal carrello e un altro viene aggiunto. Con pop() togli l'ultimo elemento di \`${b}\` (salvalo in \`rimosso\`), poi aggiungi con append() la variabile \`${p.cutName}\` (${num(p.cut)} ${p.b.unit}). Il bollettino stampa la lista aggiornata.`,
+        briefing: `Sezione 2. Un articolo viene tolto dal carrello e un altro viene aggiunto. Con pop() togli l'ultimo elemento di \`${b}\` (salvalo in \`rimosso\`; len() ti dice quanti ne restano), poi aggiungi con append() la variabile \`${p.cutName}\` (${num(p.cut)} ${p.b.unit}). Il bollettino stampa la lista aggiornata.`,
         hint: `Due istruzioni, in quest'ordine: rimosso = ${b}.pop() e poi ${b}.append(${p.cutName}).`,
         starter: body(`rimosso = None   # togli l'ultimo elemento con pop()\n# aggiungi ${p.cutName} in coda con append()`),
         solution: body(`rimosso = ${b}.pop()\n${b}.append(${p.cutName})`),
