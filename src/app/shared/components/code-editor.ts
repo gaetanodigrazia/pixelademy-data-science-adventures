@@ -13,6 +13,7 @@ import { AfterViewInit, ChangeDetectionStrategy, Component, ElementRef, OnDestro
           [value]="text()" (input)="text.set($any($event.target).value)" (focus)="typing.set(true)" (blur)="typing.set(false)" (paste)="pasted.emit($any($event).clipboardData?.getData('text')?.length ?? 0)"></textarea>
       }
     </div>
+    @if (toolbar()) {
     <div class="row left">
       <button type="button" class="btn primary" [disabled]="running()" (click)="run()" aria-label="Esegui codice">
         {{ running() ? 'In esecuzione…' : '▶ Esegui codice' }}
@@ -25,6 +26,7 @@ import { AfterViewInit, ChangeDetectionStrategy, Component, ElementRef, OnDestro
       <button type="button" class="btn kb" [attr.aria-pressed]="typing()" aria-label="Mostra o nascondi la tastiera"
         (pointerdown)="$event.preventDefault()" (mousedown)="$event.preventDefault()" (click)="toggleKeyboard()">⌨ {{ typing() ? 'Chiudi' : 'Scrivi' }}</button>
     </div>
+    }
   `,
   styles: `
     :host { display: flex; flex-direction: column; gap: 6px; min-height: 0; }
@@ -42,6 +44,8 @@ import { AfterViewInit, ChangeDetectionStrategy, Component, ElementRef, OnDestro
 export class CodeEditor implements AfterViewInit, OnDestroy {
   readonly starterCode = input.required<string>();
   readonly running = input(false);
+  /** Mostra sotto l'editor i pulsanti Esegui/Ripristina/tastiera. La pagina missione li mette nella propria barra (`run()`, `reset()` e `toggleKeyboard()` sono pubblici) e li nasconde qui. */
+  readonly toolbar = input(true);
   readonly runCode = output<string>();
   /** «Interrompi»: ferma un programma che non finisce. */
   readonly stopCode = output<void>();
@@ -53,7 +57,7 @@ export class CodeEditor implements AfterViewInit, OnDestroy {
   protected readonly text = signal('');
   private readonly ta = viewChild<ElementRef<HTMLTextAreaElement>>('ta');
   /** L'editor ha il fuoco (la tastiera del telefono è aperta o sta per aprirsi). */
-  protected readonly typing = signal(false);
+  readonly typing = signal(false);
   private editor?: {
     getValue(): string; setValue(v: string): void; dispose(): void; focus(): void;
     onDidFocusEditorText(cb: () => void): unknown; onDidBlurEditorText(cb: () => void): unknown;
@@ -115,7 +119,7 @@ export class CodeEditor implements AfterViewInit, OnDestroy {
     this.editor?.focus();
   }
 
-  protected toggleKeyboard(): void {
+  toggleKeyboard(): void {
     const area = this.ta()?.nativeElement;
     if (this.typing()) {
       (area ?? (document.activeElement as HTMLElement | null))?.blur();
@@ -126,11 +130,11 @@ export class CodeEditor implements AfterViewInit, OnDestroy {
     }
   }
 
-  protected run(): void {
+  run(): void {
     this.runCode.emit(this.editor ? this.editor.getValue() : this.text());
   }
 
-  protected reset(): void {
+  reset(): void {
     this.text.set(this.starterCode());
     this.editor?.setValue(this.starterCode());
   }

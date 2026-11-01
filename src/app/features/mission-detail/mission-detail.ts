@@ -94,10 +94,24 @@ type Phase = 'teoria' | 'battaglia' | 'task';
                 <app-code-world class="reader" [compact]="!sceneOpen()" [viz]="v" [character]="game.selectedCharacter()" [ran]="attempts() > 0" [output]="vizOutput()" [error]="error()" />
               }
               <div class="hintrow">
-                <button type="button" class="btn" (click)="showHint.set(!showHint())">{{ showHint() ? 'Nascondi suggerimento' : '💡 Suggerimento' }}</button>
-                @if (m.viz) {
-                  <button type="button" class="btn scene" [attr.aria-expanded]="sceneOpen()" (click)="sceneOpen.set(!sceneOpen())">🎮 Scena {{ sceneOpen() ? '▴' : '▾' }}</button>
-                }
+                <!-- due gruppi, divisi da un filetto: gli aiuti (suggerimento, scena) e le azioni sul codice -->
+                <div class="group" role="group" aria-label="Aiuti">
+                  <button type="button" class="btn" (click)="showHint.set(!showHint())">{{ showHint() ? 'Nascondi suggerimento' : '💡 Suggerimento' }}</button>
+                  @if (m.viz) {
+                    <button type="button" class="btn scene" [attr.aria-expanded]="sceneOpen()" (click)="sceneOpen.set(!sceneOpen())">🎮 Scena {{ sceneOpen() ? '▴' : '▾' }}</button>
+                  }
+                </div>
+                <span class="sep" aria-hidden="true"></span>
+                <div class="group actions" role="group" aria-label="Azioni sul codice">
+                  <button type="button" class="btn primary" [disabled]="running()" (click)="ed.run()" aria-label="Esegui codice">{{ running() ? 'In esecuzione…' : '▶ Esegui codice' }}</button>
+                  @if (running()) {
+                    <button type="button" class="btn danger" (click)="python.stop()" aria-label="Interrompi l'esecuzione">■ Interrompi</button>
+                  }
+                  <button type="button" class="btn" [disabled]="running()" (click)="ed.reset()" aria-label="Ripristina codice iniziale" title="Ripristina codice iniziale">↺ Ripristina</button>
+                  <!-- Solo su touch: apre/chiude la tastiera. Non ruba il fuoco all'editor, altrimenti chiuderla la riaprirebbe. -->
+                  <button type="button" class="btn kb" [attr.aria-pressed]="ed.typing()" aria-label="Mostra o nascondi la tastiera"
+                    (pointerdown)="$event.preventDefault()" (mousedown)="$event.preventDefault()" (click)="ed.toggleKeyboard()">⌨ {{ ed.typing() ? 'Chiudi' : 'Scrivi' }}</button>
+                </div>
                 @if (showHint()) { <span class="status">{{ m.hint }}</span> }
                 <span class="meter" aria-label="Cronometro ed errori">
                   <span [class.late]="seconds() > par()" [title]="'Tempo di riferimento: ' + par() + ' s'">⏱ {{ clock() }}</span>
@@ -120,7 +134,7 @@ type Phase = 'teoria' | 'battaglia' | 'task';
                   </details>
                 }
               }
-              <app-code-editor class="editor" [starterCode]="section()" [running]="running()" (runCode)="run($event)" (stopCode)="python.stop()" (pasted)="pastedChars.update((n) => n + $event)" />
+              <app-code-editor #ed class="editor" [toolbar]="false" [starterCode]="section()" [running]="running()" (runCode)="run($event)" (stopCode)="python.stop()" (pasted)="pastedChars.update((n) => n + $event)" />
               <pre class="console" aria-live="polite" aria-label="Console">{{ output() || '(nessun output)' }}</pre>
               @if (error()) { <pre class="console err" role="alert">{{ error() }}</pre> }
               <div class="foot">
@@ -229,8 +243,13 @@ type Phase = 'teoria' | 'battaglia' | 'task';
     .ctx .all { margin: 2px 8px 6px; padding: 3px 8px; font-size: .5rem; }
     .ctx pre { max-height: 6.5em; overflow: auto; margin: 0; padding: 2px 8px 4px; font: .55rem/1.5 var(--mono); color: var(--muted); }
     .hintrow { flex: none; display: flex; flex-wrap: wrap; align-items: center; gap: 8px; font-size: .55rem; }
+    .group { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+    /* filetto tra aiuti e azioni */
+    .sep { align-self: stretch; width: 3px; margin: 0 6px; background: var(--line); }
+    .kb { display: none; }
+    @media (hover: none) and (pointer: coarse) { .kb { display: inline-flex; } }
     /* L'editor non scende sotto i 150 px (a 680 px di altezza era schiacciato a 74): se manca spazio, scorre il riquadro del task. */
-    .editor { flex: 1; min-height: 150px; }
+    .editor { flex: 1; min-height: 200px; }
     .task { overflow-y: auto; }
     /* Programma esteso o errore in console: il contenuto non deve schiacciare l'editor fino a farlo sparire, il riquadro scorre. */
     .task.scrolls { overflow-y: auto; }
@@ -251,6 +270,8 @@ type Phase = 'teoria' | 'battaglia' | 'task';
       .task { overflow-y: auto; }
       .editor { flex: 1 0 auto; min-height: 260px; }
       .hintrow .btn { padding: 5px 8px; font-size: .5rem; }
+      .sep { display: none; } /* su telefono i due gruppi vanno a capo: il filetto non serve */
+      .group { width: 100%; }
       .meter { font-size: .5rem; }
       .restart { margin-left: 0; }
       .title .status { font-size: .42rem; }

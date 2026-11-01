@@ -54,7 +54,7 @@ await page.waitForTimeout(300);
 const whole = await metrics();
 console.log('programma esteso:', JSON.stringify({ before, whole }));
 if (before.scrolls) problems.push('senza programma esteso il riquadro ha già la classe scrolls');
-if (before.editorH < 150) problems.push(`a riposo l'editor è alto solo ${before.editorH}px (minimo 150)`);
+if (before.editorH < 200) problems.push(`a riposo l'editor è alto solo ${before.editorH}px (minimo 200)`);
 if (!whole.scrolls || whole.overflowY !== 'auto') problems.push('«Mostra tutto il programma» non abilita lo scroll');
 if (whole.editorH < 255) problems.push(`con il programma esteso l'editor è alto solo ${whole.editorH}px`);
 await page.click('button:has-text("Mostra solo ciò che serve")');
