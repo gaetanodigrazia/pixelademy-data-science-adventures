@@ -2,6 +2,9 @@ import { ChangeDetectionStrategy, Component, HostListener, OnInit, computed, sig
 import { BaseGame, fmt, list } from './base-game';
 import { SpriteView } from '../sprite-view';
 
+/** Ostacoli della corsa. */
+export const DEFAULT_COUNT = 18;
+
 /** Un ostacolo: il codice che lo precede, la condizione scritta sull'ostacolo e se è vera. */
 export interface Obstacle {
   lines: string[];
@@ -16,7 +19,7 @@ export interface RunnerConfig {
   v: number[];
   th: number;
   level: number;
-  /** Quanti ostacoli (default 8: circa 30–60 secondi). */
+  /** Quanti ostacoli (default 18: circa 1–2 minuti). */
   count?: number;
 }
 
@@ -47,7 +50,6 @@ const OPS: Record<string, (a: number, b: number) => boolean> = {
 /** Ostacoli «leggi un elemento e confrontalo»: `prezzi[2] > 6`. Da livello 2 anche indici negativi e >=, <=. */
 export function indexObstacles(c: RunnerConfig): Obstacle[] {
   const n = c.v.length;
-  const count = c.count ?? 8;
   const ops = c.level >= 2 ? ['>', '<', '>=', '<='] : ['>', '<'];
   const idxs = Array.from({ length: n }, (_, i) => i).concat(c.level >= 2 ? Array.from({ length: n }, (_, i) => -(i + 1)) : []);
   const all: Obstacle[] = [];
@@ -63,6 +65,7 @@ export function indexObstacles(c: RunnerConfig): Obstacle[] {
       });
     }
   }
+  const count = Math.min(c.count ?? DEFAULT_COUNT, all.length);
   const rnd = rng(c.level * 7919 + n);
   const yes = shuffled(all.filter((o) => o.truth), rnd);
   const no = shuffled(all.filter((o) => !o.truth), rnd);
@@ -75,7 +78,7 @@ export function indexObstacles(c: RunnerConfig): Obstacle[] {
 
 /** Ostacoli «dopo append/pop quanto è lunga la lista»: la lista cambia da un ostacolo all'altro. */
 export function lenObstacles(c: RunnerConfig): Obstacle[] {
-  const count = c.count ?? 8;
+  const count = c.count ?? DEFAULT_COUNT;
   const rnd = rng(c.level * 104729 + c.v.length);
   const state = [...c.v];
   let fed = 0;
@@ -124,22 +127,28 @@ export function obstaclesFor(c: RunnerConfig): Obstacle[] {
 }
 
 /**
- * Corsa dei condizionali: minigioco bonus (30–60 s) tra la battaglia e il task. A ogni ostacolo compare una condizione Python:
- * se è vera si salta, se è falsa si corre. La difficoltà viene dal concetto (indici, len, append/pop), non dai riflessi:
- * con «riduci movimento» attivo non c'è limite di tempo. Sbagliare o lasciar scadere il tempo costa solo un errore e si passa oltre.
+ * Corsa dei condizionali: minigioco **bonus** (1–2 minuti), che compare a sorpresa dopo una buona battaglia. A ogni ostacolo compare
+ * una condizione Python: se è vera si salta, se è falsa si corre. La difficoltà viene dal concetto (indici, len, append/pop): la
+ * velocità cresce, e una serie di risposte giuste dà punti extra. Con «riduci movimento» non c'è limite di tempo.
+ * Sbagliare o lasciar scadere il tempo costa solo un errore e si passa oltre.
  */
 @Component({
   selector: 'app-runner',
   imports: [SpriteView],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
-    <section class="run" aria-label="Corsa dei condizionali">
+    <section class="run" aria-label="Corsa dei condizionali" [style.--speed.ms]="scrollMs()">
       <header class="top">
-        <h2>Corsa dei condizionali</h2>
-        <span class="stats" aria-live="off">Ostacoli {{ done() }}/{{ obstacles.length }} · Errori {{ mistakes() }}</span>
+        <h2>🎁 Corsa dei condizionali</h2>
+        <span class="stats">Punti <b>{{ score() }}</b> · Errori {{ mistakes() }}</span>
       </header>
       <p class="goal"><strong>🎯 Obiettivo</strong> · Condizione vera: <b>salta</b>. Condizione falsa: <b>corri</b>.
-        @if (timed) { Hai pochi secondi per ostacolo. } @else { Nessun limite di tempo. }</p>
+        @if (timed) { Più vai avanti, più si va veloci! } @else { Nessun limite di tempo. }</p>
+      <div class="meter" role="progressbar" aria-valuemin="0" [attr.aria-valuemax]="obstacles.length" [attr.aria-valuenow]="done()"
+        [attr.aria-label]="'Ostacolo ' + (done() + 1 > obstacles.length ? obstacles.length : done() + 1) + ' di ' + obstacles.length">
+        <i [style.width.%]="(done() / obstacles.length) * 100"></i>
+        <span class="streak" [class.hot]="streak() >= 3" aria-live="polite">🔥 Serie {{ streak() }}</span>
+      </div>
 
       @if (current(); as o) {
         <div class="code" aria-label="Codice Python dell'ostacolo">
@@ -147,15 +156,17 @@ export function obstaclesFor(c: RunnerConfig): Obstacle[] {
         </div>
         <!-- un elemento nuovo per ogni ostacolo: l'animazione e la barra del tempo ripartono da capo -->
         @for (n of key(); track n) {
-          <div class="track" [class.jump]="jumping()" [class.stumble]="stumbling()">
-            @if (character) { <app-sprite-view class="hero" [sprite]="character.sprite" [scale]="3" [label]="character.name" /> }
+          <div class="track" [class.jump]="jumping()" [class.stumble]="stumbling()" [class.paused]="!timed || locked()">
+            <div class="sky" aria-hidden="true"></div>
+            <div class="hills" aria-hidden="true"></div>
             <div class="ground" aria-hidden="true"></div>
-            <div class="obstacle" [class.run]="timed && !locked()" [style.animation-duration.ms]="windowMs" role="status" aria-live="polite">
+            @if (character) { <app-sprite-view class="hero" [sprite]="character.sprite" [scale]="3" [label]="character.name" /> }
+            <div class="obstacle" [class.run]="timed && !locked()" [class.hit]="cleared1()" [style.animation-duration.ms]="windowMs()" role="status" aria-live="polite">
               <span class="sr">Ostacolo {{ done() + 1 }} di {{ obstacles.length }}: </span><code>{{ o.cond }}</code>
             </div>
           </div>
           @if (timed) {
-            <div class="timer" aria-hidden="true"><i [class.run]="!locked()" [style.animation-duration.ms]="windowMs"></i></div>
+            <div class="timer" aria-hidden="true"><i [class.run]="!locked()" [style.animation-duration.ms]="windowMs()"></i></div>
           }
         }
         <div class="row" role="group" aria-label="Decidi">
@@ -164,7 +175,7 @@ export function obstaclesFor(c: RunnerConfig): Obstacle[] {
         </div>
         <p class="hint" aria-hidden="true">Tastiera: ↑ salta · → corri</p>
       } @else {
-        <p class="end">🏁 Traguardo! {{ done() - mistakes() }} ostacoli su {{ obstacles.length }} superati al primo colpo.</p>
+        <p class="end">🏁 Traguardo! {{ score() }} punti · serie migliore {{ best() }} · {{ obstacles.length - mistakes() }} ostacoli su {{ obstacles.length }} al primo colpo.</p>
       }
       <p class="msg" [class.ok]="feedback()?.kind === 'ok'" [class.err]="feedback()?.kind === 'err'" role="status" aria-live="polite">{{ feedback()?.text }}</p>
     </section>
@@ -175,20 +186,41 @@ export function obstaclesFor(c: RunnerConfig): Obstacle[] {
       background: var(--panel); border: 4px solid var(--line); }
     .top { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
     h2 { margin: 0; font-size: .7rem; }
-    .stats { font-size: .5rem; color: var(--muted); }
+    .stats { font-size: .55rem; color: var(--muted); }
+    .stats b { color: var(--accent-2); }
     .goal { margin: 0; padding: 6px 10px; font-size: .62rem; line-height: 1.6; background: #0b0b24; border-left: 4px solid var(--accent); }
     .goal strong { color: var(--accent-2); font-weight: normal; }
+    .meter { position: relative; height: 14px; background: #020617; border: 1px solid #64748b; }
+    .meter i { display: block; height: 100%; background: var(--good); transition: width .3s; }
+    .streak { position: absolute; right: 6px; top: -1px; font-size: .55rem; line-height: 14px; color: var(--muted); }
+    .streak.hot { color: var(--accent-2); }
     .code { display: flex; flex-direction: column; gap: 2px; padding: 6px 10px; background: #020617; border: 2px solid var(--line); }
     .code code { font: .62rem/1.7 var(--mono); color: #e2e8f0; white-space: pre-wrap; overflow-wrap: anywhere; }
-    .track { position: relative; height: 110px; overflow: hidden; background: #0b1120; border: 2px solid var(--line); }
-    .ground { position: absolute; left: 0; right: 0; bottom: 14px; height: 4px; background: var(--line); }
-    .hero { position: absolute; left: 14px; bottom: 18px; transition: transform .25s ease-out; }
-    .track.jump .hero { transform: translateY(-44px); }
-    .track.stumble .hero { transform: rotate(-12deg); }
-    .obstacle { position: absolute; bottom: 18px; left: 52%; max-width: 46%; padding: 6px 8px; background: #7c2d12; border: 2px solid #fb923c; }
+    .track { position: relative; height: 150px; overflow: hidden; background: linear-gradient(#0b1120, #1e1b4b); border: 2px solid var(--line); }
+    /* sfondo che scorre: più lontano = più lento; la velocità cresce con l'avanzare della corsa (--speed) */
+    .hills { position: absolute; left: 0; right: 0; bottom: 30px; height: 40px; opacity: .6;
+      background: repeating-linear-gradient(90deg, #312e81 0 60px, transparent 60px 110px); animation: scroll-hills calc(var(--speed, 3000ms) * .92) linear infinite; }
+    .sky { position: absolute; inset: 0 0 70px; opacity: .8;
+      background: radial-gradient(circle, #fff 1px, transparent 1.5px) 0 0 / 70px 40px; animation: scroll-sky calc(var(--speed, 3000ms) * 1.55) linear infinite; }
+    .ground { position: absolute; left: 0; right: 0; bottom: 0; height: 30px; background: #0f172a; border-top: 4px solid var(--line); }
+    .ground::after { content: ''; position: absolute; inset: 8px 0 0; animation: scroll-ground calc(var(--speed, 3000ms) * .19) linear infinite;
+      background: repeating-linear-gradient(90deg, #475569 0 24px, transparent 24px 56px); height: 4px; }
+    .track.paused .hills, .track.paused .sky, .track.paused .ground::after { animation-play-state: paused; }
+    /* ogni strato scorre di un suo periodo intero: il ciclo è senza stacchi */
+    @keyframes scroll-hills { to { background-position-x: -110px; } }
+    @keyframes scroll-sky { to { background-position-x: -70px; } }
+    @keyframes scroll-ground { to { background-position-x: -56px; } }
+    .hero { position: absolute; left: 18px; bottom: 30px; animation: bob .5s ease-in-out infinite; transition: transform .3s cubic-bezier(.3, 1.4, .5, 1); }
+    .track.paused .hero { animation-play-state: paused; }
+    @keyframes bob { 0%, 100% { margin-bottom: 0; } 50% { margin-bottom: 4px; } }
+    .track.jump .hero { transform: translateY(-62px); }
+    .track.stumble .hero { transform: rotate(-14deg); }
+    .obstacle { position: absolute; bottom: 30px; left: 55%; width: max-content; max-width: 70%; padding: 6px 8px; background: #7c2d12; border: 2px solid #fb923c;
+      box-shadow: 0 4px 0 #431407; transition: opacity .3s, transform .3s; }
     .obstacle code { font: .62rem/1.4 var(--mono); color: #fff7ed; overflow-wrap: anywhere; }
     .obstacle.run { animation: approach linear forwards; }
-    @keyframes approach { from { left: 92%; } to { left: 20%; } }
+    .obstacle.hit { opacity: 0; transform: scale(.6); }
+    @keyframes approach { from { left: 92%; } to { left: 22%; } }
     .timer { height: 6px; background: #020617; border: 1px solid #64748b; }
     .timer i { display: block; height: 100%; width: 100%; background: var(--accent); }
     .timer i.run { animation: drain linear forwards; }
@@ -198,9 +230,12 @@ export function obstaclesFor(c: RunnerConfig): Obstacle[] {
     .msg { margin: 0; min-height: 2.6em; padding: 5px 8px; font-size: .58rem; line-height: 1.5; color: var(--muted); background: #020617; border-left: 4px solid var(--line); }
     .msg.ok { color: var(--good); border-left-color: var(--good); }
     .msg.err { color: #fca5a5; border-left-color: var(--bad); }
-    .end { margin: 0; text-align: center; font-size: .75rem; color: var(--good); }
+    .end { margin: 0; text-align: center; font-size: .75rem; line-height: 1.6; color: var(--good); }
     .sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); }
-    @media (prefers-reduced-motion: reduce) { .hero { transition: none; } .obstacle.run, .timer i.run { animation: none; } }
+    @media (prefers-reduced-motion: reduce) {
+      .hero, .hills, .sky, .ground::after, .obstacle.run, .timer i.run { animation: none; }
+      .hero { transition: none; }
+    }
   `,
 })
 export class Runner extends BaseGame implements OnInit {
@@ -209,11 +244,20 @@ export class Runner extends BaseGame implements OnInit {
   protected readonly locked = signal(false);
   protected readonly jumping = signal(false);
   protected readonly stumbling = signal(false);
+  protected readonly cleared1 = signal(false);
+  protected readonly streak = signal(0);
+  protected readonly best = signal(0);
+  protected readonly score = signal(0);
   protected readonly current = computed(() => this.obstacles[this.done()] ?? null);
   protected readonly key = computed(() => [this.done()]);
   /** Senza `prefers-reduced-motion` c'è un limite di tempo per ostacolo; con il movimento ridotto no. */
   protected timed = true;
-  protected windowMs = 7000;
+  private start = 11000;
+
+  /** Il tempo per ostacolo scende da ~11 a ~5,5 secondi: la corsa accelera. */
+  protected readonly windowMs = computed(() => Math.max(5500, this.start - this.done() * 400));
+  /** Durata di un giro dello sfondo: più breve = più veloce. */
+  protected readonly scrollMs = computed(() => Math.max(1200, 3600 - this.done() * 140));
 
   ngOnInit(): void {
     const level = this.level;
@@ -223,11 +267,11 @@ export class Runner extends BaseGame implements OnInit {
       v: this.nums('v', [1, 2, 3, 4, 5]),
       th: this.num('th', 3),
       level,
-      count: Math.max(3, Math.floor(this.num('count', 8))),
+      count: Math.max(3, Math.floor(this.num('count', DEFAULT_COUNT))),
     };
     this.obstacles = obstaclesFor(cfg);
     this.timed = !(typeof window !== 'undefined' && typeof window.matchMedia === 'function' && window.matchMedia('(prefers-reduced-motion: reduce)').matches);
-    this.windowMs = Math.max(4000, 8000 - level * 300);
+    this.start = 11000 - level * 300;
     this.arm();
   }
 
@@ -235,7 +279,7 @@ export class Runner extends BaseGame implements OnInit {
   private arm(): void {
     if (!this.timed || !this.current()) return;
     const at = this.done();
-    this.after(() => { if (!this.cleared && this.done() === at && !this.locked()) this.resolve(null); }, this.windowMs);
+    this.after(() => { if (!this.cleared && this.done() === at && !this.locked()) this.resolve(null); }, this.windowMs());
   }
 
   protected answer(jump: boolean): void {
@@ -250,14 +294,20 @@ export class Runner extends BaseGame implements OnInit {
     if (!o || this.locked()) return;
     this.locked.set(true);
     if (choice === o.truth) {
-      this.hit(`Giusto! ${o.why}`);
+      this.streak.update((n) => n + 1);
+      this.best.update((b) => Math.max(b, this.streak()));
+      this.score.update((n) => n + 10 + Math.min(this.streak() - 1, 5) * 2); // la serie dà punti extra
+      this.cleared1.set(true);
+      this.hit(`Giusto! ${o.why}${this.streak() >= 3 ? ` 🔥 Serie di ${this.streak()}!` : ''}`);
     } else {
+      this.streak.set(0);
       this.stumbling.set(true);
       this.miss(`${choice === null ? 'Tempo scaduto. ' : ''}${o.why} ${o.truth ? 'Andava saltata.' : 'Andava corsa.'}`);
     }
     this.after(() => {
       this.jumping.set(false);
       this.stumbling.set(false);
+      this.cleared1.set(false);
       this.done.update((n) => n + 1);
       this.locked.set(false);
       if (this.done() >= this.obstacles.length) this.win();

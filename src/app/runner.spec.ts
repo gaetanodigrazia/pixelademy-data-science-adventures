@@ -3,16 +3,18 @@ import { ComponentRef } from '@angular/core';
 import { By } from '@angular/platform-browser';
 import { PACKS } from './core/data/packs.generated';
 import { Runner, indexObstacles, lenObstacles, obstaclesFor, RunnerConfig } from './shared/components/games/runner';
+import { BONUS_CHANCE, BONUS_MAX_ERRORS, bonusEarned, rollBonus } from './core/utils/bonus';
 import { MINI_PACK } from './testing/mini-pack';
 import { btn, goToTask, openMission, setup } from './testing/mission-harness';
 
 const cfg = (over: Partial<RunnerConfig> = {}): RunnerConfig => ({ kind: 'index', name: 'prezzi', v: [3, 8, 5, 12, 7, 4, 9], th: 6, level: 1, ...over });
 
 describe('Corsa dei condizionali: generazione degli ostacoli', () => {
-  it('index: 8 ostacoli, metà veri e metà falsi, con la verità calcolata davvero e la spiegazione', () => {
-    const obs = indexObstacles(cfg());
+  it('index: ostacoli veri e falsi in parti uguali (al massimo quanti ne esistono), con la verità calcolata davvero e la spiegazione', () => {
+    const obs = indexObstacles(cfg({ count: 8 }));
     expect(obs.length).toBe(8);
     expect(obs.filter((o) => o.truth).length).toBe(4);
+    expect(indexObstacles(cfg()).length).toBe(14); // 7 valori × 2 operatori al livello 1: non ce ne sono 18
     for (const o of obs) {
       const m = /^prezzi\[(-?\d+)\] (>|<|>=|<=) 6$/.exec(o.cond)!;
       expect(m, o.cond).not.toBeNull();
@@ -32,7 +34,7 @@ describe('Corsa dei condizionali: generazione degli ostacoli', () => {
 
   it('len: la lista cambia con append e pop, mai vuota, e la verità segue len() reale', () => {
     const obs = lenObstacles(cfg({ kind: 'len', name: 'carrello', v: [4, 6, 9, 2, 5], level: 2 }));
-    expect(obs.length).toBe(8);
+    expect(obs.length).toBe(18);
     let state = [4, 6, 9, 2, 5];
     for (const o of obs) {
       const parsed = JSON.parse(o.lines[0].replace(/^carrello = /, ''));
@@ -124,7 +126,7 @@ describe('Corsa dei condizionali: il minigioco', () => {
 describe('Le Liste: la corsa bonus tra battaglia e task', () => {
   const liste = PACKS[0].paths.find((p) => p.id === 'adventure-core-liste')!;
   beforeEach(() => { vi.stubGlobal('matchMedia', undefined); });
-  afterEach(() => vi.unstubAllGlobals());
+  afterEach(() => { vi.unstubAllGlobals(); vi.restoreAllMocks(); });
 
   it('le tre missioni hanno il bonus, le altre del pack no', () => {
     expect(liste.missions.every((m) => m.bonus?.type === 'adventure-runner')).toBe(true);
@@ -133,15 +135,18 @@ describe('Le Liste: la corsa bonus tra battaglia e task', () => {
     expect(others.some((m) => m.bonus)).toBe(false);
   });
 
-  it('dopo la battaglia si va alla corsa; «Salta il bonus» porta al task; dal task si può tornare (ricarica) senza perdere nulla', async () => {
+  it('dopo una buona battaglia (e il sorteggio) si va alla corsa; «Salta il bonus» porta al task', async () => {
+    vi.spyOn(Math, 'random').mockReturnValue(0.1); // il bonus compare
     setup();
     const { f, el } = await openMission(liste.missions[0].id);
     btn(el, 'Salta la teoria').click();
     f.detectChanges();
-    expect(el.querySelector('.steps')!.textContent).toContain('Corsa (bonus)');
+    expect(el.querySelector('.steps')!.textContent).not.toContain('Bonus'); // prima della battaglia non c'è
     f.debugElement.query(By.css('.game-host')).componentInstance.win();
     f.detectChanges();
-    (Array.from(el.querySelector('[role=dialog]')!.querySelectorAll('button')).find((b) => b.textContent?.includes('Alla corsa bonus')) as HTMLButtonElement).click();
+    expect(el.querySelector('[role=dialog]')!.textContent).toContain('Bonus sbloccato');
+    expect(el.querySelector('.steps')!.textContent).toContain('Bonus');
+    (Array.from(el.querySelector('[role=dialog]')!.querySelectorAll('button')).find((b) => b.textContent?.includes('Al bonus')) as HTMLButtonElement).click();
     f.detectChanges();
     expect(el.querySelector('section[aria-label="Corsa bonus"]')).not.toBeNull();
     expect(el.querySelector('section[aria-label="Task Python"]')).toBeNull();
@@ -149,6 +154,51 @@ describe('Le Liste: la corsa bonus tra battaglia e task', () => {
     btn(el, 'Salta il bonus').click();
     f.detectChanges();
     expect(el.querySelector('section[aria-label="Task Python"]')).not.toBeNull();
+    f.destroy();
+  });
+
+  it('sorteggio sfavorevole: nessun bonus, si va dritti al task', async () => {
+    vi.spyOn(Math, 'random').mockReturnValue(0.9);
+    setup();
+    const { f, el } = await openMission(liste.missions[0].id);
+    btn(el, 'Salta la teoria').click();
+    f.detectChanges();
+    f.debugElement.query(By.css('.game-host')).componentInstance.win();
+    f.detectChanges();
+    const d = el.querySelector('[role=dialog]')!;
+    expect(d.textContent).not.toContain('Bonus sbloccato');
+    expect(d.textContent).not.toContain('al massimo'); // ha giocato bene: nessun suggerimento
+    expect(el.querySelector('.steps')!.textContent).not.toContain('Bonus');
+    (Array.from(d.querySelectorAll('button')).find((b) => b.textContent?.includes('Vai al task')) as HTMLButtonElement).click();
+    f.detectChanges();
+    expect(el.querySelector('section[aria-label="Task Python"]')).not.toBeNull();
+    f.destroy();
+  });
+
+  it('troppi errori in battaglia: niente bonus, anche col sorteggio favorevole, e il messaggio spiega come sbloccarlo', async () => {
+    vi.spyOn(Math, 'random').mockReturnValue(0);
+    setup();
+    const { f, el } = await openMission(liste.missions[0].id);
+    btn(el, 'Salta la teoria').click();
+    f.detectChanges();
+    const g = f.debugElement.query(By.css('.game-host')).componentInstance;
+    for (let i = 0; i < 3; i++) g.miss('x');
+    g.win();
+    f.detectChanges();
+    const d = el.querySelector('[role=dialog]')!;
+    expect(d.textContent).not.toContain('Bonus sbloccato');
+    expect(d.textContent).toContain('al massimo 1 errore');
+    f.destroy();
+  });
+
+  it('il sorteggio non si ripete ricaricando la pagina', async () => {
+    vi.spyOn(Math, 'random').mockReturnValue(0.1);
+    setup();
+    const id = liste.missions[0].id;
+    sessionStorage.setItem('pixelademy.phase.v1', JSON.stringify({ [id]: 'task' }));
+    sessionStorage.setItem('pixelademy.bonus.v1', JSON.stringify({ [id]: true }));
+    const { f, el } = await openMission(id);
+    expect(el.querySelector('.steps')!.textContent).toContain('Bonus');
     f.destroy();
   });
 
@@ -171,10 +221,36 @@ describe('Le Liste: la corsa bonus tra battaglia e task', () => {
   });
 
   it('il harness dei test attraversa il bonus (goToTask)', async () => {
+    vi.spyOn(Math, 'random').mockReturnValue(0.1);
     setup();
     const { f, el } = await openMission(liste.missions[0].id);
     goToTask(f);
     expect(el.querySelector('section[aria-label="Task Python"]')).not.toBeNull();
     f.destroy();
+  });
+});
+
+describe('sblocco del bonus', () => {
+  it('serve una battaglia con al massimo 1 errore', () => {
+    expect(BONUS_MAX_ERRORS).toBe(1);
+    expect(bonusEarned(0)).toBe(true);
+    expect(bonusEarned(1)).toBe(true);
+    expect(bonusEarned(2)).toBe(false);
+  });
+
+  it('chi se l\'è guadagnato lo vede a caso (50%); chi no, mai', () => {
+    expect(BONUS_CHANCE).toBe(0.5);
+    expect(rollBonus(0, () => 0.49)).toBe(true);
+    expect(rollBonus(0, () => 0.5)).toBe(false);
+    expect(rollBonus(1, () => 0)).toBe(true);
+    expect(rollBonus(2, () => 0)).toBe(false); // mai, qualunque sia il sorteggio
+  });
+
+  it('su molti sorteggi compare circa una volta su due', () => {
+    let seed = 7;
+    const rnd = () => { seed = (seed * 1664525 + 1013904223) >>> 0; return seed / 4294967296; };
+    const n = Array.from({ length: 2000 }, () => rollBonus(0, rnd)).filter(Boolean).length;
+    expect(n).toBeGreaterThan(900);
+    expect(n).toBeLessThan(1100);
   });
 });
