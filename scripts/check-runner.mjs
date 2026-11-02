@@ -1,5 +1,5 @@
 // Prova nel browser sulla BUILD DI PRODUZIONE (opzionale, non in CI): la «Corsa dei condizionali» di «Le Liste» si gioca fino al traguardo
-// (rispondendo giusto leggendo la condizione) su telefono e su desktop, e il task resta raggiungibile.
+// (rispondendo giusto leggendo la condizione, in 15 secondi) su telefono e su desktop, e il task resta raggiungibile.
 // Il bonus compare a caso dopo una buona battaglia: qui si salta la battaglia impostando direttamente la fase «corsa» e il sorteggio riuscito.
 //   npm run build && npx http-server dist/pixelademy/browser -p 4300 -s -P "http://localhost:4300?"
 //   node scripts/check-runner.mjs [http://localhost:4300]
@@ -47,6 +47,7 @@ for (const [name, vp, mobile] of [['telefono', { width: 393, height: 852 }, true
     const start = page.locator('button:has-text("Comincia")');
     if (await start.count()) await start.click();
     await page.waitForSelector('app-runner', { timeout: 10000 });
+    const t0 = Date.now();
     for (let i = 0; i < 30; i++) {
       if (await page.locator('.end').count()) break; // traguardo
       await page.waitForSelector('.obstacle code', { timeout: 4000 });
@@ -54,14 +55,15 @@ for (const [name, vp, mobile] of [['telefono', { width: 393, height: 852 }, true
       const cond = (await page.locator('.obstacle code').innerText()).trim();
       const jump = truth(code.map((c) => c.replace(/\s+#.*$/, '')), cond);
       await page.locator('.row button').nth(jump ? 0 : 1).click();
-      await page.waitForTimeout(1000);
+      await page.waitForTimeout(700);
       if (i === 4 && mission === 'liste-01' && name === 'telefono') await page.screenshot({ path: '/tmp/run-meta.png' });
     }
     const text = await page.locator('app-runner').innerText();
-    const ok = /Errori 0/.test(text) && text.includes('Traguardo');
+    const secs = ((Date.now() - t0) / 1000).toFixed(1);
+    const ok = /Errori 0/.test(text) && /Tempo!|Traguardo/.test(text) && secs >= 14 && secs <= 22;
     if (mission === 'liste-01' && name === 'telefono') await page.screenshot({ path: '/tmp/run-fine.png' });
-    console.log(`${name} ${mission}: ${ok ? 'OK' : 'PROBLEMA'} — ${text.replace(/\n/g, ' ').match(/Punti \d+ · Errori \d+/)?.[0]}`);
-    if (!ok) problems.push(`${name} ${mission}: la corsa non finisce senza errori`);
+    console.log(`${name} ${mission}: ${ok ? 'OK' : 'PROBLEMA'} (${secs} s) — ${text.replace(/\n/g, ' ').match(/Punti \d+ · Errori \d+/)?.[0]}`);
+    if (!ok) problems.push(`${name} ${mission}: la corsa non dura ~15 s o ha errori`);
     await page.locator('button:has-text("Vai al task")').click();
     await page.waitForSelector('section[aria-label="Task Python"]', { timeout: 5000 }).catch(() => problems.push(`${name} ${mission}: il task non si apre`));
     if (errs.length) problems.push(`${name} ${mission}: errori di pagina ${errs[0]}`);

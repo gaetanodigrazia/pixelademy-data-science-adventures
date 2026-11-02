@@ -2,8 +2,14 @@ import { ChangeDetectionStrategy, Component, HostListener, OnInit, computed, sig
 import { BaseGame, fmt, list } from './base-game';
 import { SpriteView } from '../sprite-view';
 
-/** Ostacoli della corsa. */
-export const DEFAULT_COUNT = 18;
+/** Durata della corsa (con il movimento normale). */
+export const RUN_SECONDS = 15;
+/** Ostacoli disponibili per la corsa a tempo (la corsa finisce comunque allo scadere dei secondi). */
+export const DEFAULT_COUNT = 12;
+/** Con il tempo si preparano almeno tanti ostacoli (chi risponde in fretta ne supera circa 20 in 15 secondi). */
+export const MIN_TIMED_POOL = 40;
+/** Ostacoli della corsa senza limite di tempo (movimento ridotto). */
+export const UNTIMED_COUNT = 6;
 
 /** Un ostacolo: il codice che lo precede, la condizione scritta sull'ostacolo e se è vera. */
 export interface Obstacle {
@@ -19,8 +25,10 @@ export interface RunnerConfig {
   v: number[];
   th: number;
   level: number;
-  /** Quanti ostacoli (default 18: circa 1–2 minuti). */
+  /** Quanti ostacoli (default 12; la corsa a tempo finisce comunque dopo 15 secondi). */
   count?: number;
+  /** Per ottenere un'altra serie di ostacoli a parità di dati (la corsa a tempo ne concatena più d'una). */
+  seed?: number;
 }
 
 /** PRNG deterministico: stessi dati, stessa corsa (e test ripetibili). */
@@ -66,7 +74,7 @@ export function indexObstacles(c: RunnerConfig): Obstacle[] {
     }
   }
   const count = Math.min(c.count ?? DEFAULT_COUNT, all.length);
-  const rnd = rng(c.level * 7919 + n);
+  const rnd = rng(c.level * 7919 + n + (c.seed ?? 0) * 31337);
   const yes = shuffled(all.filter((o) => o.truth), rnd);
   const no = shuffled(all.filter((o) => !o.truth), rnd);
   const half = Math.floor(count / 2);
@@ -79,7 +87,7 @@ export function indexObstacles(c: RunnerConfig): Obstacle[] {
 /** Ostacoli «dopo append/pop quanto è lunga la lista»: la lista cambia da un ostacolo all'altro. */
 export function lenObstacles(c: RunnerConfig): Obstacle[] {
   const count = c.count ?? DEFAULT_COUNT;
-  const rnd = rng(c.level * 104729 + c.v.length);
+  const rnd = rng(c.level * 104729 + c.v.length + (c.seed ?? 0) * 31337);
   const state = [...c.v];
   let fed = 0;
   const out: Obstacle[] = [];
@@ -127,10 +135,11 @@ export function obstaclesFor(c: RunnerConfig): Obstacle[] {
 }
 
 /**
- * Corsa dei condizionali: minigioco **bonus** (1–2 minuti), che compare a sorpresa dopo una buona battaglia. A ogni ostacolo compare
- * una condizione Python: se è vera si salta, se è falsa si corre. La difficoltà viene dal concetto (indici, len, append/pop): la
- * velocità cresce, e una serie di risposte giuste dà punti extra. Con «riduci movimento» non c'è limite di tempo.
- * Sbagliare o lasciar scadere il tempo costa solo un errore e si passa oltre.
+ * Corsa dei condizionali: minigioco **bonus** di 15 secondi, che compare a sorpresa dopo una buona battaglia. A ogni ostacolo compare
+ * una condizione Python: se è vera si salta, se è falsa si corre. La difficoltà viene dal concetto (indici, len, append/pop): gli
+ * ostacoli si susseguono, la velocità cresce e una serie di risposte giuste dà punti extra. Allo scadere dei 15 secondi la corsa
+ * finisce con il punteggio. Con «riduci movimento» non c'è limite di tempo: la corsa è di pochi ostacoli.
+ * Sbagliare o lasciar scadere il tempo di un ostacolo costa solo un errore e si passa oltre.
  */
 @Component({
   selector: 'app-runner',
@@ -140,13 +149,14 @@ export function obstaclesFor(c: RunnerConfig): Obstacle[] {
     <section class="run" aria-label="Corsa dei condizionali" [style.--speed.ms]="scrollMs()">
       <header class="top">
         <h2>🎁 Corsa dei condizionali</h2>
-        <span class="stats">Punti <b>{{ score() }}</b> · Errori {{ mistakes() }}</span>
+        <span class="stats">Punti <b>{{ score() }}</b> · Errori {{ mistakes() }}@if (timed) { · ⏱ <b>{{ secondsLeft() }}</b> s }</span>
       </header>
       <p class="goal"><strong>🎯 Obiettivo</strong> · Condizione vera: <b>salta</b>. Condizione falsa: <b>corri</b>.
-        @if (timed) { Più vai avanti, più si va veloci! } @else { Nessun limite di tempo. }</p>
-      <div class="meter" role="progressbar" aria-valuemin="0" [attr.aria-valuemax]="obstacles.length" [attr.aria-valuenow]="done()"
-        [attr.aria-label]="'Ostacolo ' + (done() + 1 > obstacles.length ? obstacles.length : done() + 1) + ' di ' + obstacles.length">
-        <i [style.width.%]="(done() / obstacles.length) * 100"></i>
+        @if (timed) { Hai {{ runSeconds }} secondi: più ostacoli superi, più punti! } @else { Nessun limite di tempo. }</p>
+      <div class="meter" role="progressbar" aria-valuemin="0" [attr.aria-valuemax]="timed ? runSeconds : obstacles.length"
+        [attr.aria-valuenow]="timed ? secondsLeft() : done()"
+        [attr.aria-label]="timed ? ('Tempo rimasto: ' + secondsLeft() + ' secondi') : ('Ostacolo ' + (done() + 1 > obstacles.length ? obstacles.length : done() + 1) + ' di ' + obstacles.length)">
+        <i [style.width.%]="timed ? (remainingMs() / (runSeconds * 1000)) * 100 : (done() / obstacles.length) * 100"></i>
         <span class="streak" [class.hot]="streak() >= 3" aria-live="polite">🔥 Serie {{ streak() }}</span>
       </div>
 
@@ -175,7 +185,7 @@ export function obstaclesFor(c: RunnerConfig): Obstacle[] {
         </div>
         <p class="hint" aria-hidden="true">Tastiera: ↑ salta · → corri</p>
       } @else {
-        <p class="end">🏁 Traguardo! {{ score() }} punti · serie migliore {{ best() }} · {{ obstacles.length - mistakes() }} ostacoli su {{ obstacles.length }} al primo colpo.</p>
+        <p class="end">{{ timeUp() ? '⏱ Tempo!' : '🏁 Traguardo!' }} {{ score() }} punti · {{ done() - mistakes() }} ostacoli superati su {{ done() }} · serie migliore {{ best() }}.</p>
       }
       <p class="msg" [class.ok]="feedback()?.kind === 'ok'" [class.err]="feedback()?.kind === 'err'" role="status" aria-live="polite">{{ feedback()?.text }}</p>
     </section>
@@ -248,16 +258,20 @@ export class Runner extends BaseGame implements OnInit {
   protected readonly streak = signal(0);
   protected readonly best = signal(0);
   protected readonly score = signal(0);
-  protected readonly current = computed(() => this.obstacles[this.done()] ?? null);
+  protected readonly timeUp = signal(false);
+  protected readonly remainingMs = signal(RUN_SECONDS * 1000);
+  protected readonly secondsLeft = computed(() => Math.ceil(this.remainingMs() / 1000));
+  protected readonly runSeconds = RUN_SECONDS;
+  protected readonly current = computed(() => (this.timeUp() ? null : this.obstacles[this.done()] ?? null));
   protected readonly key = computed(() => [this.done()]);
   /** Senza `prefers-reduced-motion` c'è un limite di tempo per ostacolo; con il movimento ridotto no. */
   protected timed = true;
-  private start = 11000;
+  private start = 4500;
 
-  /** Il tempo per ostacolo scende da ~11 a ~5,5 secondi: la corsa accelera. */
-  protected readonly windowMs = computed(() => Math.max(5500, this.start - this.done() * 400));
+  /** Il tempo per ostacolo scende da ~4,5 a ~2,5 secondi: la corsa accelera. */
+  protected readonly windowMs = computed(() => Math.max(2500, this.start - this.done() * 250));
   /** Durata di un giro dello sfondo: più breve = più veloce. */
-  protected readonly scrollMs = computed(() => Math.max(1200, 3600 - this.done() * 140));
+  protected readonly scrollMs = computed(() => Math.max(1200, 3200 - this.done() * 200));
 
   ngOnInit(): void {
     const level = this.level;
@@ -267,12 +281,34 @@ export class Runner extends BaseGame implements OnInit {
       v: this.nums('v', [1, 2, 3, 4, 5]),
       th: this.num('th', 3),
       level,
-      count: Math.max(3, Math.floor(this.num('count', DEFAULT_COUNT))),
+      count: 0,
     };
-    this.obstacles = obstaclesFor(cfg);
     this.timed = !(typeof window !== 'undefined' && typeof window.matchMedia === 'function' && window.matchMedia('(prefers-reduced-motion: reduce)').matches);
-    this.start = 11000 - level * 300;
+    cfg.count = Math.max(3, Math.floor(this.num('count', this.timed ? DEFAULT_COUNT : UNTIMED_COUNT)));
+    this.obstacles = obstaclesFor(cfg);
+    if (this.timed) {
+      // serbatoio abbondante: chi risponde in fretta non finisce gli ostacoli prima dei 15 secondi
+      for (let seed = 1; this.obstacles.length < MIN_TIMED_POOL && seed < 20; seed++) this.obstacles = [...this.obstacles, ...obstaclesFor({ ...cfg, seed })];
+    }
+    this.start = 4800 - level * 100;
+    if (this.timed) {
+      // il conto alla rovescia generale parte subito: allo scadere la corsa finisce con il punteggio
+      const t0 = Date.now();
+      this.every(() => {
+        if (this.cleared) return;
+        const left = Math.max(0, RUN_SECONDS * 1000 - (Date.now() - t0));
+        this.remainingMs.set(left);
+        if (left <= 0) this.finish(true);
+      }, 100);
+    }
     this.arm();
+  }
+
+  /** Fine della corsa: per tempo scaduto o perché gli ostacoli sono finiti. */
+  private finish(timeUp: boolean): void {
+    if (this.cleared) return;
+    this.timeUp.set(timeUp);
+    this.win();
   }
 
   /** Avvia il conto alla rovescia dell'ostacolo corrente (solo con il movimento normale). */
@@ -310,9 +346,9 @@ export class Runner extends BaseGame implements OnInit {
       this.cleared1.set(false);
       this.done.update((n) => n + 1);
       this.locked.set(false);
-      if (this.done() >= this.obstacles.length) this.win();
+      if (this.done() >= this.obstacles.length) this.finish(false);
       else this.arm();
-    }, 900);
+    }, 500);
   }
 
   @HostListener('document:keydown', ['$event'])

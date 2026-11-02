@@ -55,7 +55,7 @@ I test «per percorso» (`games`, `viz`, `content`, `validator`, `python-solutio
 3. Riepiloga all'utente: percorso, titolo, esercizio, riga che stampa, cosa è cambiato per i giocatori (sotto).
 
 ## Corsa bonus (facoltativa)
-Se il percorso ha `runner` (oggi solo «Le Liste»), aggiungi anche la voce per la nuova missione (`'index'`, `'len'` o `null`): la lista deve avere la stessa lunghezza di `missions`. Dopo la battaglia la missione mostra la «Corsa dei condizionali» (30–60 s, saltabile, non cambia gli XP).
+Se il percorso ha `runner` (oggi solo «Le Liste»), aggiungi anche la voce per la nuova missione (`'index'`, `'len'` o `null`): la lista deve avere la stessa lunghezza di `missions`. Dopo la battaglia la missione mostra la «Corsa dei condizionali» (15 secondi, a sorpresa dopo una buona battaglia, saltabile, non cambia gli XP).
 
 ## Effetti da dire sempre all'utente
 - **Aggiungi in fondo**: gli id delle missioni sono per posizione (`adventure-core-<slug>-NN`). Inserire una missione **in mezzo** sposta le successive e i progressi già salvati puntano alla missione sbagliata: lo si fa solo se l'utente accetta di perdere quei progressi.
