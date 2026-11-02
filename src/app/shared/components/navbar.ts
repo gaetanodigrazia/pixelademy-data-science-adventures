@@ -22,8 +22,11 @@ import { SpriteView } from './sprite-view';
 
       <div id="nav-items" class="items" [class.open]="menuOpen()">
         <div class="links">
-          @if (!onHome()) { <a routerLink="/" class="btn home" (click)="closeMenu()">{{ 'nav.home' | t }}</a> }
-          <a routerLink="/info" class="btn info" (click)="closeMenu()">{{ 'nav.project' | t }}</a>
+          <!-- la pagina in cui si è: voce evidenziata e non cliccabile (aria-current), così si capisce dove ci si trova -->
+          @if (onHome()) { <span class="btn home current" aria-current="page">{{ 'nav.home' | t }}</span> }
+          @else { <a routerLink="/" class="btn home" (click)="closeMenu()">{{ 'nav.home' | t }}</a> }
+          @if (onInfo()) { <span class="btn info current" aria-current="page">{{ 'nav.project' | t }}</span> }
+          @else { <a routerLink="/info" class="btn info" (click)="closeMenu()">{{ 'nav.project' | t }}</a> }
         </div>
 
         <div class="right">
@@ -74,6 +77,8 @@ import { SpriteView } from './sprite-view';
   styles: `
     /* Mobile: barra con menu a scomparsa e logo sempre centrato */
     :host { display: block; flex: none; position: relative; z-index: 20; }
+    /* La voce della pagina in cui si è: evidenziata, non cliccabile. */
+    .btn.current { background: var(--accent); color: #0b0b24; border-color: var(--accent); cursor: default; pointer-events: none; }
     .nav { position: relative; display: grid; grid-template-columns: 48px 1fr 48px; align-items: center; gap: 8px;
       padding: 8px 12px; background: #000; border-bottom: 4px solid var(--accent); }
     .burger { grid-column: 1; width: 48px; padding: 6px 0; font-size: 1.2rem; }
@@ -116,9 +121,10 @@ import { SpriteView } from './sprite-view';
 export class Navbar {
   private readonly host = inject<ElementRef<HTMLElement>>(ElementRef);
   private readonly router = inject(Router);
-  /** Sulla home il pulsante «Home» non serve. */
+  /** Pagina corrente: la voce del menu è evidenziata. */
   private readonly url = toSignal(this.router.events.pipe(filter((e) => e instanceof NavigationEnd), map(() => this.router.url)), { initialValue: this.router.url });
   protected readonly onHome = computed(() => (this.url() ?? '/').split(/[?#]/)[0] === '/');
+  protected readonly onInfo = computed(() => (this.url() ?? '').split(/[?#]/)[0] === '/info');
   protected readonly game = inject(GameStateService);
   protected readonly i18n = inject(I18nService);
   protected readonly locales = LOCALES;
