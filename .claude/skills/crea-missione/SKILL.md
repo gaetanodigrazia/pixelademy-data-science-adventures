@@ -54,6 +54,9 @@ I test «per percorso» (`games`, `viz`, `content`, `validator`, `python-solutio
 2. A vista (viewport ~393×852): selezionare il percorso, aprire la nuova missione (teoria, battaglia, task con scena ed editor) e giocarla con la soluzione.
 3. Riepiloga all'utente: percorso, titolo, esercizio, riga che stampa, cosa è cambiato per i giocatori (sotto).
 
+## Corsa bonus (facoltativa)
+Se il percorso ha `runner` (oggi solo «Le Liste»), aggiungi anche la voce per la nuova missione (`'index'`, `'len'` o `null`): la lista deve avere la stessa lunghezza di `missions`. Dopo la battaglia la missione mostra la «Corsa dei condizionali» (30–60 s, saltabile, non cambia gli XP).
+
 ## Effetti da dire sempre all'utente
 - **Aggiungi in fondo**: gli id delle missioni sono per posizione (`adventure-core-<slug>-NN`). Inserire una missione **in mezzo** sposta le successive e i progressi già salvati puntano alla missione sbagliata: lo si fa solo se l'utente accetta di perdere quei progressi.
 - Chi aveva **completato** il percorso ora ha una missione in più da fare: il percorso torna «da completare». **I percorsi che lo richiedono (`requires`) si richiudono per chi non li ha ancora iniziati**: vale soprattutto per «Le Variabili» e «Le Liste», che bloccano tutti gli altri (chi ha già progressi in un percorso non lo perde). Se aggiungi a un percorso base, avvisa l'utente di questo prima di procedere.

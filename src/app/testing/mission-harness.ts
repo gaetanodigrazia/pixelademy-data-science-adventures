@@ -65,8 +65,11 @@ export function goToTask(f: ComponentFixture<unknown>) {
   const game = f.debugElement.query(By.css('.game-host')).componentInstance;
   game.win();
   f.detectChanges();
-  dialogBtn(el, 'Vai al task').click();
+  (dialogBtn(el, 'Vai al task') ?? dialogBtn(el, 'Alla corsa bonus')).click();
   f.detectChanges();
+  // missione con bonus: la corsa è facoltativa, la si salta
+  const skip = btn(el, 'Salta il bonus');
+  if (skip) { skip.click(); f.detectChanges(); }
 }
 
 /** Esegue nell'editor il codice dato (ciò che emette «Esegui codice») e attende la fine dell'esecuzione. */

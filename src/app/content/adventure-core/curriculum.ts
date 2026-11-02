@@ -33,6 +33,8 @@ export interface PathSeed {
   exercises?: string[];
   /** Dashboard dei risultati: `true` (default) o `false` per un percorso con il solo progetto, senza pagina dei grafici. */
   dashboard?: boolean;
+  /** Minigioco bonus («Corsa dei condizionali») per missione, nell'ordine: `'index'` (leggi un elemento e confrontalo), `'len'` (append, pop e len) o `null`. */
+  runner?: (('index' | 'len') | null)[];
   /** Da 1 a 10 missioni, una per concetto nell'ordine fisso dei concetti: un percorso breve usa i primi (difficoltà 1..N). */
   missions: MissionText[];
 }
@@ -363,6 +365,8 @@ export const PATH_SEEDS: PathSeed[] = [
     enemySlug: 'dispersione',
     // percorso base: leggere un elemento, aggiungere e togliere (append e pop), contare (len)
     exercises: ['std-1', 'liste-modifica', 'std-2'],
+    // bonus: indici e confronti, poi append/pop con len() (pilota della «Corsa dei condizionali»)
+    runner: ['index', 'len', 'len'],
     dashboard: false,
     project: {
       heading: 'ELENCO DELLA SPESA',

@@ -28,6 +28,9 @@ I percorsi si sbloccano a catena (`PathSeed.requires`, slug dei percorsi da comp
 
 **Cosa dire all'utente** (prima di scrivere e nel riepilogo finale): «Il percorso `<titolo>` resterà bloccato finché non avrai completato almeno *Le Variabili* e *Le Liste*» (più gli eventuali altri requisiti scelti), e che l'Osservatorio delle Nuvole si aprirà solo dopo questo percorso. Chiedi conferma se vuole requisiti diversi o aggiuntivi: non toglierli senza che lo chieda.
 
+## Corsa bonus (`runner`, facoltativa)
+Una voce può avere `runner: ['index' | 'len' | null, …]` (uno per missione): dopo la battaglia compare la fase facoltativa «Corsa dei condizionali» (30–60 s, sempre saltabile, non cambia gli XP). `'index'` fa leggere un elemento della serie `a` e confrontarlo con `alert` (`prezzi[3] > 6`); `'len'` lavora sulla lista `b` con `append`/`pop`/`len`. Oggi la usa solo «Le Liste». Vale solo per percorsi che parlano di liste e confronti: non metterla dove i concetti sono altri.
+
 ## Percorsi brevi (da 1 a 9 missioni)
 Il numero di missioni è la lunghezza di `missions`: un percorso di **N missioni usa i primi N concetti**, con difficoltà 1..N (la scala resta «su 10»: una missione di difficoltà 3 si vede come 3/10). Esempio con i concetti standard: i primi N dei 10. `mobilita` ed `energia` invece hanno **esercizi propri** (vedi sotto).
 - **Si compilano comunque tutti i campi di `project`** (serie `a`, `b`, `c`, `k`, `cut`, `alert`, `registry`, `extreme` e le 10 `labels`): le sezioni che il percorso non raggiunge non compaiono né nel codice né nel bollettino, ma i tipi li richiedono. Usa valori plausibili.
