@@ -112,3 +112,4 @@
 | E05 | BUG-05.5 Il pulsante «Cerca eroi» è coperto dal badge di Netlify | #229 | #231 | `docs/issues/BUG-05.5.md` | fatto |
 | E05 | UX-06.6 Far capire che si è nella home (voce di menu attiva) | #230 | #232 | `docs/issues/UX-06.6.md` | fatto |
 | E12 | TEST-12.8 Script di prova del flusso reale del bonus (battaglia → sorteggio → platform) | #233 | #234 | `docs/issues/TEST-12.8.md` | fatto |
+| E04 | UX-04.13 Bonus: si sblocca sempre con al massimo 1 errore (niente sorteggio), altrimenti messaggio «non sbloccato» | #235 | #236 | `docs/issues/UX-04.13.md` | fatto |
