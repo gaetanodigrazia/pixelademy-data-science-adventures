@@ -14,7 +14,7 @@ import { baseLineCount, composeProject, editorSection, neededContext, shiftError
 import { projectCode } from '../../core/utils/project-code';
 import { vizLine } from '../../core/utils/viz';
 import { ScoreBreakdown, parSeconds, scoreAttempt, stripBase } from '../../core/utils/scoring';
-import { BONUS_MAX_ERRORS, bonusEarned, rollBonus } from '../../core/utils/bonus';
+import { BONUS_MAX_ERRORS, bonusSettings, unlockBonus } from '../../core/utils/bonus';
 import { DifficultyStars } from '../../shared/components/difficulty-stars';
 import { CodeEditor } from '../../shared/components/code-editor';
 import { CodeWorld } from '../../shared/components/code-world';
@@ -175,9 +175,9 @@ type Phase = 'teoria' | 'battaglia' | 'corsa' | 'task';
           <app-modal title="Battaglia vinta!" (closed)="victoryOpen.set(false)">
             <p class="ok">Missione completata! Il task Python è sbloccato.</p>
             @if (bonusOffered()) {
-              <p class="ok">🎁 Bonus sbloccato! Hai giocato bene: un platform extra da 15 secondi, se ti va.</p>
-            } @else if (m.bonus && !bonusEarned(battleErrors())) {
-              <p class="status">Finisci la battaglia con al massimo {{ maxBonusErrors }} errore per avere la possibilità di un bonus.</p>
+              <p class="ok">🎁 Bonus sbloccato! Hai fatto al massimo {{ maxBonusErrors }} errore: un platform extra da 15 secondi, se ti va.</p>
+            } @else if (m.bonus && bonusEnabled) {
+              <p class="status">🔒 Bonus non sbloccato: hai fatto {{ battleErrors() }} errori, ne servono al massimo {{ maxBonusErrors }}. Per sbloccarlo ricomincia dalla teoria (↺ Teoria) e finisci la battaglia con meno errori.</p>
             }
             <div class="row">
               <button type="button" class="btn primary" (click)="goToTask()">{{ bonusOffered() ? '🎁 Al bonus →' : 'Vai al task →' }}</button>
@@ -338,7 +338,7 @@ export class MissionDetail {
   protected readonly bonusDone = signal(false);
   /** Il bonus è comparso per questa missione (a sorpresa, e solo dopo una buona battaglia). */
   protected readonly bonusOffered = signal(false);
-  protected readonly bonusEarned = bonusEarned;
+  protected get bonusEnabled(): boolean { return bonusSettings.enabled; }
   protected readonly maxBonusErrors = BONUS_MAX_ERRORS;
   /** Errori commessi nel minigioco della battaglia (contano negli XP insieme a quelli del task). */
   protected readonly battleErrors = signal(0);
@@ -441,7 +441,7 @@ export class MissionDetail {
         this.battleWon.set(true);
         const mistakes = Math.max(0, Math.floor(result?.mistakes ?? 0));
         this.setBattleErrors(mistakes);
-        this.setBonusOffered(!!m?.bonus && rollBonus(mistakes));
+        this.setBonusOffered(!!m?.bonus && unlockBonus(mistakes));
         this.victoryOpen.set(true);
       },
     };

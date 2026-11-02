@@ -1,5 +1,5 @@
 // Prova nel browser sulla BUILD DI PRODUZIONE (opzionale, non in CI): il flusso vero del bonus. Si gioca la battaglia di «Le Variabili»
-// (il quiz si risolve leggendo il codice mostrato), con il sorteggio forzato a favore e poi contrario, e con un errore di troppo.
+// (il quiz si risolve leggendo il codice mostrato): 0 e 1 errore sbloccano il bonus (sempre, anche cambiando Math.random), 2 errori no, con il messaggio.
 //   npm run build && npx http-server dist/pixelademy/browser -p 4300 -s -P "http://localhost:4300?"
 //   node scripts/check-bonus-flow.mjs [http://localhost:4300]
 import { createRequire } from 'node:module';
@@ -49,23 +49,22 @@ async function play({ random, wrongClicks }) {
   return { dialog, steps, bonusButton, platform };
 }
 
-const yes = await play({ random: 0.1, wrongClicks: 0 });
-console.log('buon gioco + sorteggio favorevole:', yes.bonusButton ? 'bonus offerto' : 'NIENTE bonus', '|', yes.steps, '| platform visibile:', yes.platform);
-if (!yes.bonusButton || !yes.platform || !/Bonus sbloccato/.test(yes.dialog)) problems.push('con buon gioco e sorteggio favorevole il bonus non compare');
+const clean = await play({ random: 0.9, wrongClicks: 0 }); // il sorteggio non esiste più: Math.random non deve contare
+console.log('0 errori:', clean.bonusButton ? 'bonus sbloccato' : 'NIENTE bonus', '|', clean.steps, '| platform visibile:', clean.platform);
+if (!clean.bonusButton || !clean.platform || !/Bonus sbloccato/.test(clean.dialog)) problems.push('con 0 errori il bonus non si sblocca');
 
-const luck = await play({ random: 0.9, wrongClicks: 0 });
-console.log('buon gioco + sorteggio sfavorevole:', luck.bonusButton ? 'bonus offerto' : 'nessun bonus (atteso)');
-if (luck.bonusButton) problems.push('il sorteggio sfavorevole offre comunque il bonus');
+const clean2 = await play({ random: 0.1, wrongClicks: 0 });
+if (!clean2.bonusButton) problems.push('con 0 errori il bonus dipende dal caso');
 
-const one = await play({ random: 0.1, wrongClicks: 1 });
-console.log('1 errore + sorteggio favorevole:', one.bonusButton ? 'bonus offerto (atteso)' : 'NIENTE bonus');
-if (!one.bonusButton) problems.push('con 1 errore (consentito) il bonus non compare');
+const one = await play({ random: 0.9, wrongClicks: 1 });
+console.log('1 errore:', one.bonusButton ? 'bonus sbloccato (atteso)' : 'NIENTE bonus');
+if (!one.bonusButton) problems.push('con 1 errore (consentito) il bonus non si sblocca');
 
 const two = await play({ random: 0.1, wrongClicks: 2 });
-console.log('2 errori + sorteggio favorevole:', two.bonusButton ? 'bonus offerto' : 'nessun bonus (atteso)', '|', two.dialog.match(/Finisci la battaglia[^.]*\./)?.[0] ?? '(nessun suggerimento)');
-if (two.bonusButton) problems.push('con 2 errori il bonus compare');
-if (!/Finisci la battaglia/.test(two.dialog)) problems.push('con 2 errori manca il suggerimento su come sbloccarlo');
+console.log('2 errori:', two.bonusButton ? 'bonus sbloccato' : 'non sbloccato (atteso)', '|', two.dialog.match(/Bonus non sbloccato[^.]*\./)?.[0] ?? '(nessun messaggio)');
+if (two.bonusButton) problems.push('con 2 errori il bonus si sblocca');
+if (!/Bonus non sbloccato: hai fatto 2 errori, ne servono al massimo 1/.test(two.dialog)) problems.push('con 2 errori manca il messaggio «Bonus non sbloccato»');
 
 await browser.close();
 if (problems.length) { console.log(`PROBLEMI:\n- ${problems.join('\n- ')}`); process.exit(1); }
-console.log('OK: il bonus segue la regola (≤1 errore + sorteggio).');
+console.log('OK: il bonus si sblocca con al massimo 1 errore, senza sorteggio.');

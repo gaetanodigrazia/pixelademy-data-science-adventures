@@ -1,9 +1,10 @@
-import { beforeEach, vi } from 'vitest';
+import { beforeEach } from 'vitest';
+import { bonusSettings } from './app/core/utils/bonus';
 
 /**
- * Il bonus platform compare a caso dopo una buona battaglia (vedi `core/utils/bonus.ts`): nei test il sorteggio è fisso su «niente bonus»,
- * così le missioni vanno dritte al task e i test non sono instabili. Chi prova il bonus imposta `Math.random` a un valore basso.
+ * Il bonus platform si sblocca con al massimo 1 errore nella battaglia (vedi `core/utils/bonus.ts`): nei test è spento di default,
+ * così le missioni vanno dritte al task. Chi prova il bonus lo riaccende con `bonusSettings.enabled = true`.
  */
 beforeEach(() => {
-  vi.spyOn(Math, 'random').mockReturnValue(0.99);
+  bonusSettings.enabled = false;
 });
