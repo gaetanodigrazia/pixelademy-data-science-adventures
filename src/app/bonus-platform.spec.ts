@@ -1,0 +1,321 @@
+import { TestBed } from '@angular/core/testing';
+import { By } from '@angular/platform-browser';
+import { PACKS } from './core/data/packs.generated';
+import { BONUS_CHANCE, BONUS_MAX_ERRORS, bonusEarned, rollBonus } from './core/utils/bonus';
+import { AIR_Y, COIN_R, CoinSpec, PlatformerEngine, RUN_SECONDS, WORLD, coinSpecs } from './core/utils/platformer-engine';
+import { Platformer } from './shared/components/games/platformer';
+import { MINI_PACK } from './testing/mini-pack';
+import { btn, goToTask, openMission, setup } from './testing/mission-harness';
+import { ComponentRef } from '@angular/core';
+
+const cfg = (over: Partial<Parameters<typeof coinSpecs>[0]> = {}) => ({ kind: 'index' as const, name: 'prezzi', v: [3, 8, 5, 12, 7, 4, 9], th: 6, level: 1, ...over });
+
+describe('bonus platform: generazione delle monete', () => {
+  it('index: la condizione dice il vero (verificato sui dati) e la spiegazione cita il valore', () => {
+    const v = [3, 8, 5, 12, 7, 4, 9];
+    const specs = coinSpecs(cfg(), 12);
+    expect(specs.length).toBe(12);
+    expect(specs.filter((c) => c.truth).length).toBe(6);
+    for (const c of specs) {
+      const m = /^prezzi\[(-?\d+)\] (>|<|>=|<=) 6$/.exec(c.cond)!;
+      expect(m, c.cond).not.toBeNull();
+      const x = v[+m[1] < 0 ? v.length + +m[1] : +m[1]];
+      expect(c.truth).toBe({ '>': x > 6, '<': x < 6, '>=': x >= 6, '<=': x <= 6 }[m[2] as '>' | '<' | '>=' | '<=']);
+      expect(c.why).toContain(String(x));
+    }
+  });
+
+  it('index: livello 1 senza indici negativi né >=/<=; dal livello 2 sì', () => {
+    expect(coinSpecs(cfg({ level: 1 }), 14).every((c) => !/\[-/.test(c.cond) && !/[<>]=/.test(c.cond))).toBe(true);
+    expect(coinSpecs(cfg({ level: 2 }), 16).some((c) => /\[-/.test(c.cond))).toBe(true);
+  });
+
+  it('pop: [..].pop() vale l\'ultimo elemento della lista scritta', () => {
+    for (const c of coinSpecs(cfg({ kind: 'pop', name: 'carrello', v: [4, 6, 9, 2, 5], th: 6, level: 2 }), 16)) {
+      const m = /^\[([\d, ]+)\]\.pop\(\) (>|<) 6$/.exec(c.cond)!;
+      expect(m, c.cond).not.toBeNull();
+      const last = +m[1].split(',').pop()!;
+      expect(c.truth).toBe(m[2] === '>' ? last > 6 : last < 6);
+    }
+  });
+
+  it('len: len([..]) conta davvero gli elementi', () => {
+    for (const c of coinSpecs(cfg({ kind: 'len', name: 'carrello', v: [4, 6, 9, 2, 5], level: 3 }), 16)) {
+      const m = /^len\(\[([\d, ]+)\]\) (>|==) (-?\d+)$/.exec(c.cond)!;
+      expect(m, c.cond).not.toBeNull();
+      const n = m[1].split(',').length;
+      expect(c.truth).toBe(m[2] === '>' ? n > +m[3] : n === +m[3]);
+    }
+  });
+
+  it('è deterministica e le serie con seed diversi sono diverse', () => {
+    expect(JSON.stringify(coinSpecs(cfg()))).toBe(JSON.stringify(coinSpecs(cfg())));
+    expect(JSON.stringify(coinSpecs(cfg(), 12, 1))).not.toBe(JSON.stringify(coinSpecs(cfg(), 12, 2)));
+  });
+});
+
+/** Gioca come un bot: salta (o no) per prendere/evitare ogni moneta secondo la regola giusta. */
+function play(engine: PlatformerEngine, decide: (c: { air: boolean; truth: boolean }) => boolean): void {
+  const dt = 1 / 60;
+  while (!engine.finished) {
+    // la prossima moneta viva: se serve saltare, salta quando è a ~70 px (il salto dura ~0,65 s)
+    const c = engine.coins.find((x) => x.state === 'live' && x.x > WORLD.heroX - 20);
+    if (c && c.x - WORLD.heroX < 55 && c.x - WORLD.heroX > 40 && decide(c) && engine.onGround) engine.jump();
+    engine.step(dt);
+  }
+}
+const specs = (n = 16): CoinSpec[] => coinSpecs(cfg(), n);
+
+describe('bonus platform: il motore', () => {
+  it('dura 15 secondi, poi si ferma', () => {
+    const e = new PlatformerEngine(specs());
+    for (let i = 0; i < 60 * 15 + 30; i++) e.step(1 / 60);
+    expect(e.t).toBe(RUN_SECONDS);
+    expect(e.finished).toBe(true);
+    const d = e.distance;
+    e.step(1);
+    expect(e.distance).toBe(d); // fermo
+  });
+
+  it('il salto ha un arco: parte, sale di ~75 px, ricade e non si può rifare in aria', () => {
+    const e = new PlatformerEngine(specs());
+    e.jump();
+    let peak = 0, steps = 0;
+    while (!e.onGround || steps === 0) { e.step(1 / 120); peak = Math.max(peak, e.y); steps++; if (steps > 400) break; }
+    expect(peak).toBeGreaterThan(65);
+    expect(peak).toBeLessThan(90);
+    expect(steps / 120).toBeGreaterThan(0.5);
+    expect(steps / 120).toBeLessThan(0.8);
+    e.jump(); e.step(1 / 60); // in aria: il doppio salto non esiste
+    const y1 = e.y;
+    e.jump();
+    e.step(1 / 60);
+    expect(e.vy).toBeLessThan(480); // non è stato rilanciato
+    expect(y1).toBeGreaterThan(0);
+  });
+
+  it('chi risponde sempre bene ottiene tutte decisioni giuste e nessun errore', () => {
+    const e = new PlatformerEngine(specs(16));
+    // a terra: salta per evitare se falsa; in aria: salta per prendere se vera
+    play(e, (c) => (c.air ? c.truth : !c.truth));
+    expect(e.mistakes).toBe(0);
+    expect(e.correct).toBeGreaterThanOrEqual(9);
+    expect(e.score).toBeGreaterThan(100);
+    expect(e.best).toBe(e.correct);
+  });
+
+  it('chi non salta mai prende le monete a terra (anche le false) e lascia passare quelle in aria (anche le vere)', () => {
+    const e = new PlatformerEngine(specs(16));
+    play(e, () => false);
+    const resolved = e.coins.filter((c) => c.state !== 'live');
+    for (const c of resolved) {
+      expect(c.state).toBe(c.air ? 'passed' : 'taken');
+      expect(c.correct).toBe(c.air ? !c.truth : c.truth);
+    }
+    expect(e.mistakes).toBeGreaterThan(0);
+  });
+
+  it('chi salta sempre fa l\'opposto: prende quelle in aria, evita quelle a terra', () => {
+    const e = new PlatformerEngine(specs(16));
+    play(e, () => true);
+    for (const c of e.coins.filter((x) => x.state !== 'live')) {
+      expect(c.state, `${c.cond} (${c.air ? 'aria' : 'terra'})`).toBe(c.air ? 'taken' : 'passed');
+    }
+  });
+
+  it('la serie azzera con un errore e dà punti extra', () => {
+    const e = new PlatformerEngine(specs(16));
+    play(e, (c) => (c.air ? c.truth : !c.truth));
+    const perfect = e.score;
+    const e2 = new PlatformerEngine(specs(16));
+    play(e2, () => false);
+    expect(perfect).toBeGreaterThan(e2.score);
+    expect(e2.streak).toBeLessThanOrEqual(e2.best);
+  });
+
+  it('le monete in aria stanno all\'altezza giusta e quelle a terra sul suolo (collisione con l\'eroe)', () => {
+    expect(AIR_Y).toBeGreaterThan(COIN_R);
+    const e = new PlatformerEngine(specs());
+    expect(e.coins.some((c) => c.air)).toBe(true);
+    expect(e.coins.some((c) => !c.air)).toBe(true);
+  });
+});
+
+describe('bonus platform: il componente', () => {
+  type G = { phase(): string; engine: PlatformerEngine; update(dt: number): void; score(): number; startRun(): void };
+  function mount(onCleared: (r?: { mistakes: number }) => void = () => undefined) {
+    TestBed.resetTestingModule();
+    const fixture = TestBed.createComponent(Platformer);
+    const ref = fixture.componentRef as ComponentRef<unknown>;
+    ref.setInput('character', MINI_PACK.characters[0]);
+    ref.setInput('config', { kind: 'index', name: 'prezzi', v: [3, 8, 5, 12, 7, 4, 9], th: 6, level: 1 });
+    ref.setInput('onCleared', onCleared);
+    fixture.detectChanges();
+    return { fixture, g: fixture.componentInstance as unknown as G, el: fixture.nativeElement as HTMLElement };
+  }
+
+  it('parte con «Via!», non prima; finiti i 15 secondi chiama onCleared una volta con gli errori', () => {
+    let calls = 0; let result: { mistakes: number } | undefined;
+    const { fixture, g, el } = mount((r) => { calls++; result = r; });
+    expect(g.phase()).toBe('ready');
+    expect(el.textContent).toContain('Via!');
+    g.update(5); // fermo: non succede nulla finché non si parte
+    expect(g.engine.t).toBe(0);
+    g.startRun();
+    for (let i = 0; i < 16 * 60; i++) g.update(1 / 60);
+    fixture.detectChanges();
+    expect(g.phase()).toBe('done');
+    expect(calls).toBe(1);
+    expect(result!.mistakes).toBe(g.engine.mistakes);
+    expect(el.textContent).toContain('Tempo!');
+  });
+
+  it('mostra la lista dei dati (indice) e dice la regola', () => {
+    const { el } = mount();
+    expect(el.textContent).toContain('prezzi = [3, 8, 5, 12, 7, 4, 9]');
+    expect(el.textContent).toContain('vera');
+  });
+
+  it('Spazio e ↑ saltano durante la corsa e fanno partire quando è pronta', () => {
+    const { fixture, g } = mount();
+    document.dispatchEvent(new KeyboardEvent('keydown', { key: ' ', bubbles: true }));
+    fixture.detectChanges();
+    expect(g.phase()).toBe('running');
+    g.update(0.05);
+    document.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowUp', bubbles: true }));
+    g.update(0.05);
+    expect(g.engine.y).toBeGreaterThan(0);
+  });
+});
+
+describe('Le Liste: il bonus platform tra battaglia e task', () => {
+  const liste = PACKS[0].paths.find((p) => p.id === 'adventure-core-liste')!;
+  beforeEach(() => { vi.stubGlobal('matchMedia', undefined); });
+  afterEach(() => { vi.unstubAllGlobals(); vi.restoreAllMocks(); });
+
+  it('le tre missioni hanno il bonus, le altre del pack no', () => {
+    expect(liste.missions.every((m) => m.bonus?.type === 'adventure-platformer')).toBe(true);
+    expect(liste.missions.map((m) => (m.bonus!.config as { kind: string }).kind)).toEqual(['index', 'pop', 'len']);
+    const others = PACKS.flatMap((p) => p.paths).filter((p) => p.id !== liste.id).flatMap((p) => p.missions);
+    expect(others.some((m) => m.bonus)).toBe(false);
+  });
+
+  it('dopo una buona battaglia (e il sorteggio) si va alla corsa; «Salta il bonus» porta al task', async () => {
+    vi.spyOn(Math, 'random').mockReturnValue(0.1); // il bonus compare
+    setup();
+    const { f, el } = await openMission(liste.missions[0].id);
+    btn(el, 'Salta la teoria').click();
+    f.detectChanges();
+    expect(el.querySelector('.steps')!.textContent).not.toContain('Bonus'); // prima della battaglia non c'è
+    f.debugElement.query(By.css('.game-host')).componentInstance.win();
+    f.detectChanges();
+    expect(el.querySelector('[role=dialog]')!.textContent).toContain('Bonus sbloccato');
+    expect(el.querySelector('.steps')!.textContent).toContain('Bonus');
+    (Array.from(el.querySelector('[role=dialog]')!.querySelectorAll('button')).find((b) => b.textContent?.includes('Al bonus')) as HTMLButtonElement).click();
+    f.detectChanges();
+    expect(el.querySelector('section[aria-label="Corsa bonus"]')).not.toBeNull();
+    expect(el.querySelector('section[aria-label="Task Python"]')).toBeNull();
+    expect(btn(el, 'Salta il bonus')).toBeDefined();
+    btn(el, 'Salta il bonus').click();
+    f.detectChanges();
+    expect(el.querySelector('section[aria-label="Task Python"]')).not.toBeNull();
+    f.destroy();
+  });
+
+  it('sorteggio sfavorevole: nessun bonus, si va dritti al task', async () => {
+    vi.spyOn(Math, 'random').mockReturnValue(0.9);
+    setup();
+    const { f, el } = await openMission(liste.missions[0].id);
+    btn(el, 'Salta la teoria').click();
+    f.detectChanges();
+    f.debugElement.query(By.css('.game-host')).componentInstance.win();
+    f.detectChanges();
+    const d = el.querySelector('[role=dialog]')!;
+    expect(d.textContent).not.toContain('Bonus sbloccato');
+    expect(d.textContent).not.toContain('al massimo'); // ha giocato bene: nessun suggerimento
+    expect(el.querySelector('.steps')!.textContent).not.toContain('Bonus');
+    (Array.from(d.querySelectorAll('button')).find((b) => b.textContent?.includes('Vai al task')) as HTMLButtonElement).click();
+    f.detectChanges();
+    expect(el.querySelector('section[aria-label="Task Python"]')).not.toBeNull();
+    f.destroy();
+  });
+
+  it('troppi errori in battaglia: niente bonus, anche col sorteggio favorevole, e il messaggio spiega come sbloccarlo', async () => {
+    vi.spyOn(Math, 'random').mockReturnValue(0);
+    setup();
+    const { f, el } = await openMission(liste.missions[0].id);
+    btn(el, 'Salta la teoria').click();
+    f.detectChanges();
+    const g = f.debugElement.query(By.css('.game-host')).componentInstance;
+    for (let i = 0; i < 3; i++) g.miss('x');
+    g.win();
+    f.detectChanges();
+    const d = el.querySelector('[role=dialog]')!;
+    expect(d.textContent).not.toContain('Bonus sbloccato');
+    expect(d.textContent).toContain('al massimo 1 errore');
+    f.destroy();
+  });
+
+  it('il sorteggio non si ripete ricaricando la pagina', async () => {
+    vi.spyOn(Math, 'random').mockReturnValue(0.1);
+    setup();
+    const id = liste.missions[0].id;
+    sessionStorage.setItem('pixelademy.phase.v1', JSON.stringify({ [id]: 'task' }));
+    sessionStorage.setItem('pixelademy.bonus.v1', JSON.stringify({ [id]: true }));
+    const { f, el } = await openMission(id);
+    expect(el.querySelector('.steps')!.textContent).toContain('Bonus');
+    f.destroy();
+  });
+
+  it('ricaricando durante la corsa si resta lì, e con la battaglia vinta (task sbloccato)', async () => {
+    setup();
+    const id = liste.missions[0].id;
+    sessionStorage.setItem('pixelademy.phase.v1', JSON.stringify({ [id]: 'corsa' }));
+    const { f, el } = await openMission(id);
+    expect(el.querySelector('section[aria-label="Corsa bonus"]')).not.toBeNull();
+    f.destroy();
+  });
+
+  it('una fase «corsa» salvata per una missione senza bonus ripiega sul task', async () => {
+    setup();
+    const m = PACKS[0].paths.find((p) => p.id === 'adventure-core-mobilita')!.missions[0];
+    sessionStorage.setItem('pixelademy.phase.v1', JSON.stringify({ [m.id]: 'corsa' }));
+    const { f, el } = await openMission(m.id);
+    expect(el.querySelector('section[aria-label="Task Python"]')).not.toBeNull();
+    f.destroy();
+  });
+
+  it('il harness dei test attraversa il bonus (goToTask)', async () => {
+    vi.spyOn(Math, 'random').mockReturnValue(0.1);
+    setup();
+    const { f, el } = await openMission(liste.missions[0].id);
+    goToTask(f);
+    expect(el.querySelector('section[aria-label="Task Python"]')).not.toBeNull();
+    f.destroy();
+  });
+});
+
+describe('sblocco del bonus', () => {
+  it('serve una battaglia con al massimo 1 errore', () => {
+    expect(BONUS_MAX_ERRORS).toBe(1);
+    expect(bonusEarned(0)).toBe(true);
+    expect(bonusEarned(1)).toBe(true);
+    expect(bonusEarned(2)).toBe(false);
+  });
+
+  it('chi se l\'è guadagnato lo vede a caso (50%); chi no, mai', () => {
+    expect(BONUS_CHANCE).toBe(0.5);
+    expect(rollBonus(0, () => 0.49)).toBe(true);
+    expect(rollBonus(0, () => 0.5)).toBe(false);
+    expect(rollBonus(1, () => 0)).toBe(true);
+    expect(rollBonus(2, () => 0)).toBe(false); // mai, qualunque sia il sorteggio
+  });
+
+  it('su molti sorteggi compare circa una volta su due', () => {
+    let seed = 7;
+    const rnd = () => { seed = (seed * 1664525 + 1013904223) >>> 0; return seed / 4294967296; };
+    const n = Array.from({ length: 2000 }, () => rollBonus(0, rnd)).filter(Boolean).length;
+    expect(n).toBeGreaterThan(900);
+    expect(n).toBeLessThan(1100);
+  });
+});

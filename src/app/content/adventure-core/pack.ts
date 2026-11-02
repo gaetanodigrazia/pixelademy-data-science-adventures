@@ -3,15 +3,15 @@ import { Mission } from '../../core/models/mission.model';
 import { xpForDifficulty } from '../../core/utils/progress';
 import { CHARACTERS, ENEMIES } from './characters';
 import { PACK_ID, PATH_SEEDS } from './curriculum';
-import { GAMES, GAME_IDS, RUNNER_GAME } from './games';
+import { GAMES, GAME_IDS, BONUS_GAME } from './games';
 import { ProjectSpec } from './concepts';
 import { assembleProject } from './project';
 import { missionId, SOLUTIONS } from './solutions';
 
-/** Il bonus «Corsa dei condizionali»: `index` legge la serie `a` e la confronta con `alert`; `len` lavora sulla lista `b`. */
-function runnerBonus(kind: 'index' | 'len', p: ProjectSpec, level: number): Mission['bonus'] {
+/** Il bonus platform: `index` legge la serie `a` e la confronta con `alert`; `pop` e `len` lavorano sulla lista `b`. */
+function bonusFor(kind: 'index' | 'pop' | 'len', p: ProjectSpec, level: number): Mission['bonus'] {
   const s = kind === 'index' ? p.a : p.b;
-  return { type: RUNNER_GAME, config: { kind, name: s.name, v: s.values, th: p.alert, unit: s.unit, level } };
+  return { type: BONUS_GAME, config: { kind, name: s.name, v: s.values, th: p.alert, unit: s.unit, level } };
 }
 
 const paths: LearningPath[] = PATH_SEEDS.map((p) => {
@@ -40,7 +40,7 @@ const paths: LearningPath[] = PATH_SEEDS.map((p) => {
       // Un gioco per concetto: riceve i dati del progetto e li usa per far imparare giocando.
       game: { type: step.exercise.game ?? GAME_IDS[step.exercise.stdIndex ?? i], config: { level: difficulty, ...step.exercise.gameConfig(p.project) } },
       viz: step.exercise.viz(p.project),
-      bonus: p.runner?.[i] ? runnerBonus(p.runner[i]!, p.project, difficulty) : undefined,
+      bonus: p.runner?.[i] ? bonusFor(p.runner[i]!, p.project, difficulty) : undefined,
       enemyId: `${PACK_ID}-${p.enemySlug}`,
     };
   });
