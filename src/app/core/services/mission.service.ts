@@ -2,6 +2,7 @@ import { Injectable, inject } from '@angular/core';
 import { LearningPath } from '../models/content-pack.model';
 import { Mission, ValidationResult } from '../models/mission.model';
 import { isPathUnlocked, missingRequirements } from '../utils/path-lock';
+import { completionPercent } from '../utils/progress';
 import { validateOutput } from '../utils/validator';
 import { ContentRegistryService } from './content-registry.service';
 import { GameStateService } from './game-state.service';
@@ -35,6 +36,11 @@ export class MissionService {
 
   completedCount(path: LearningPath): number {
     return path.missions.filter((m) => this.game.isCompleted(m.id)).length;
+  }
+
+  /** Percentuale di completamento del percorso (100 solo con tutte le missioni completate). */
+  percent(path: LearningPath): number {
+    return completionPercent(this.completedCount(path), path.missions.length);
   }
 
   validate(m: Mission, output: string): ValidationResult {

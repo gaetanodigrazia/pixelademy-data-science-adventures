@@ -58,7 +58,9 @@ type CatalogKind = 'paths' | 'heroes';
               <span class="icon" aria-hidden="true">{{ path()!.icon }}</span>
               <div class="txt">
                 <strong>{{ path()!.title }}</strong>
-                <span>{{ 'home.missionsDone' | t: { done: missions.completedCount(path()!), total: path()!.missions.length } }}</span>
+                <span>{{ 'home.missionsDone' | t: { done: missions.completedCount(path()!), total: path()!.missions.length, percent: missions.percent(path()!) } }}</span>
+                <div class="pbar" role="progressbar" [attr.aria-valuenow]="missions.percent(path()!)" aria-valuemin="0" aria-valuemax="100"
+                  [attr.aria-label]="'home.pathProgress' | t: { percent: missions.percent(path()!) }"><span [style.width.%]="missions.percent(path()!)"></span></div>
                 @if (pathAuthor(); as a) { <span class="muted">{{ 'home.by' | t: { author: a } }}</span> }
                 @if (path()!.contributor; as c) { <span class="muted contributor"><app-contributor [contributor]="c" /></span> }
               </div>
@@ -118,7 +120,7 @@ type CatalogKind = 'paths' | 'heroes';
                     <strong>{{ p.title }}</strong>
                     <span>{{ p.description }}</span>
                     @if (lockNote(p); as note) { <span class="lock-note">🔒 {{ note }}</span> }
-                    <span class="muted">{{ missions.completedCount(p) }}/{{ p.missions.length }} missioni · {{ p.tags.join(', ') }}</span>
+                    <span class="muted">{{ missions.completedCount(p) }}/{{ p.missions.length }} missioni · {{ missions.percent(p) }}% · {{ p.tags.join(', ') }}</span>
                     @if (p.contributor; as c) { <span class="muted contributor"><app-contributor [contributor]="c" [link]="false" /></span> }
                   </span>
                 </button>
@@ -161,6 +163,8 @@ type CatalogKind = 'paths' | 'heroes';
     .box h2 { margin: 0; }
     .box-body { display: flex; flex: 1; align-items: center; gap: 10px; min-width: 0; }
     .icon { font-size: 1.8rem; }
+    .pbar { height: 8px; max-width: 220px; background: #020617; border: 1px solid #64748b; }
+    .pbar span { display: block; height: 100%; background: var(--good); transition: width .3s; }
     .txt { display: flex; flex-direction: column; gap: 3px; min-width: 0; line-height: 1.5; overflow-wrap: anywhere; }
     .muted { color: var(--muted); }
     /* Gli eroi stanno su una riga che scorre di lato, qualunque sia il loro numero. */
