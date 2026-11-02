@@ -34,12 +34,17 @@ export interface CoinSpec {
   why: string;
 }
 
+/** Il tipo di condizione sulle monete: dipende dal concetto della missione. */
+export type BonusKind = 'index' | 'pop' | 'len' | 'sum' | 'mean' | 'minmax' | 'dict' | 'cmp';
+
 export interface PlatformerConfig {
-  kind: 'index' | 'pop' | 'len';
+  kind: BonusKind;
   name: string;
   v: number[];
   th: number;
   level: number;
+  /** Il dizionario (solo per `dict`). */
+  d?: Record<string, number>;
 }
 
 /* ───────────────────────── generazione delle monete ───────────────────────── */
@@ -124,10 +129,97 @@ function lenCoins(c: PlatformerConfig, rnd: () => number): CoinSpec[] {
   return out;
 }
 
+/** Un pezzo di lista di 3 elementi, a partire da un punto a caso. */
+function slice3(v: number[], rnd: () => number): number[] {
+  const len = Math.min(3, v.length);
+  const start = Math.floor(rnd() * Math.max(1, v.length - len + 1));
+  return v.slice(start, start + len);
+}
+
+/** `sum([4, 6, 9]) > 18`: sommare. La soglia è scelta per avere metà vere e metà false. */
+function sumCoins(c: PlatformerConfig, rnd: () => number): CoinSpec[] {
+  const out: CoinSpec[] = [];
+  for (let k = 0; k < 40; k++) {
+    const part = slice3(c.v, rnd);
+    const total = part.reduce((a, b) => a + b, 0);
+    const wantTrue = k % 2 === 0;
+    const t = wantTrue ? total - 1 - Math.floor(rnd() * 3) : total + Math.floor(rnd() * 3);
+    const truth = total > t;
+    out.push({ cond: `sum(${list(part)}) > ${t}`, truth, why: `${part.map(fmt).join(' + ')} = ${fmt(total)}: ${fmt(total)} > ${t} è ${truth ? 'vero' : 'falso'}.` });
+  }
+  return out;
+}
+
+/** `sum([4, 6, 8]) / 3 > 5`: la media di tre valori. */
+function meanCoins(c: PlatformerConfig, rnd: () => number): CoinSpec[] {
+  const out: CoinSpec[] = [];
+  for (let k = 0; k < 40; k++) {
+    const part = slice3(c.v, rnd);
+    const mean = part.reduce((a, b) => a + b, 0) / part.length;
+    const t = k % 2 === 0 ? Math.floor(mean) - (Number.isInteger(mean) ? 1 : 0) : Math.ceil(mean) + (Number.isInteger(mean) ? 0 : 0);
+    const truth = mean > t;
+    out.push({ cond: `sum(${list(part)}) / ${part.length} > ${t}`, truth, why: `La media è ${fmt(mean)}: ${fmt(mean)} > ${t} è ${truth ? 'vero' : 'falso'}.` });
+  }
+  return out;
+}
+
+/** `max([4, 6, 9]) > 8` e `min([...]) < 5`: gli estremi. */
+function minmaxCoins(c: PlatformerConfig, rnd: () => number): CoinSpec[] {
+  const out: CoinSpec[] = [];
+  for (let k = 0; k < 40; k++) {
+    const part = slice3(c.v, rnd);
+    const useMax = k % 4 < 2;
+    const ext = useMax ? Math.max(...part) : Math.min(...part);
+    const wantTrue = k % 2 === 0;
+    const op = useMax ? '>' : '<';
+    const t = wantTrue ? (useMax ? ext - 1 : ext + 1) : ext;
+    const truth = CMP[op](ext, t);
+    out.push({ cond: `${useMax ? 'max' : 'min'}(${list(part)}) ${op} ${t}`, truth, why: `${useMax ? 'Il massimo' : 'Il minimo'} è ${fmt(ext)}: ${fmt(ext)} ${op} ${t} è ${truth ? 'vero' : 'falso'}.` });
+  }
+  return out;
+}
+
+/** `venti['sud'] > 20`: leggere un dizionario con la chiave. */
+function dictCoins(c: PlatformerConfig): CoinSpec[] {
+  const d = c.d ?? {};
+  const entries = Object.entries(d);
+  if (!entries.length) return [];
+  const values = entries.map(([, x]) => x);
+  const mid = Math.round(values.reduce((a, b) => a + b, 0) / values.length);
+  const out: CoinSpec[] = [];
+  for (const [key, x] of entries) {
+    for (const op of ['>', '<']) {
+      for (const t of [mid, Math.round((mid + x) / 2)]) {
+        if (t === x) continue;
+        const truth = CMP[op](x, t);
+        out.push({ cond: `${c.name}['${key}'] ${op} ${t}`, truth, why: `${c.name}['${key}'] vale ${fmt(x)}: ${fmt(x)} ${op} ${t} è ${truth ? 'vero' : 'falso'}.` });
+      }
+    }
+  }
+  return out;
+}
+
+/** `28 > 22`: un confronto (condizionali). */
+function cmpCoins(c: PlatformerConfig): CoinSpec[] {
+  const out: CoinSpec[] = [];
+  const ops = c.level >= 4 ? ['>', '<', '>=', '<='] : ['>', '<'];
+  for (const x of c.v) {
+    for (const op of ops) {
+      const truth = CMP[op](x, c.th);
+      out.push({ cond: `${fmt(x)} ${op} ${fmt(c.th)}`, truth, why: `${fmt(x)} ${op} ${fmt(c.th)} è ${truth ? 'vero' : 'falso'}.` });
+    }
+  }
+  return out;
+}
+
 /** Le monete di una corsa: stesse condizioni per gli stessi dati, metà vere e metà false. */
 export function coinSpecs(c: PlatformerConfig, count = 16, seed = 0): CoinSpec[] {
   const rnd = rng(c.level * 7919 + c.v.length + seed * 31337);
-  const pool = c.kind === 'pop' ? popCoins(c, rnd) : c.kind === 'len' ? lenCoins(c, rnd) : indexCoins(c);
+  const pool = {
+    pop: () => popCoins(c, rnd), len: () => lenCoins(c, rnd), sum: () => sumCoins(c, rnd), mean: () => meanCoins(c, rnd),
+    minmax: () => minmaxCoins(c, rnd), dict: () => dictCoins(c), cmp: () => cmpCoins(c), index: () => indexCoins(c),
+  }[c.kind]();
+  if (!pool.length) return [];
   const out: CoinSpec[] = [];
   for (let s = 0; out.length < count && s < 10; s++) out.push(...balanced(pool, Math.min(count, pool.length), rng(c.level * 104729 + s + seed * 31337)));
   return out.slice(0, count);
@@ -155,7 +247,8 @@ export class PlatformerEngine {
   constructor(specs: CoinSpec[], private readonly speedScale = 1) {
     // la prima moneta arriva dopo un secondo; poi una ogni ~1,35 s di corsa, a quota alterna
     const rnd = rng(specs.length * 977 + 13);
-    const airs = shuffled(specs.map((_, i) => i % 2 === 0), rnd);
+    // a coppie casuali (una in aria e una a terra): niente lunghe serie della stessa quota
+    const airs = specs.flatMap((_, i) => (i % 2 === 0 ? (rnd() < 0.5 ? [true, false] : [false, true]) : [])).slice(0, specs.length);
     let x = WORLD.w + 40;
     this.coins = specs.map((s, i) => {
       const coin: Coin = { id: i, x, air: airs[i], ...s, state: 'live' };

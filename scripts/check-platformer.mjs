@@ -11,17 +11,20 @@ const browser = await chromium.launch();
 const problems = [];
 
 for (const [name, vp, mobile] of [['telefono', { width: 393, height: 852 }, true], ['desktop', { width: 1280, height: 800 }, false]]) {
-  for (const mission of ['liste-01', 'liste-02', 'liste-03']) {
+  // una missione per tipo di moneta: indice, pop, len, dizionario (nuvole-07), somma, media, minimo/massimo, confronto
+  for (const mission of ['liste-01', 'liste-02', 'liste-03', 'nuvole-07', 'nuvole-04', 'statistica-01', 'energia-03', 'outlier-02']) {
     const ctx = await browser.newContext({ viewport: vp, hasTouch: mobile, isMobile: mobile });
     const page = await ctx.newPage();
     const errs = []; page.on('pageerror', (e) => errs.push(e.message));
     await page.goto(base);
     await page.evaluate((id) => {
       localStorage.clear(); sessionStorage.clear(); localStorage.setItem('pixelademy.consent.v1', 'granted');
-      const done = ['adventure-core-variabili-01', 'adventure-core-variabili-02'];
-      if (id !== 'liste-01') done.push('adventure-core-liste-01');
-      if (id === 'liste-03') done.push('adventure-core-liste-02');
-      localStorage.setItem('pixelademy.player.v1', JSON.stringify({ schemaVersion: 5, xp: 0, level: 1, completedMissionIds: done, solvedCode: {}, liked: false, records: {}, selectedPathId: 'adventure-core-liste', selectedCharacterId: 'adventure-core-teo' }));
+      const done = ['adventure-core-variabili-01', 'adventure-core-variabili-02', 'adventure-core-liste-01', 'adventure-core-liste-02', 'adventure-core-liste-03'];
+      // le missioni precedenti dello stesso percorso (anche «Le Liste»: la missione stessa resta da fare)
+      const [slug, n] = [id.slice(0, id.lastIndexOf('-')), +id.slice(id.lastIndexOf('-') + 1)];
+      for (let i = 1; i < n; i++) done.push(`adventure-core-${slug}-${String(i).padStart(2, '0')}`);
+      if (slug === 'liste') done.splice(done.indexOf(`adventure-core-liste-${String(n).padStart(2, '0')}`), 3);
+      localStorage.setItem('pixelademy.player.v1', JSON.stringify({ schemaVersion: 5, xp: 0, level: 1, completedMissionIds: done, solvedCode: {}, liked: false, records: {}, selectedPathId: `adventure-core-${id.slice(0, id.lastIndexOf('-'))}`, selectedCharacterId: 'adventure-core-teo' }));
       sessionStorage.setItem('pixelademy.phase.v1', JSON.stringify({ [`adventure-core-${id}`]: 'corsa' }));
       sessionStorage.setItem('pixelademy.bonus.v1', JSON.stringify({ [`adventure-core-${id}`]: true }));
       sessionStorage.setItem('pixelademy.intro.v1', '1');
@@ -46,7 +49,7 @@ for (const [name, vp, mobile] of [['telefono', { width: 393, height: 852 }, true
     const text = (await page.locator('app-platformer').innerText()).replace(/\n/g, ' ');
     const ended = /Tempo!/.test(text);
     console.log(`${name} ${mission}: ${ended ? 'OK' : 'PROBLEMA'} (${secs} s, ${announced} monete annunciate, ${jumps} salti) — ${text.match(/Tempo! \d+ punti/)?.[0] ?? '?'}`);
-    if (mission === 'liste-01') await page.screenshot({ path: `/tmp/plat-${name}.png` });
+    if (name === 'telefono') await page.screenshot({ path: `/tmp/plat-${mission}.png` });
     if (!ended || secs < 14 || secs > 20 || announced < 5) problems.push(`${name} ${mission}: la corsa non va come previsto`);
     await page.locator('button:has-text("Vai al task")').click().catch(() => page.locator('button:has-text("Salta il bonus")').click());
     await page.waitForSelector('section[aria-label="Task Python"]', { timeout: 5000 }).catch(() => problems.push(`${name} ${mission}: il task non si apre`));
