@@ -169,8 +169,8 @@ describe('Navbar: menu del profilo, chiusura con clic fuori', () => {
   });
 });
 
-describe('Navbar: pulsante Home', () => {
-  it('non c\'è sulla home, compare nelle altre pagine', async () => {
+describe('Navbar: la voce della pagina corrente', () => {
+  it('sulla home «Home» è evidenziata e non cliccabile; nelle altre pagine è un link', async () => {
     const { TestBed: TB } = await import('@angular/core/testing');
     const { Router, provideRouter } = await import('@angular/router');
     const { App } = await import('./app');
@@ -180,10 +180,16 @@ describe('Navbar: pulsante Home', () => {
     TB.configureTestingModule({ providers: [provideRouter(routes)] });
     const f = TB.createComponent(App);
     const go = async (u: string) => { await TB.inject(Router).navigateByUrl(u); f.detectChanges(); await f.whenStable(); f.detectChanges(); };
+    const q = (sel: string) => f.nativeElement.querySelector(sel) as HTMLElement | null;
     await go('/');
-    expect(f.nativeElement.querySelector('.btn.home')).toBeNull();
-    expect(f.nativeElement.querySelector('.brand')).not.toBeNull();
+    expect(q('.btn.home.current')!.getAttribute('aria-current')).toBe('page');
+    expect(q('.btn.home.current')!.tagName).toBe('SPAN'); // niente link a se stessi
+    expect(q('a.btn.home')).toBeNull();
+    expect(q('a.btn.info')).not.toBeNull();
+    expect(q('.brand')).not.toBeNull(); // il logo resta un link
     await go('/info');
-    expect(f.nativeElement.querySelector('.btn.home')).not.toBeNull();
+    expect(q('a.btn.home')).not.toBeNull();
+    expect(q('.btn.info.current')!.getAttribute('aria-current')).toBe('page');
+    expect(q('.btn.home.current')).toBeNull();
   });
 });
