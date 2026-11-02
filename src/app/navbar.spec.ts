@@ -193,3 +193,64 @@ describe('Navbar: la voce della pagina corrente', () => {
     expect(q('.btn.home.current')).toBeNull();
   });
 });
+
+describe('Navbar: il menu della barra (telefono) si chiude cliccando fuori dalla barra', () => {
+  beforeEach(() => {
+    localStorage.clear();
+    TestBed.resetTestingModule();
+    TestBed.configureTestingModule({ providers: [provideRouter(routes)] });
+    useMiniPack();
+  });
+  afterEach(() => document.body.innerHTML = '');
+
+  async function mount() {
+    const f = TestBed.createComponent(App);
+    document.body.appendChild(f.nativeElement);
+    await TestBed.inject(Router).navigateByUrl('/');
+    f.detectChanges();
+    await f.whenStable();
+    f.detectChanges();
+    const el = f.nativeElement as HTMLElement;
+    return { f, el, burger: el.querySelector('.burger') as HTMLButtonElement, items: () => el.querySelector('#nav-items') as HTMLElement };
+  }
+
+  it('menu aperto + clic sulla pagina fuori dalla barra: si chiude', async () => {
+    const { f, el, burger, items } = await mount();
+    burger.click();
+    f.detectChanges();
+    expect(items().classList.contains('open')).toBe(true);
+    expect(burger.getAttribute('aria-expanded')).toBe('true');
+    const page = el.querySelector('main, app-dashboard, router-outlet') ?? document.body;
+    (page as HTMLElement).dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true }));
+    f.detectChanges();
+    expect(items().classList.contains('open')).toBe(false);
+    expect(burger.getAttribute('aria-expanded')).toBe('false');
+  });
+
+  it('un clic sul documento (body) lo chiude', async () => {
+    const { f, burger, items } = await mount();
+    burger.click();
+    f.detectChanges();
+    document.body.click();
+    f.detectChanges();
+    expect(items().classList.contains('open')).toBe(false);
+  });
+
+  it('un clic dentro la barra, fuori dalle voci, non lo chiude da solo', async () => {
+    const { f, el, burger, items } = await mount();
+    burger.click();
+    f.detectChanges();
+    el.querySelector('.nav')!.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true }));
+    items().dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true }));
+    f.detectChanges();
+    expect(items().classList.contains('open')).toBe(true);
+  });
+
+  it('il pulsante del menu lo apre e lo richiude (non resta aperto per il clic fuori)', async () => {
+    const { f, burger, items } = await mount();
+    burger.click(); f.detectChanges();
+    expect(items().classList.contains('open')).toBe(true);
+    burger.click(); f.detectChanges();
+    expect(items().classList.contains('open')).toBe(false);
+  });
+});
