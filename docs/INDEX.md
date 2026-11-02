@@ -106,3 +106,4 @@
 | E03 | US-03.9 Percentuale di completamento del percorso (mai 100% con missioni da fare) | #217 | #219 | `docs/issues/US-03.9.md` | fatto |
 | E04 | US-04.8 Corsa bonus: più dinamica e lunga, a sorpresa e da sbloccare con un buon punteggio | #218 | #220 | `docs/issues/US-04.8.md` | fatto |
 | E04 | BUG-04.9 La corsa bonus dura troppo: deve durare 15 secondi | #221 | #222 | `docs/issues/BUG-04.9.md` | fatto |
+| E04 | US-04.10 Bonus platform stile Super Mario (15 secondi) al posto della corsa a bottoni | #223 | #224 | `docs/issues/US-04.10.md` | fatto |
