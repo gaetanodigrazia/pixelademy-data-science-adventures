@@ -4,14 +4,20 @@ import { xpForDifficulty } from '../../core/utils/progress';
 import { CHARACTERS, ENEMIES } from './characters';
 import { PACK_ID, PATH_SEEDS } from './curriculum';
 import { GAMES, GAME_IDS, BONUS_GAME } from './games';
+import { BONUS_KINDS } from './bonus-kinds';
 import { ProjectSpec } from './concepts';
 import { assembleProject } from './project';
 import { missionId, SOLUTIONS } from './solutions';
 
-/** Il bonus platform: `index` legge la serie `a` e la confronta con `alert`; `pop` e `len` lavorano sulla lista `b`. */
-function bonusFor(kind: 'index' | 'pop' | 'len', p: ProjectSpec, level: number): Mission['bonus'] {
-  const s = kind === 'index' ? p.a : p.b;
-  return { type: BONUS_GAME, config: { kind, name: s.name, v: s.values, th: p.alert, unit: s.unit, level } };
+/**
+ * Il bonus platform di una missione: il tipo di moneta dipende dall'esercizio (`BONUS_KINDS`) e i dati dal progetto.
+ * `index` legge la serie `a`; `pop` e `len` la lista `b`; `dict` il registro; `sum`, `mean`, `minmax` e `cmp` i valori di `a`.
+ */
+function bonusFor(exerciseId: string, p: ProjectSpec, level: number): Mission['bonus'] {
+  const kind = BONUS_KINDS[exerciseId];
+  if (!kind) throw new Error(`Manca il tipo di bonus per l'esercizio «${exerciseId}» (bonus-kinds.ts).`);
+  const s = kind === 'pop' || kind === 'len' ? p.b : p.a;
+  return { type: BONUS_GAME, config: { kind, name: kind === 'dict' ? p.registry.name : s.name, v: s.values, th: p.alert, unit: s.unit, level, d: p.registry.entries } };
 }
 
 const paths: LearningPath[] = PATH_SEEDS.map((p) => {
@@ -40,7 +46,7 @@ const paths: LearningPath[] = PATH_SEEDS.map((p) => {
       // Un gioco per concetto: riceve i dati del progetto e li usa per far imparare giocando.
       game: { type: step.exercise.game ?? GAME_IDS[step.exercise.stdIndex ?? i], config: { level: difficulty, ...step.exercise.gameConfig(p.project) } },
       viz: step.exercise.viz(p.project),
-      bonus: p.runner?.[i] ? bonusFor(p.runner[i]!, p.project, difficulty) : undefined,
+      bonus: bonusFor(step.exercise.id, p.project, difficulty),
       enemyId: `${PACK_ID}-${p.enemySlug}`,
     };
   });

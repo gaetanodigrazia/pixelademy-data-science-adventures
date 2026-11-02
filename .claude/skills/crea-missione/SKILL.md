@@ -54,8 +54,8 @@ I test «per percorso» (`games`, `viz`, `content`, `validator`, `python-solutio
 2. A vista (viewport ~393×852): selezionare il percorso, aprire la nuova missione (teoria, battaglia, task con scena ed editor) e giocarla con la soluzione.
 3. Riepiloga all'utente: percorso, titolo, esercizio, riga che stampa, cosa è cambiato per i giocatori (sotto).
 
-## Bonus platform (facoltativo)
-Se il percorso ha `runner` (oggi solo «Le Liste»), aggiungi anche la voce per la nuova missione (`'index'`, `'pop'`, `'len'` o `null`): la lista deve avere la stessa lunghezza di `missions`. Dopo la battaglia la missione mostra la «Bonus platform» stile Super Mario (15 secondi, a sorpresa dopo una buona battaglia, saltabile, non cambia gli XP).
+## Bonus platform (automatico)
+Ogni missione ha il bonus platform, facoltativo e a sorpresa: il tipo di moneta si deduce dall'esercizio (`BONUS_KINDS` in `content/adventure-core/bonus-kinds.ts`). **Se aggiungi un esercizio nuovo, aggiungi anche la sua riga lì** (un test fallisce se manca): scegli il tipo che esercita lo stesso concetto (`index`, `pop`, `len`, `sum`, `mean`, `minmax`, `dict`, `cmp`) o crea un generatore in `core/utils/platformer-engine.ts`. Per una missione con un esercizio esistente non serve fare altro.
 
 ## Effetti da dire sempre all'utente
 - **Aggiungi in fondo**: gli id delle missioni sono per posizione (`adventure-core-<slug>-NN`). Inserire una missione **in mezzo** sposta le successive e i progressi già salvati puntano alla missione sbagliata: lo si fa solo se l'utente accetta di perdere quei progressi.

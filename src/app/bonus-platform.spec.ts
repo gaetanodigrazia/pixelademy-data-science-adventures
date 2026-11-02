@@ -2,8 +2,11 @@ import { TestBed } from '@angular/core/testing';
 import { By } from '@angular/platform-browser';
 import { PACKS } from './core/data/packs.generated';
 import { BONUS_CHANCE, BONUS_MAX_ERRORS, bonusEarned, rollBonus } from './core/utils/bonus';
+import { BONUS_KINDS } from './content/adventure-core/bonus-kinds';
+import { EXERCISES } from './content/adventure-core/exercises';
 import { AIR_Y, COIN_R, CoinSpec, PlatformerEngine, RUN_SECONDS, WORLD, coinSpecs } from './core/utils/platformer-engine';
 import { Platformer } from './shared/components/games/platformer';
+import { ContentRegistryService } from './core/services/content-registry.service';
 import { MINI_PACK } from './testing/mini-pack';
 import { btn, goToTask, openMission, setup } from './testing/mission-harness';
 import { ComponentRef } from '@angular/core';
@@ -133,6 +136,15 @@ describe('bonus platform: il motore', () => {
     expect(e2.streak).toBeLessThanOrEqual(e2.best);
   });
 
+  it('quota alternata a coppie: mai più di due monete di fila alla stessa quota', () => {
+    const e = new PlatformerEngine(specs(16));
+    let run = 1;
+    for (let i = 1; i < e.coins.length; i++) {
+      run = e.coins[i].air === e.coins[i - 1].air ? run + 1 : 1;
+      expect(run).toBeLessThanOrEqual(2);
+    }
+  });
+
   it('le monete in aria stanno all\'altezza giusta e quelle a terra sul suolo (collisione con l\'eroe)', () => {
     expect(AIR_Y).toBeGreaterThan(COIN_R);
     const e = new PlatformerEngine(specs());
@@ -193,11 +205,14 @@ describe('Le Liste: il bonus platform tra battaglia e task', () => {
   beforeEach(() => { vi.stubGlobal('matchMedia', undefined); });
   afterEach(() => { vi.unstubAllGlobals(); vi.restoreAllMocks(); });
 
-  it('le tre missioni hanno il bonus, le altre del pack no', () => {
-    expect(liste.missions.every((m) => m.bonus?.type === 'adventure-platformer')).toBe(true);
+  it('Le Liste: indici, pop e len; ogni missione dei percorsi di base ha un bonus, le sfide pandas (senza battaglia) no', () => {
     expect(liste.missions.map((m) => (m.bonus!.config as { kind: string }).kind)).toEqual(['index', 'pop', 'len']);
-    const others = PACKS.flatMap((p) => p.paths).filter((p) => p.id !== liste.id).flatMap((p) => p.missions);
-    expect(others.some((m) => m.bonus)).toBe(false);
+    for (const p of PACKS.flatMap((x) => x.paths)) {
+      for (const m of p.missions) {
+        if (m.challenge) expect(m.bonus, m.id).toBeUndefined();
+        else expect(m.bonus?.type, m.id).toBe('adventure-platformer');
+      }
+    }
   });
 
   it('dopo una buona battaglia (e il sorteggio) si va alla corsa; «Salta il bonus» porta al task', async () => {
@@ -279,6 +294,8 @@ describe('Le Liste: il bonus platform tra battaglia e task', () => {
   it('una fase «corsa» salvata per una missione senza bonus ripiega sul task', async () => {
     setup();
     const m = PACKS[0].paths.find((p) => p.id === 'adventure-core-mobilita')!.missions[0];
+    // la stessa missione, ma senza bonus (come se il contenuto fosse cambiato dopo il salvataggio)
+    TestBed.inject(ContentRegistryService).packs.set(PACKS.map((pk) => ({ ...pk, paths: pk.paths.map((pa) => ({ ...pa, missions: pa.missions.map((mm) => (mm.id === m.id ? { ...mm, bonus: undefined } : mm)) })) })));
     sessionStorage.setItem('pixelademy.phase.v1', JSON.stringify({ [m.id]: 'corsa' }));
     const { f, el } = await openMission(m.id);
     expect(el.querySelector('section[aria-label="Task Python"]')).not.toBeNull();
@@ -319,3 +336,44 @@ describe('sblocco del bonus', () => {
     expect(n).toBeLessThan(1100);
   });
 });
+
+describe('bonus in ogni missione: monete adatte al concetto', () => {
+  it('ogni esercizio dichiara il suo tipo di moneta (e non ce ne sono di orfani)', () => {
+    for (const id of Object.keys(EXERCISES)) expect(BONUS_KINDS[id], `manca il tipo per «${id}» in bonus-kinds.ts`).toBeDefined();
+    for (const id of Object.keys(BONUS_KINDS)) expect(EXERCISES[id], `«${id}» non è un esercizio`).toBeDefined();
+  });
+
+  it('per ogni missione del pack le monete si generano, sono metà vere e metà false, e la condizione è vera davvero', () => {
+    for (const p of PACKS[0].paths) {
+      for (const m of p.missions) {
+        const c = m.bonus!.config as { kind: 'index'; name: string; v: number[]; th: number; level: number; d?: Record<string, number> };
+        const specs = coinSpecs(c, 16);
+        expect(specs.length, m.id).toBeGreaterThanOrEqual(8);
+        const yes = specs.filter((x) => x.truth).length;
+        expect(yes, `${m.id}: vere`).toBeGreaterThanOrEqual(Math.floor(specs.length / 2) - 2);
+        expect(specs.length - yes, `${m.id}: false`).toBeGreaterThanOrEqual(Math.floor(specs.length / 2) - 2);
+        for (const s of specs) expect(s.cond.length, m.id).toBeLessThan(34); // sta sulla moneta senza uscire dallo schermo
+        for (const s of specs) expect(evaluate(s.cond), `${m.id}: ${s.cond}`).toBe(s.truth);
+      }
+    }
+  });
+});
+
+/** Valuta una condizione di moneta con Python-in-JS (stesse regole per i soli costrutti usati dai generatori). */
+function evaluate(cond: string): boolean {
+  const js = cond
+    .replace(/(\w+)\[(-?\d+)\] /g, (_m, name, i) => `__r(${name}, ${i}) `) // lista o dizionario: gestito sotto
+    .replace(/sum\((\[[^\]]*\])\)/g, 'sumOf($1)').replace(/max\((\[[^\]]*\])\)/g, 'Math.max(...$1)').replace(/min\((\[[^\]]*\])\)/g, 'Math.min(...$1)')
+    .replace(/len\((\[[^\]]*\])\)/g, '($1).length').replace(/(\[[^\]]*\])\.pop\(\)/g, '($1).at(-1)')
+    .replace(/==/g, '===');
+  const world: Record<string, unknown> = {};
+  for (const c of PACKS[0].paths) {
+    const proj = (c as unknown as { project?: { a: { name: string; values: number[] }; b: { name: string; values: number[] }; c: { name: string; values: number[] }; registry: { name: string; entries: Record<string, number> } } }).project;
+    if (!proj) continue;
+    world[proj.a.name] = proj.a.values; world[proj.b.name] = proj.b.values; world[proj.c.name] = proj.c.values; world[proj.registry.name] = proj.registry.entries;
+  }
+  const names = Object.keys(world);
+  const keyed = js.replace(/(\w+)\['(\w+)'\]/g, (_m, n, k) => `${n}.${k}`);
+  // eslint-disable-next-line no-new-func
+  return new Function(...names, 'sumOf', '__r', `return (${keyed});`)(...names.map((n) => world[n]), (a: number[]) => a.reduce((x, y) => x + y, 0), (l: number[], i: number) => l.at(i)) as boolean;
+}

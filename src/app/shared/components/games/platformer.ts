@@ -81,15 +81,16 @@ export class Platformer extends BaseGame implements OnInit, AfterViewInit {
 
   ngOnInit(): void {
     const cfg: PlatformerConfig = {
-      kind: this.str('kind', 'index') === 'pop' ? 'pop' : this.str('kind', 'index') === 'len' ? 'len' : 'index',
+      kind: (['pop', 'len', 'sum', 'mean', 'minmax', 'dict', 'cmp'] as const).find((k) => k === this.str('kind', 'index')) ?? 'index',
       name: this.str('name', 'valori'),
       v: this.nums('v', [1, 2, 3, 4, 5]),
       th: this.num('th', 3),
       level: this.level,
+      d: this.dict({}),
     };
     this.reducedMotion = typeof window !== 'undefined' && typeof window.matchMedia === 'function' && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
     this.engine = new PlatformerEngine(coinSpecs(cfg, 16), this.reducedMotion ? 0.8 : 1);
-    this.listLine = cfg.kind === 'index' ? `${cfg.name} = ${list(cfg.v)}` : '';
+    this.listLine = cfg.kind === 'index' ? `${cfg.name} = ${list(cfg.v)}` : cfg.kind === 'dict' ? `${cfg.name} = {${Object.entries(cfg.d ?? {}).map(([k, x]) => `'${k}': ${x}`).join(', ')}}` : '';
   }
 
   ngAfterViewInit(): void {
