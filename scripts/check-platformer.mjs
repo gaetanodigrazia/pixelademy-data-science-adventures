@@ -57,6 +57,40 @@ for (const [name, vp, mobile] of [['telefono', { width: 393, height: 852 }, true
     await ctx.close();
   }
 }
+
+// pausa: a metà corsa si ferma il tempo, un tocco sull'area non riprende, «Riprendi» sì
+{
+  const ctx = await browser.newContext({ viewport: { width: 393, height: 852 }, isMobile: true, hasTouch: true });
+  const page = await ctx.newPage();
+  await page.goto(base);
+  await page.evaluate(() => {
+    localStorage.clear(); sessionStorage.clear(); localStorage.setItem('pixelademy.consent.v1', 'granted');
+    localStorage.setItem('pixelademy.player.v1', JSON.stringify({ schemaVersion: 5, xp: 0, level: 1, completedMissionIds: ['adventure-core-variabili-01', 'adventure-core-variabili-02'], solvedCode: {}, liked: false, records: {}, selectedPathId: 'adventure-core-liste', selectedCharacterId: 'adventure-core-teo' }));
+    sessionStorage.setItem('pixelademy.phase.v1', JSON.stringify({ 'adventure-core-liste-01': 'corsa' }));
+    sessionStorage.setItem('pixelademy.bonus.v1', JSON.stringify({ 'adventure-core-liste-01': true }));
+    sessionStorage.setItem('pixelademy.intro.v1', '1');
+  });
+  await page.goto(`${base}/missione/adventure-core-liste-01`);
+  await page.waitForSelector('app-platformer canvas');
+  await page.locator('button:has-text("Via!")').click();
+  await page.waitForTimeout(3000);
+  await page.locator('button.pause').click();
+  const read = async () => +(await page.locator('app-platformer .stats b').first().innerText());
+  const t1 = await read();
+  await page.waitForTimeout(3000);
+  const t2 = await read();
+  console.log(`pausa: secondi rimasti ${t1} → ${t2} dopo 3 s di pausa`);
+  if (t1 !== t2) problems.push('in pausa il tempo scorre');
+  const box = await page.locator('app-platformer canvas').boundingBox();
+  await page.touchscreen.tap(Math.round(box.x + 40), Math.round(box.y + 40)); // un tocco sull'area
+  if (!(await page.locator('app-platformer .veil:has-text("In pausa")').count())) problems.push('un tocco sull\'area ha ripreso il gioco');
+  await page.locator('.veil button:has-text("Riprendi")').click();
+  await page.waitForTimeout(2200);
+  const t3 = await read();
+  console.log(`ripresa: secondi rimasti ${t2} → ${t3} dopo 2 s`);
+  if (!(t3 < t2)) problems.push('dopo «Riprendi» il tempo non scorre');
+  await ctx.close();
+}
 await browser.close();
 if (problems.length) { console.log(`PROBLEMI:\n- ${problems.join('\n- ')}`); process.exit(1); }
-console.log('OK: il bonus platform si gioca per 15 secondi e porta al task.');
+console.log('OK: il bonus platform si gioca per 15 secondi, si mette in pausa e porta al task.');

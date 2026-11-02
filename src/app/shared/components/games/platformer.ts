@@ -20,6 +20,9 @@ interface Pop { x: number; y: number; text: string; good: boolean; age: number }
       <header class="top">
         <h2>🎁 Bonus: salta e raccogli</h2>
         <span class="stats">⏱ <b>{{ secondsLeft() }}</b> s · Punti <b>{{ score() }}</b> · Errori {{ mistakes() }}@if (streak() >= 2) { · <span class="hot">🔥 {{ streak() }}</span> }</span>
+        @if (phase() === 'running') {
+          <button type="button" class="btn pause" (click)="togglePause()" [attr.aria-pressed]="paused()" aria-label="Pausa (P o Esc)">{{ paused() ? '▶ Riprendi' : '⏸ Pausa' }}</button>
+        }
       </header>
       <p class="goal"><strong>🎯 Regola</strong> · Condizione <b>vera</b>: prendi la moneta. <b>Falsa</b>: evitala.
         A terra: cammina per prenderla, salta per evitarla. In aria: il contrario.</p>
@@ -29,6 +32,8 @@ interface Pop { x: number; y: number; text: string; good: boolean; age: number }
         <canvas #cv class="cv" aria-hidden="true"></canvas>
         @if (phase() === 'ready') {
           <div class="veil"><button type="button" class="btn primary" (click)="startRun()">Via! (tocca o Spazio)</button></div>
+        } @else if (paused()) {
+          <div class="veil"><p>⏸ In pausa</p><button type="button" class="btn primary" (click)="togglePause()">▶ Riprendi (P)</button></div>
         } @else if (phase() === 'done') {
           <div class="veil end"><p>⏱ Tempo! <b>{{ score() }}</b> punti</p><p class="sm">{{ correct() }} decisioni giuste · {{ mistakes() }} sbagliate · serie migliore {{ best() }}</p></div>
         }
@@ -54,6 +59,7 @@ interface Pop { x: number; y: number; text: string; good: boolean; age: number }
     .veil { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px; background: rgba(2, 6, 23, .55); }
     .veil p { margin: 0; font-size: .8rem; color: #fff; text-shadow: 0 2px 0 #000; } .veil .sm { font-size: .55rem; }
     .veil b { color: var(--accent-2); }
+    .pause { padding: 4px 10px; font-size: .55rem; }
     .hint { margin: 0; text-align: center; font-size: .5rem; color: var(--muted); }
     .msg { margin: 0; min-height: 2.6em; padding: 5px 8px; font-size: .58rem; line-height: 1.5; color: var(--muted); background: #020617; border-left: 4px solid var(--line); }
     .msg.ok { color: var(--good); border-left-color: var(--good); } .msg.err { color: #fca5a5; border-left-color: var(--bad); }
@@ -72,6 +78,8 @@ export class Platformer extends BaseGame implements OnInit, AfterViewInit {
   protected readonly best = signal(0);
   protected readonly secondsLeft = signal(RUN_SECONDS);
   protected readonly sr = signal('');
+  /** In pausa: il tempo e il gioco sono fermi; si riprende solo dal pulsante (un tocco sull'area non basta). */
+  protected readonly paused = signal(false);
   protected readonly reduced = computed(() => this.reducedMotion);
   private reducedMotion = false;
   private loop?: GameLoop;
@@ -111,13 +119,36 @@ export class Platformer extends BaseGame implements OnInit, AfterViewInit {
   }
 
   protected onPointer(e: Event): void {
-    if ((e.target as HTMLElement).closest('button')) return; // il pulsante «Via!» fa da sé
+    if ((e.target as HTMLElement).closest('button')) return; // i pulsanti («Via!», «Riprendi») fanno da sé
+    if (this.paused()) return; // in pausa un tocco sull'area non riprende per sbaglio
     this.press();
+  }
+
+  /** Pausa e ripresa (pulsante, P o Esc). */
+  protected togglePause(): void {
+    if (this.phase() !== 'running') return;
+    this.paused.update((p) => !p);
+    this.say(this.paused() ? 'Gioco in pausa: il tempo è fermo.' : 'Si riparte!', 'info');
+    this.zone.run(() => this.sr.set(this.paused() ? 'Pausa' : 'Si riparte'));
+  }
+
+  /** Se la scheda del browser va in background il gioco non deve continuare a correre: si mette in pausa. */
+  @HostListener('document:visibilitychange')
+  protected onVisibility(): void {
+    if (typeof document !== 'undefined' && document.hidden && this.phase() === 'running' && !this.paused()) this.togglePause();
   }
 
   @HostListener('document:keydown', ['$event'])
   protected onKey(e: KeyboardEvent): void {
+    if ((e.key === 'p' || e.key === 'P' || e.key === 'Escape') && this.phase() === 'running') {
+      const tgt = e.target as HTMLElement | null;
+      if (typeof tgt?.closest === 'function' && tgt.closest('input, textarea, [contenteditable]')) return;
+      e.preventDefault();
+      this.togglePause();
+      return;
+    }
     if (e.key !== 'ArrowUp' && e.key !== ' ') return;
+    if (this.paused()) return;
     const t = e.target as HTMLElement | null;
     if (e.key === ' ' && typeof t?.closest === 'function' && t.closest('button, a, input, textarea, [contenteditable]')) return; // Spazio su un pulsante lo attiva
     if (this.phase() === 'done') return;
@@ -127,12 +158,12 @@ export class Platformer extends BaseGame implements OnInit, AfterViewInit {
 
   private press(): void {
     if (this.phase() === 'ready') { this.phase.set('running'); return; }
-    if (this.phase() === 'running') this.engine.jump();
+    if (this.phase() === 'running' && !this.paused()) this.engine.jump();
   }
 
   /** Un passo di simulazione (richiamabile anche dai test, senza canvas). */
   protected update(dt: number): void {
-    if (this.phase() !== 'running') return;
+    if (this.phase() !== 'running' || this.paused()) return;
     const e = this.engine;
     const before = e.lastEvent;
     e.step(dt);
