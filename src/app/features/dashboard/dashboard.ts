@@ -144,7 +144,8 @@ type CatalogKind = 'paths' | 'heroes';
   `,
   styles: `
     :host { display: flex; flex: 1; min-height: 0; min-width: 0; }
-    main { gap: clamp(4px, 1.2vh, 10px); }
+    /* In basso resta uno spazio libero: il badge di Netlify (fisso, in basso a destra) non deve coprire «Cerca eroi» e gli altri pulsanti. */
+    main { gap: clamp(4px, 1.2vh, 10px); padding-bottom: 72px; }
     .head { flex: none; text-align: center; }
     .titlerow { display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 4px 10px; }
     .titlerow .like { padding: 3px 8px; font-size: .5rem; }
