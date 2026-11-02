@@ -14,6 +14,7 @@ import { baseLineCount, composeProject, editorSection, neededContext, shiftError
 import { projectCode } from '../../core/utils/project-code';
 import { vizLine } from '../../core/utils/viz';
 import { ScoreBreakdown, parSeconds, scoreAttempt, stripBase } from '../../core/utils/scoring';
+import { BONUS_MAX_ERRORS, bonusEarned, rollBonus } from '../../core/utils/bonus';
 import { DifficultyStars } from '../../shared/components/difficulty-stars';
 import { CodeEditor } from '../../shared/components/code-editor';
 import { CodeWorld } from '../../shared/components/code-world';
@@ -26,6 +27,7 @@ const INTRO_KEY = 'pixelademy.intro.v1';
 const PHASE_KEY = 'pixelademy.phase.v1';
 /** Gli errori della battaglia di ogni missione (per la sessione): ricaricando al task contano ancora. */
 const BATTLE_KEY = 'pixelademy.battle.v1';
+const BONUS_KEY = 'pixelademy.bonus.v1';
 
 type Phase = 'teoria' | 'battaglia' | 'corsa' | 'task';
 
@@ -54,8 +56,8 @@ type Phase = 'teoria' | 'battaglia' | 'corsa' | 'task';
         <ol class="steps" [class.in-task]="phase() === 'task'" aria-label="Fasi della missione">
           <li class="step" [class.current]="phase() === 'teoria'" [attr.aria-current]="phase() === 'teoria' ? 'step' : null">1 · Teoria</li>
           <li class="step" [class.current]="phase() === 'battaglia'" [attr.aria-current]="phase() === 'battaglia' ? 'step' : null">2 · Battaglia</li>
-          @if (m.bonus) { <li class="step" [class.current]="phase() === 'corsa'" [attr.aria-current]="phase() === 'corsa' ? 'step' : null">3 · Corsa (bonus)</li> }
-          <li class="step" [class.current]="phase() === 'task'" [attr.aria-current]="phase() === 'task' ? 'step' : null">{{ m.bonus ? 4 : 3 }} · Task</li>
+          @if (bonusOffered()) { <li class="step" [class.current]="phase() === 'corsa'" [attr.aria-current]="phase() === 'corsa' ? 'step' : null">3 · 🎁 Bonus</li> }
+          <li class="step" [class.current]="phase() === 'task'" [attr.aria-current]="phase() === 'task' ? 'step' : null">{{ bonusOffered() ? 4 : 3 }} · Task</li>
         </ol>
         }
 
@@ -84,7 +86,7 @@ type Phase = 'teoria' | 'battaglia' | 'corsa' | 'task';
                 <p class="panel err">Minigioco non disponibile: {{ m.game.type }}</p>
               }
               @if (taskUnlocked()) {
-                <div class="row"><button type="button" class="btn primary" (click)="afterBattle()">{{ m.bonus ? 'Alla corsa bonus →' : 'Vai al task →' }}</button></div>
+                <div class="row"><button type="button" class="btn primary" (click)="afterBattle()">{{ bonusOffered() ? '🎁 Al bonus →' : 'Vai al task →' }}</button></div>
               }
             </section>
           }
@@ -172,8 +174,13 @@ type Phase = 'teoria' | 'battaglia' | 'corsa' | 'task';
         @if (victoryOpen()) {
           <app-modal title="Battaglia vinta!" (closed)="victoryOpen.set(false)">
             <p class="ok">Missione completata! Il task Python è sbloccato.</p>
+            @if (bonusOffered()) {
+              <p class="ok">🎁 Bonus sbloccato! Hai giocato bene: una corsa extra, se ti va.</p>
+            } @else if (m.bonus && !bonusEarned(battleErrors())) {
+              <p class="status">Finisci la battaglia con al massimo {{ maxBonusErrors }} errore per avere la possibilità di un bonus.</p>
+            }
             <div class="row">
-              <button type="button" class="btn primary" (click)="goToTask()">{{ m.bonus ? 'Alla corsa bonus →' : 'Vai al task →' }}</button>
+              <button type="button" class="btn primary" (click)="goToTask()">{{ bonusOffered() ? '🎁 Al bonus →' : 'Vai al task →' }}</button>
               <button type="button" class="btn" (click)="victoryOpen.set(false)">Resta qui</button>
             </div>
           </app-modal>
@@ -329,6 +336,10 @@ export class MissionDetail {
   protected readonly battleWon = signal(false);
   /** La corsa bonus è stata completata (facoltativa: non cambia gli XP). */
   protected readonly bonusDone = signal(false);
+  /** Il bonus è comparso per questa missione (a sorpresa, e solo dopo una buona battaglia). */
+  protected readonly bonusOffered = signal(false);
+  protected readonly bonusEarned = bonusEarned;
+  protected readonly maxBonusErrors = BONUS_MAX_ERRORS;
   /** Errori commessi nel minigioco della battaglia (contano negli XP insieme a quelli del task). */
   protected readonly battleErrors = signal(0);
   protected readonly victoryOpen = signal(false);
@@ -428,7 +439,9 @@ export class MissionDetail {
       config: m?.game.config ?? {},
       onCleared: (result?: { mistakes: number }) => {
         this.battleWon.set(true);
-        this.setBattleErrors(Math.max(0, Math.floor(result?.mistakes ?? 0)));
+        const mistakes = Math.max(0, Math.floor(result?.mistakes ?? 0));
+        this.setBattleErrors(mistakes);
+        this.setBonusOffered(!!m?.bonus && rollBonus(mistakes));
         this.victoryOpen.set(true);
       },
     };
@@ -449,6 +462,7 @@ export class MissionDetail {
         this.slide.set(0);
         this.battleWon.set(saved === 'task' || saved === 'corsa');
         this.bonusDone.set(false);
+        this.bonusOffered.set(!!m?.bonus && (saved === 'corsa' || this.savedBonus(m.id)));
         this.battleErrors.set((saved === 'task' || saved === 'corsa') && m ? this.savedBattleErrors(m.id) : 0);
         this.victoryOpen.set(false);
         this.rewardOpen.set(false);
@@ -542,6 +556,28 @@ export class MissionDetail {
     }
   }
 
+  /** Ricorda se il bonus è comparso (il sorteggio non si ripete ricaricando la pagina). */
+  private setBonusOffered(v: boolean): void {
+    this.bonusOffered.set(v);
+    const id = this.current;
+    if (!id) return;
+    try {
+      const all = JSON.parse(sessionStorage.getItem(BONUS_KEY) ?? '{}') as Record<string, boolean>;
+      all[id] = v;
+      sessionStorage.setItem(BONUS_KEY, JSON.stringify(all));
+    } catch {
+      /* senza storage il sorteggio si ripete ricaricando: non è un problema */
+    }
+  }
+
+  private savedBonus(id: string): boolean {
+    try {
+      return (JSON.parse(sessionStorage.getItem(BONUS_KEY) ?? '{}') as Record<string, unknown>)[id] === true;
+    } catch {
+      return false;
+    }
+  }
+
   /** Registra gli errori della battaglia e li ricorda per la sessione. */
   private setBattleErrors(n: number): void {
     this.battleErrors.set(n);
@@ -576,6 +612,7 @@ export class MissionDetail {
 
   protected restart(): void {
     this.victoryOpen.set(false);
+    this.setBonusOffered(false); // si ricomincia: un nuovo sorteggio alla prossima battaglia
     this.slide.set(0);
     this.go('teoria');
   }
@@ -587,7 +624,7 @@ export class MissionDetail {
 
   /** Finita la battaglia: se la missione ha il bonus si passa alla corsa, altrimenti direttamente al task. */
   protected afterBattle(): void {
-    this.go(this.mission()?.bonus ? 'corsa' : 'task');
+    this.go(this.bonusOffered() ? 'corsa' : 'task');
   }
 
   protected async run(code: string): Promise<void> {
