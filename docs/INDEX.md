@@ -103,3 +103,4 @@
 | E11 | BUG-11.13 «Togli e aggiungi»: il quiz usa len() senza spiegarlo | #211 | #212 | `docs/issues/BUG-11.13.md` | fatto |
 | E05 | BUG-05.4 Da mobile non si scorre la pagina toccando dentro il compilatore | #213 | #214 | `docs/issues/BUG-05.4.md` | fatto |
 | E04 | US-04.7 Corsa dei condizionali: minigioco bonus tra battaglia e task (pilota su «Le Liste») | #215 | #216 | `docs/issues/US-04.7.md` | fatto |
+| E03 | US-03.9 Percentuale di completamento del percorso (mai 100% con missioni da fare) | #217 | #219 | `docs/issues/US-03.9.md` | fatto |
