@@ -14,7 +14,8 @@ describe('Corsa dei condizionali: generazione degli ostacoli', () => {
     const obs = indexObstacles(cfg({ count: 8 }));
     expect(obs.length).toBe(8);
     expect(obs.filter((o) => o.truth).length).toBe(4);
-    expect(indexObstacles(cfg()).length).toBe(14); // 7 valori × 2 operatori al livello 1: non ce ne sono 18
+    expect(indexObstacles(cfg({ count: 30 })).length).toBe(14); // 7 valori × 2 operatori al livello 1: non ce ne sono di più
+    expect(indexObstacles(cfg()).length).toBe(12); // di norma 12
     for (const o of obs) {
       const m = /^prezzi\[(-?\d+)\] (>|<|>=|<=) 6$/.exec(o.cond)!;
       expect(m, o.cond).not.toBeNull();
@@ -34,7 +35,7 @@ describe('Corsa dei condizionali: generazione degli ostacoli', () => {
 
   it('len: la lista cambia con append e pop, mai vuota, e la verità segue len() reale', () => {
     const obs = lenObstacles(cfg({ kind: 'len', name: 'carrello', v: [4, 6, 9, 2, 5], level: 2 }));
-    expect(obs.length).toBe(18);
+    expect(obs.length).toBe(12);
     let state = [4, 6, 9, 2, 5];
     for (const o of obs) {
       const parsed = JSON.parse(o.lines[0].replace(/^carrello = /, ''));
@@ -48,6 +49,10 @@ describe('Corsa dei condizionali: generazione degli ostacoli', () => {
     }
     expect(obs.some((o) => o.truth)).toBe(true);
     expect(obs.some((o) => !o.truth)).toBe(true);
+  });
+
+  it('un altro seed dà un\'altra serie (la corsa a tempo ne concatena più d\'una)', () => {
+    expect(JSON.stringify(indexObstacles(cfg({ seed: 1 })))).not.toBe(JSON.stringify(indexObstacles(cfg({ seed: 2 }))));
   });
 
   it('è deterministica: stessi dati, stessa corsa', () => {
@@ -102,6 +107,29 @@ describe('Corsa dei condizionali: il minigioco', () => {
       fixture.detectChanges();
     }
     expect(result).toEqual({ mistakes: 3 });
+  });
+
+  it('a tempo: dura 15 secondi, poi la corsa finisce con il punteggio (anche senza rispondere)', () => {
+    vi.useFakeTimers();
+    vi.stubGlobal('matchMedia', (q: string) => ({ matches: false, addEventListener() { /* niente */ }, removeEventListener() { /* niente */ }, media: q }));
+    TestBed.resetTestingModule();
+    let result: { mistakes: number } | undefined;
+    const fixture = TestBed.createComponent(Runner);
+    const ref = fixture.componentRef as ComponentRef<unknown>;
+    ref.setInput('character', MINI_PACK.characters[0]);
+    ref.setInput('config', { kind: 'index', name: 'prezzi', v: [3, 8, 5, 12, 7, 4, 9], th: 6, level: 1 });
+    ref.setInput('onCleared', (r: { mistakes: number }) => (result = r));
+    fixture.detectChanges();
+    const el = fixture.nativeElement as HTMLElement;
+    expect(el.textContent).toContain('15 secondi');
+    expect((fixture.componentInstance as unknown as { obstacles: unknown[] }).obstacles.length).toBeGreaterThanOrEqual(40); // non si esauriscono prima del tempo
+    vi.advanceTimersByTime(7000);
+    fixture.detectChanges();
+    expect(result).toBeUndefined(); // dopo 7 secondi è ancora in corso
+    vi.advanceTimersByTime(8200);
+    fixture.detectChanges();
+    expect(result).toBeDefined();
+    expect(el.querySelector('.end')!.textContent).toContain('Tempo!');
   });
 
   it('con «riduci movimento» non c\'è limite di tempo', () => {
