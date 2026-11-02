@@ -4,7 +4,7 @@ import { PACKS } from './core/data/packs.generated';
 import { BONUS_CHANCE, BONUS_MAX_ERRORS, bonusEarned, rollBonus } from './core/utils/bonus';
 import { BONUS_KINDS } from './content/adventure-core/bonus-kinds';
 import { EXERCISES } from './content/adventure-core/exercises';
-import { AIR_Y, COIN_R, CoinSpec, PlatformerEngine, RUN_SECONDS, WORLD, coinSpecs } from './core/utils/platformer-engine';
+import { AIR_Y, COIN_R, CoinSpec, PlatformerEngine, RUN_SECONDS, WORLD, coinSpecs, roundThreshold } from './core/utils/platformer-engine';
 import { Platformer } from './shared/components/games/platformer';
 import { ContentRegistryService } from './core/services/content-registry.service';
 import { MINI_PACK } from './testing/mini-pack';
@@ -377,3 +377,38 @@ function evaluate(cond: string): boolean {
   // eslint-disable-next-line no-new-func
   return new Function(...names, 'sumOf', '__r', `return (${keyed});`)(...names.map((n) => world[n]), (a: number[]) => a.reduce((x, y) => x + y, 0), (l: number[], i: number) => l.at(i)) as boolean;
 }
+
+describe('soglie facili da valutare a mente', () => {
+  it('roundThreshold: tonda, dalla parte giusta e lontana dal valore', () => {
+    const r = () => 0.3;
+    expect(roundThreshold(1065, true, r)).toBe(1000);
+    expect(roundThreshold(1065, false, r)).toBe(1200);
+    expect(roundThreshold(705, true, r)).toBe(650);
+    expect(roundThreshold(705, false, r)).toBe(750);
+    expect(roundThreshold(380, true, r)).toBe(360);
+    expect(roundThreshold(64, true, r)).toBe(60);
+    expect(roundThreshold(64, false, r)).toBe(70);
+    for (const x of [7, 19, 29]) {
+      expect(roundThreshold(x, true, r)).toBeLessThan(x);
+      expect(roundThreshold(x, false, r)).toBeGreaterThanOrEqual(x);
+    }
+    for (const x of [31, 99, 100, 455, 1065, 9999]) {
+      expect(roundThreshold(x, true, r)).toBeLessThan(x);
+      expect(roundThreshold(x, false, r)).toBeGreaterThan(x);
+    }
+  });
+
+  it('con numeri grandi (Officina dell\'Energia): al massimo due valori e soglie tonde', () => {
+    const energia = PACKS[0].paths.find((p) => p.id === 'adventure-core-energia')!;
+    for (const m of energia.missions) {
+      const c = m.bonus!.config as { kind: 'sum'; name: string; v: number[]; th: number; level: number };
+      if (!['sum', 'mean', 'minmax'].includes(c.kind)) continue;
+      for (const s of coinSpecs(c, 16)) {
+        const nums = /\[([\d, ]+)\]/.exec(s.cond)![1].split(',').length;
+        expect(nums, `${m.id}: ${s.cond}`).toBeLessThanOrEqual(2);
+        const t = +/(?:>|<) (-?\d+)$/.exec(s.cond)![1];
+        expect(t % 10, `${m.id}: ${s.cond}`).toBe(0); // una soglia «tonda»
+      }
+    }
+  });
+});
