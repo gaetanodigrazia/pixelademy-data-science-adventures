@@ -1,7 +1,7 @@
 import { TestBed } from '@angular/core/testing';
 import { By } from '@angular/platform-browser';
 import { PACKS } from './core/data/packs.generated';
-import { BONUS_CHANCE, BONUS_MAX_ERRORS, bonusEarned, rollBonus } from './core/utils/bonus';
+import { BONUS_MAX_ERRORS, bonusEarned, bonusSettings, unlockBonus } from './core/utils/bonus';
 import { BONUS_KINDS } from './content/adventure-core/bonus-kinds';
 import { EXERCISES } from './content/adventure-core/exercises';
 import { AIR_Y, COIN_R, CoinSpec, PlatformerEngine, RUN_SECONDS, WORLD, coinSpecs, roundThreshold } from './core/utils/platformer-engine';
@@ -202,7 +202,7 @@ describe('bonus platform: il componente', () => {
 
 describe('Le Liste: il bonus platform tra battaglia e task', () => {
   const liste = PACKS[0].paths.find((p) => p.id === 'adventure-core-liste')!;
-  beforeEach(() => { vi.stubGlobal('matchMedia', undefined); });
+  beforeEach(() => { vi.stubGlobal('matchMedia', undefined); bonusSettings.enabled = true; });
   afterEach(() => { vi.unstubAllGlobals(); vi.restoreAllMocks(); });
 
   it('Le Liste: indici, pop e len; ogni missione dei percorsi di base ha un bonus, le sfide pandas (senza battaglia) no', () => {
@@ -215,8 +215,7 @@ describe('Le Liste: il bonus platform tra battaglia e task', () => {
     }
   });
 
-  it('dopo una buona battaglia (e il sorteggio) si va alla corsa; «Salta il bonus» porta al task', async () => {
-    vi.spyOn(Math, 'random').mockReturnValue(0.1); // il bonus compare
+  it('dopo una buona battaglia si va al bonus; «Salta il bonus» porta al task', async () => {
     setup();
     const { f, el } = await openMission(liste.missions[0].id);
     btn(el, 'Salta la teoria').click();
@@ -237,26 +236,21 @@ describe('Le Liste: il bonus platform tra battaglia e task', () => {
     f.destroy();
   });
 
-  it('sorteggio sfavorevole: nessun bonus, si va dritti al task', async () => {
-    vi.spyOn(Math, 'random').mockReturnValue(0.9);
+  it('con un solo errore (il massimo) il bonus si sblocca comunque', async () => {
     setup();
+    bonusSettings.enabled = true;
     const { f, el } = await openMission(liste.missions[0].id);
     btn(el, 'Salta la teoria').click();
     f.detectChanges();
-    f.debugElement.query(By.css('.game-host')).componentInstance.win();
+    const g = f.debugElement.query(By.css('.game-host')).componentInstance;
+    g.miss('x');
+    g.win();
     f.detectChanges();
-    const d = el.querySelector('[role=dialog]')!;
-    expect(d.textContent).not.toContain('Bonus sbloccato');
-    expect(d.textContent).not.toContain('al massimo'); // ha giocato bene: nessun suggerimento
-    expect(el.querySelector('.steps')!.textContent).not.toContain('Bonus');
-    (Array.from(d.querySelectorAll('button')).find((b) => b.textContent?.includes('Vai al task')) as HTMLButtonElement).click();
-    f.detectChanges();
-    expect(el.querySelector('section[aria-label="Task Python"]')).not.toBeNull();
+    expect(el.querySelector('[role=dialog]')!.textContent).toContain('Bonus sbloccato');
     f.destroy();
   });
 
-  it('troppi errori in battaglia: niente bonus, anche col sorteggio favorevole, e il messaggio spiega come sbloccarlo', async () => {
-    vi.spyOn(Math, 'random').mockReturnValue(0);
+  it('troppi errori in battaglia: bonus non sbloccato, e il messaggio dice quanti errori e cosa fare', async () => {
     setup();
     const { f, el } = await openMission(liste.missions[0].id);
     btn(el, 'Salta la teoria').click();
@@ -267,12 +261,13 @@ describe('Le Liste: il bonus platform tra battaglia e task', () => {
     f.detectChanges();
     const d = el.querySelector('[role=dialog]')!;
     expect(d.textContent).not.toContain('Bonus sbloccato');
-    expect(d.textContent).toContain('al massimo 1 errore');
+    expect(d.textContent).toContain('Bonus non sbloccato: hai fatto 3 errori, ne servono al massimo 1');
+    expect(d.textContent).toContain('ricomincia dalla teoria');
+    expect(el.querySelector('.steps')!.textContent).not.toContain('Bonus');
     f.destroy();
   });
 
-  it('il sorteggio non si ripete ricaricando la pagina', async () => {
-    vi.spyOn(Math, 'random').mockReturnValue(0.1);
+  it('l\'esito dello sblocco si ricorda ricaricando la pagina', async () => {
     setup();
     const id = liste.missions[0].id;
     sessionStorage.setItem('pixelademy.phase.v1', JSON.stringify({ [id]: 'task' }));
@@ -303,7 +298,6 @@ describe('Le Liste: il bonus platform tra battaglia e task', () => {
   });
 
   it('il harness dei test attraversa il bonus (goToTask)', async () => {
-    vi.spyOn(Math, 'random').mockReturnValue(0.1);
     setup();
     const { f, el } = await openMission(liste.missions[0].id);
     goToTask(f);
@@ -313,27 +307,25 @@ describe('Le Liste: il bonus platform tra battaglia e task', () => {
 });
 
 describe('sblocco del bonus', () => {
-  it('serve una battaglia con al massimo 1 errore', () => {
+  it('si sblocca sempre con al massimo 1 errore, mai con di più (nessun sorteggio)', () => {
     expect(BONUS_MAX_ERRORS).toBe(1);
     expect(bonusEarned(0)).toBe(true);
     expect(bonusEarned(1)).toBe(true);
     expect(bonusEarned(2)).toBe(false);
+    bonusSettings.enabled = true;
+    // nessun elemento casuale: stesso esito qualunque sia Math.random
+    for (const r of [0, 0.3, 0.99]) {
+      vi.spyOn(Math, 'random').mockReturnValue(r);
+      expect(unlockBonus(0)).toBe(true);
+      expect(unlockBonus(1)).toBe(true);
+      expect(unlockBonus(2)).toBe(false);
+    }
+    vi.restoreAllMocks();
   });
 
-  it('chi se l\'è guadagnato lo vede a caso (50%); chi no, mai', () => {
-    expect(BONUS_CHANCE).toBe(0.5);
-    expect(rollBonus(0, () => 0.49)).toBe(true);
-    expect(rollBonus(0, () => 0.5)).toBe(false);
-    expect(rollBonus(1, () => 0)).toBe(true);
-    expect(rollBonus(2, () => 0)).toBe(false); // mai, qualunque sia il sorteggio
-  });
-
-  it('su molti sorteggi compare circa una volta su due', () => {
-    let seed = 7;
-    const rnd = () => { seed = (seed * 1664525 + 1013904223) >>> 0; return seed / 4294967296; };
-    const n = Array.from({ length: 2000 }, () => rollBonus(0, rnd)).filter(Boolean).length;
-    expect(n).toBeGreaterThan(900);
-    expect(n).toBeLessThan(1100);
+  it('l\'interruttore dei test lo spegne', () => {
+    bonusSettings.enabled = false;
+    expect(unlockBonus(0)).toBe(false);
   });
 });
 
