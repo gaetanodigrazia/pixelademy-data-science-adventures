@@ -10,7 +10,7 @@ import { IndexRack } from '../../shared/components/games/index-rack';
 import { ListBench } from '../../shared/components/games/list-bench';
 import { MeanCalc } from '../../shared/components/games/mean-calc';
 import { PipelineLine } from '../../shared/components/games/pipeline-line';
-import { Runner } from '../../shared/components/games/runner';
+import { Platformer } from '../../shared/components/games/platformer';
 
 /** I primi 10: un minigioco per concetto, nello stesso ordine delle 10 missioni standard (poi quelli dei percorsi con esercizi propri): si impara il concetto giocandolo sui dati della missione. */
 export const GAMES: GameDefinition[] = [
@@ -25,11 +25,11 @@ export const GAMES: GameDefinition[] = [
   { id: 'adventure-function-forge', title: 'Fucina delle funzioni', description: 'Monta una funzione riga per riga e provala con un test.', controls: 'Clic sulle righe', component: FunctionForge },
   { id: 'adventure-pipeline-line', title: 'Linea di analisi', description: 'Componi una pipeline e guarda i dati cambiare a ogni passo.', controls: 'Clic sui passi', component: PipelineLine },
   { id: 'adventure-quiz', title: 'Esegui il codice a mano', description: 'Scegli il risultato di ogni passo del codice, tra quello vero e le sviste più comuni.', controls: 'Clic sul risultato', component: ExerciseQuiz },
-  { id: 'adventure-runner', title: 'Corsa dei condizionali', description: 'Bonus: a ogni ostacolo c\'è una condizione Python: se è vera salta, se è falsa corri.', controls: 'Salta (↑) o corri (→)', component: Runner },
+  { id: 'adventure-platformer', title: 'Bonus platform', description: 'Bonus a tempo: corri e salta, prendi le monete con la condizione vera ed evita quelle false.', controls: 'Salta: tocco, Spazio o ↑', component: Platformer },
 ];
 
-export const RUNNER_GAME = 'adventure-runner';
+export const BONUS_GAME = 'adventure-platformer';
 
 /** Gli id dei giochi della battaglia (un minigioco per concetto, poi il quiz): il bonus non fa parte delle battaglie. */
-export const GAME_IDS = GAMES.map((g) => g.id).filter((id) => id !== RUNNER_GAME);
+export const GAME_IDS = GAMES.map((g) => g.id).filter((id) => id !== BONUS_GAME);
 

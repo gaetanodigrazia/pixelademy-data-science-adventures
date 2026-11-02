@@ -71,7 +71,7 @@ export interface Mission {
   projectSection?: string;
   validation: ValidationSpec;
   game: MissionGame;
-  /** Minigioco bonus facoltativo, tra la battaglia e il task (15 secondi, a sorpresa e sempre saltabile). */
+  /** Minigioco bonus facoltativo (platform a tempo, 15 secondi), tra la battaglia e il task: a sorpresa e sempre saltabile. */
   bonus?: MissionGame;
   /** Scena di gioco del task: il risultato del programma muove il mondo di gioco (si affianca al minigioco della battaglia). */
   viz?: MissionViz;

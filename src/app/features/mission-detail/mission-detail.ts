@@ -175,7 +175,7 @@ type Phase = 'teoria' | 'battaglia' | 'corsa' | 'task';
           <app-modal title="Battaglia vinta!" (closed)="victoryOpen.set(false)">
             <p class="ok">Missione completata! Il task Python è sbloccato.</p>
             @if (bonusOffered()) {
-              <p class="ok">🎁 Bonus sbloccato! Hai giocato bene: una corsa extra, se ti va.</p>
+              <p class="ok">🎁 Bonus sbloccato! Hai giocato bene: un platform extra da 15 secondi, se ti va.</p>
             } @else if (m.bonus && !bonusEarned(battleErrors())) {
               <p class="status">Finisci la battaglia con al massimo {{ maxBonusErrors }} errore per avere la possibilità di un bonus.</p>
             }

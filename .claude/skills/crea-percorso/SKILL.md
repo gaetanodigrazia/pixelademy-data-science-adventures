@@ -28,8 +28,8 @@ I percorsi si sbloccano a catena (`PathSeed.requires`, slug dei percorsi da comp
 
 **Cosa dire all'utente** (prima di scrivere e nel riepilogo finale): «Il percorso `<titolo>` resterà bloccato finché non avrai completato almeno *Le Variabili* e *Le Liste*» (più gli eventuali altri requisiti scelti), e che l'Osservatorio delle Nuvole si aprirà solo dopo questo percorso. Chiedi conferma se vuole requisiti diversi o aggiuntivi: non toglierli senza che lo chieda.
 
-## Corsa bonus (`runner`, facoltativa)
-Una voce può avere `runner: ['index' | 'len' | null, …]` (uno per missione): dopo la battaglia compare la fase facoltativa «Corsa dei condizionali» (15 secondi, a sorpresa dopo una buona battaglia, sempre saltabile, non cambia gli XP). `'index'` fa leggere un elemento della serie `a` e confrontarlo con `alert` (`prezzi[3] > 6`); `'len'` lavora sulla lista `b` con `append`/`pop`/`len`. Oggi la usa solo «Le Liste». Vale solo per percorsi che parlano di liste e confronti: non metterla dove i concetti sono altri.
+## Bonus platform (`runner`, facoltativo)
+Una voce può avere `runner: ['index' | 'pop' | 'len' | null, …]` (uno per missione): dopo la battaglia compare la fase facoltativa «Bonus platform» stile Super Mario (15 secondi, a sorpresa dopo una buona battaglia, sempre saltabile, non cambia gli XP). Il personaggio corre da solo e si salta con un tocco: le monete portano una condizione, da prendere se vera e da evitare se falsa (a terra: cammina per prendere, salta per evitare; in aria il contrario). `'index'` legge la serie `a` e la confronta con `alert` (`prezzi[3] > 6`); `'pop'` usa `[4, 6, 9].pop() > 5` e `'len'` usa `len([4, 6, 9]) > 2`, sulla lista `b`. Oggi la usa solo «Le Liste». Vale solo per percorsi che parlano di liste e confronti: non metterla dove i concetti sono altri.
 
 ## Percorsi brevi (da 1 a 9 missioni)
 Il numero di missioni è la lunghezza di `missions`: un percorso di **N missioni usa i primi N concetti**, con difficoltà 1..N (la scala resta «su 10»: una missione di difficoltà 3 si vede come 3/10). Esempio con i concetti standard: i primi N dei 10. `mobilita` ed `energia` invece hanno **esercizi propri** (vedi sotto).
