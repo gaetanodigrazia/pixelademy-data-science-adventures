@@ -108,3 +108,4 @@
 | E04 | BUG-04.9 La corsa bonus dura troppo: deve durare 15 secondi | #221 | #222 | `docs/issues/BUG-04.9.md` | fatto |
 | E04 | US-04.10 Bonus platform stile Super Mario (15 secondi) al posto della corsa a bottoni | #223 | #224 | `docs/issues/US-04.10.md` | fatto |
 | E04 | US-04.11 Bonus platform in ogni missione (facoltativo), con monete adatte al concetto | #225 | #226 | `docs/issues/US-04.11.md` | fatto |
+| E04 | UX-04.12 Bonus platform: condizioni con numeri grandi più facili da valutare a mente | #227 | #228 | `docs/issues/UX-04.12.md` | fatto |
