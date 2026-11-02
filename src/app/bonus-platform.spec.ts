@@ -188,6 +188,52 @@ describe('bonus platform: il componente', () => {
     expect(el.textContent).toContain('vera');
   });
 
+  it('pausa: il tempo e il gioco si fermano, si riprende solo dal pulsante', () => {
+    type P = G & { paused(): boolean; togglePause(): void; onPointer(e: Event): void };
+    const { fixture, g, el } = mount();
+    const p = g as unknown as P;
+    expect(el.querySelector('.pause')).toBeNull(); // prima di partire non c'è
+    g.startRun();
+    fixture.detectChanges();
+    g.update(2);
+    const t = g.engine.t;
+    const pause = el.querySelector<HTMLButtonElement>('.pause')!;
+    expect(pause.textContent).toContain('Pausa');
+    pause.click();
+    fixture.detectChanges();
+    expect(p.paused()).toBe(true);
+    expect(el.textContent).toContain('In pausa');
+    g.update(5); // il tempo non scorre
+    expect(g.engine.t).toBe(t);
+    // un tocco sull'area non riprende, e il salto è ignorato
+    p.onPointer({ target: el.querySelector('.stage') } as unknown as Event);
+    document.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowUp', bubbles: true }));
+    expect(p.paused()).toBe(true);
+    expect(g.engine.y).toBe(0);
+    // «Riprendi»
+    el.querySelector<HTMLButtonElement>('.veil button')!.click();
+    fixture.detectChanges();
+    expect(p.paused()).toBe(false);
+    g.update(1);
+    expect(g.engine.t).toBeCloseTo(t + 1, 5);
+  });
+
+  it('P ed Esc mettono in pausa e riprendono; se la scheda va in background il gioco si ferma da solo', () => {
+    type P = G & { paused(): boolean };
+    const { fixture, g } = mount();
+    const p = g as unknown as P;
+    g.startRun();
+    fixture.detectChanges();
+    document.dispatchEvent(new KeyboardEvent('keydown', { key: 'p', bubbles: true }));
+    expect(p.paused()).toBe(true);
+    document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
+    expect(p.paused()).toBe(false);
+    Object.defineProperty(document, 'hidden', { value: true, configurable: true });
+    document.dispatchEvent(new Event('visibilitychange'));
+    expect(p.paused()).toBe(true);
+    Object.defineProperty(document, 'hidden', { value: false, configurable: true });
+  });
+
   it('Spazio e ↑ saltano durante la corsa e fanno partire quando è pronta', () => {
     const { fixture, g } = mount();
     document.dispatchEvent(new KeyboardEvent('keydown', { key: ' ', bubbles: true }));
