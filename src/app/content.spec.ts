@@ -45,12 +45,15 @@ describe('adventure-core pack', () => {
     }
   });
 
-  it('registra 11 minigiochi (10 standard + il quiz degli esercizi propri) e li usa tutti', () => {
-    expect(pack.games.length).toBe(11);
-    expect(new Set(pack.games.map((g) => g.component)).size).toBe(11);
+  it('registra 12 minigiochi (10 standard, il quiz degli esercizi propri e la corsa bonus) e li usa tutti', () => {
+    expect(pack.games.length).toBe(12);
+    expect(new Set(pack.games.map((g) => g.component)).size).toBe(12);
     const used = new Set(missions.map((m) => m.game.type));
     for (const m of missions) expect(pack.games.some((g) => g.id === m.game.type)).toBe(true);
-    expect(used.size).toBe(11);
+    expect(used.size).toBe(11); // le battaglie: la corsa è solo bonus
+    const bonus = missions.filter((m) => m.bonus);
+    for (const m of bonus) expect(pack.games.some((g) => g.id === m.bonus!.type)).toBe(true);
+    expect(bonus.length).toBeGreaterThan(0);
   });
 
   it('ha una soluzione per ogni missione che non compare in starter code né hint', () => {

@@ -27,7 +27,7 @@ const PHASE_KEY = 'pixelademy.phase.v1';
 /** Gli errori della battaglia di ogni missione (per la sessione): ricaricando al task contano ancora. */
 const BATTLE_KEY = 'pixelademy.battle.v1';
 
-type Phase = 'teoria' | 'battaglia' | 'task';
+type Phase = 'teoria' | 'battaglia' | 'corsa' | 'task';
 
 @Component({
   selector: 'app-mission-detail',
@@ -54,7 +54,8 @@ type Phase = 'teoria' | 'battaglia' | 'task';
         <ol class="steps" [class.in-task]="phase() === 'task'" aria-label="Fasi della missione">
           <li class="step" [class.current]="phase() === 'teoria'" [attr.aria-current]="phase() === 'teoria' ? 'step' : null">1 · Teoria</li>
           <li class="step" [class.current]="phase() === 'battaglia'" [attr.aria-current]="phase() === 'battaglia' ? 'step' : null">2 · Battaglia</li>
-          <li class="step" [class.current]="phase() === 'task'" [attr.aria-current]="phase() === 'task' ? 'step' : null">3 · Task</li>
+          @if (m.bonus) { <li class="step" [class.current]="phase() === 'corsa'" [attr.aria-current]="phase() === 'corsa' ? 'step' : null">3 · Corsa (bonus)</li> }
+          <li class="step" [class.current]="phase() === 'task'" [attr.aria-current]="phase() === 'task' ? 'step' : null">{{ m.bonus ? 4 : 3 }} · Task</li>
         </ol>
         }
 
@@ -83,8 +84,22 @@ type Phase = 'teoria' | 'battaglia' | 'task';
                 <p class="panel err">Minigioco non disponibile: {{ m.game.type }}</p>
               }
               @if (taskUnlocked()) {
-                <div class="row"><button type="button" class="btn primary" (click)="go('task')">Vai al task →</button></div>
+                <div class="row"><button type="button" class="btn primary" (click)="afterBattle()">{{ m.bonus ? 'Alla corsa bonus →' : 'Vai al task →' }}</button></div>
               }
+            </section>
+          }
+          @case ('corsa') {
+            <section class="stage battle" aria-label="Corsa bonus">
+              @if (bonusComponent(); as g) {
+                <ng-container *ngComponentOutlet="g; inputs: bonusInputs()" />
+              }
+              <div class="row">
+                @if (bonusDone()) {
+                  <button type="button" class="btn primary" (click)="go('task')">Vai al task →</button>
+                } @else {
+                  <button type="button" class="btn" (click)="go('task')">Salta il bonus →</button>
+                }
+              </div>
             </section>
           }
           @case ('task') {
@@ -158,7 +173,7 @@ type Phase = 'teoria' | 'battaglia' | 'task';
           <app-modal title="Battaglia vinta!" (closed)="victoryOpen.set(false)">
             <p class="ok">Missione completata! Il task Python è sbloccato.</p>
             <div class="row">
-              <button type="button" class="btn primary" (click)="goToTask()">Vai al task →</button>
+              <button type="button" class="btn primary" (click)="goToTask()">{{ m.bonus ? 'Alla corsa bonus →' : 'Vai al task →' }}</button>
               <button type="button" class="btn" (click)="victoryOpen.set(false)">Resta qui</button>
             </div>
           </app-modal>
@@ -312,6 +327,8 @@ export class MissionDetail {
   protected readonly sceneOpen = signal(typeof window === 'undefined' || typeof window.matchMedia !== 'function' || !window.matchMedia('(max-width: 600px)').matches);
   protected readonly slide = signal(0);
   protected readonly battleWon = signal(false);
+  /** La corsa bonus è stata completata (facoltativa: non cambia gli XP). */
+  protected readonly bonusDone = signal(false);
   /** Errori commessi nel minigioco della battaglia (contano negli XP insieme a quelli del task). */
   protected readonly battleErrors = signal(0);
   protected readonly victoryOpen = signal(false);
@@ -390,6 +407,19 @@ export class MissionDetail {
     const m = this.mission();
     return m ? this.registry.game(m.game.type)?.component : undefined;
   });
+  protected readonly bonusComponent = computed(() => {
+    const b = this.mission()?.bonus;
+    return b ? this.registry.game(b.type)?.component : undefined;
+  });
+  protected readonly bonusInputs = computed(() => {
+    const m = this.mission();
+    return {
+      character: this.game.selectedCharacter(),
+      enemy: this.registry.enemy(m?.enemyId),
+      config: m?.bonus?.config ?? {},
+      onCleared: () => this.bonusDone.set(true), // gli errori della corsa non contano negli XP
+    };
+  });
   protected readonly gameInputs = computed(() => {
     const m = this.mission();
     return {
@@ -413,11 +443,13 @@ export class MissionDetail {
       untracked(() => {
         this.current = m?.id ?? null;
         // dopo un ricaricamento si riparte dalla fase raggiunta (se la battaglia era vinta, il task resta sbloccato)
-        const saved = m && !m.challenge ? this.savedPhase(m.id) : null;
+        const savedRaw = m && !m.challenge ? this.savedPhase(m.id) : null;
+        const saved = savedRaw === 'corsa' && !m?.bonus ? 'task' : savedRaw; // la corsa non c'è (più) per questa missione
         this.phase.set(m?.challenge ? 'task' : saved ?? 'teoria');
         this.slide.set(0);
-        this.battleWon.set(saved === 'task');
-        this.battleErrors.set(saved === 'task' && m ? this.savedBattleErrors(m.id) : 0);
+        this.battleWon.set(saved === 'task' || saved === 'corsa');
+        this.bonusDone.set(false);
+        this.battleErrors.set((saved === 'task' || saved === 'corsa') && m ? this.savedBattleErrors(m.id) : 0);
         this.victoryOpen.set(false);
         this.rewardOpen.set(false);
         // Prima missione di un progetto, non ancora completata: si presenta il progetto (una volta per sessione).
@@ -536,7 +568,7 @@ export class MissionDetail {
   private savedPhase(id: string): Phase | null {
     try {
       const p = (JSON.parse(sessionStorage.getItem(PHASE_KEY) ?? '{}') as Record<string, unknown>)[id];
-      return p === 'battaglia' || p === 'task' ? p : null;
+      return p === 'battaglia' || p === 'corsa' || p === 'task' ? p : null;
     } catch {
       return null;
     }
@@ -550,7 +582,12 @@ export class MissionDetail {
 
   protected goToTask(): void {
     this.victoryOpen.set(false);
-    this.go('task');
+    this.afterBattle();
+  }
+
+  /** Finita la battaglia: se la missione ha il bonus si passa alla corsa, altrimenti direttamente al task. */
+  protected afterBattle(): void {
+    this.go(this.mission()?.bonus ? 'corsa' : 'task');
   }
 
   protected async run(code: string): Promise<void> {
