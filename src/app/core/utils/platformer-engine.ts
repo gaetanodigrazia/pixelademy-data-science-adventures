@@ -129,9 +129,30 @@ function lenCoins(c: PlatformerConfig, rnd: () => number): CoinSpec[] {
   return out;
 }
 
-/** Un pezzo di lista di 3 elementi, a partire da un punto a caso. */
+/** Con numeri grandi (≥100) bastano due valori: la somma a mente resta fattibile in pochi secondi. */
+const isBig = (v: number[]): boolean => Math.max(...v) >= 100;
+
+/** Il passo «tondo» (1, 2 o 5 per una potenza di 10) più vicino per difetto a `r`. */
+function niceStep(r: number): number {
+  const p = 10 ** Math.floor(Math.log10(r));
+  const m = r / p;
+  return (m >= 5 ? 5 : m >= 2 ? 2 : 1) * p;
+}
+
+/**
+ * Una soglia «tonda» e lontana da `x`, così basta una stima: sotto di `x` (la condizione `x > t` è vera) o sopra (falsa).
+ * Per i numeri piccoli resta vicina (±1…3); da 30 in su è un multiplo tondo di circa un decimo di `x`
+ * (x = 705 → 650 oppure 750; x = 1065 → 1000 oppure 1200).
+ */
+export function roundThreshold(x: number, below: boolean, rnd: () => number): number {
+  if (x < 30) return below ? Math.floor(x) - 1 - Math.floor(rnd() * 2) : Math.ceil(x) + Math.floor(rnd() * 2);
+  const step = niceStep(x / 10);
+  return below ? Math.floor((x - step / 2) / step) * step : Math.ceil((x + step / 2) / step) * step;
+}
+
+/** Un pezzo di lista di 3 elementi (2 con numeri grandi), a partire da un punto a caso. */
 function slice3(v: number[], rnd: () => number): number[] {
-  const len = Math.min(3, v.length);
+  const len = Math.min(isBig(v) ? 2 : 3, v.length);
   const start = Math.floor(rnd() * Math.max(1, v.length - len + 1));
   return v.slice(start, start + len);
 }
@@ -142,8 +163,7 @@ function sumCoins(c: PlatformerConfig, rnd: () => number): CoinSpec[] {
   for (let k = 0; k < 40; k++) {
     const part = slice3(c.v, rnd);
     const total = part.reduce((a, b) => a + b, 0);
-    const wantTrue = k % 2 === 0;
-    const t = wantTrue ? total - 1 - Math.floor(rnd() * 3) : total + Math.floor(rnd() * 3);
+    const t = roundThreshold(total, k % 2 === 0, rnd);
     const truth = total > t;
     out.push({ cond: `sum(${list(part)}) > ${t}`, truth, why: `${part.map(fmt).join(' + ')} = ${fmt(total)}: ${fmt(total)} > ${t} è ${truth ? 'vero' : 'falso'}.` });
   }
@@ -156,7 +176,7 @@ function meanCoins(c: PlatformerConfig, rnd: () => number): CoinSpec[] {
   for (let k = 0; k < 40; k++) {
     const part = slice3(c.v, rnd);
     const mean = part.reduce((a, b) => a + b, 0) / part.length;
-    const t = k % 2 === 0 ? Math.floor(mean) - (Number.isInteger(mean) ? 1 : 0) : Math.ceil(mean) + (Number.isInteger(mean) ? 0 : 0);
+    const t = roundThreshold(mean, k % 2 === 0, rnd);
     const truth = mean > t;
     out.push({ cond: `sum(${list(part)}) / ${part.length} > ${t}`, truth, why: `La media è ${fmt(mean)}: ${fmt(mean)} > ${t} è ${truth ? 'vero' : 'falso'}.` });
   }
@@ -172,7 +192,8 @@ function minmaxCoins(c: PlatformerConfig, rnd: () => number): CoinSpec[] {
     const ext = useMax ? Math.max(...part) : Math.min(...part);
     const wantTrue = k % 2 === 0;
     const op = useMax ? '>' : '<';
-    const t = wantTrue ? (useMax ? ext - 1 : ext + 1) : ext;
+    // max > t: vera con t sotto il massimo; min < t: vera con t sopra il minimo
+    const t = useMax ? roundThreshold(ext, wantTrue, rnd) : roundThreshold(ext, !wantTrue, rnd);
     const truth = CMP[op](ext, t);
     out.push({ cond: `${useMax ? 'max' : 'min'}(${list(part)}) ${op} ${t}`, truth, why: `${useMax ? 'Il massimo' : 'Il minimo'} è ${fmt(ext)}: ${fmt(ext)} ${op} ${t} è ${truth ? 'vero' : 'falso'}.` });
   }
