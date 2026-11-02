@@ -162,9 +162,12 @@ export class Navbar {
     this.privacyOpen.set(true);
   }
 
-  /** Clic o tocco fuori dal menu del profilo (e dal suo pulsante): il menu si chiude. Dentro non lo chiude. */
+  /** Clic o tocco fuori dal menu del profilo (e dal suo pulsante): il menu si chiude. Dentro non lo chiude. Idem per il menu della barra, fuori dalla barra. */
   @HostListener('document:click', ['$event'])
   protected onDocumentClick(e: Event): void {
+    // menu della barra (telefono) aperto: un clic o tocco fuori dalla barra lo chiude; dentro la barra no (voci e pulsante gestiscono da sé)
+    const nav = this.host.nativeElement.querySelector('.nav');
+    if (this.menuOpen() && nav && !e.composedPath().includes(nav)) this.closeMenu();
     if (!this.profileOpen()) return;
     const profile = this.host.nativeElement.querySelector('.profile');
     if (profile && e.composedPath().includes(profile)) return;
