@@ -17,7 +17,7 @@ import { SpriteView } from './sprite-view';
   template: `
     <nav class="nav" [attr.aria-label]="'nav.label' | t">
       <button type="button" class="btn burger" aria-controls="nav-items" [attr.aria-expanded]="menuOpen()"
-        [attr.aria-label]="menuOpen() ? ('nav.closeMenu' | t) : ('nav.openMenu' | t)" (click)="toggleMenu()">{{ menuOpen() ? '✕' : '☰' }}</button>
+        [attr.aria-label]="menuOpen() ? ('nav.closeMenu' | t) : ('nav.openMenu' | t)" (click)="toggleMenu()"><i></i><i></i><i></i></button>
       <a routerLink="/" class="brand" aria-label="Pixelademy" (click)="closeMenu()">PIXELADEMY</a>
 
       <div id="nav-items" class="items" [class.open]="menuOpen()">
@@ -81,7 +81,16 @@ import { SpriteView } from './sprite-view';
     .btn.current { background: var(--accent); color: #0b0b24; border-color: var(--accent); cursor: default; pointer-events: none; }
     .nav { position: relative; display: grid; grid-template-columns: 48px 1fr 48px; align-items: center; gap: 8px;
       padding: 8px 12px; background: #000; border-bottom: 4px solid var(--accent); }
-    .burger { grid-column: 1; width: 48px; padding: 6px 0; font-size: 1.2rem; }
+    /* Hamburger nello stile dell'app: pulsante quadrato (come gli altri .btn) con tre barre pixel centrate; da aperto diventa una X su fondo giallo. */
+    .burger { grid-column: 1; justify-self: start; width: 44px; height: 44px; padding: 0; display: inline-flex; flex-direction: column;
+      align-items: center; justify-content: center; gap: 5px; }
+    .burger i { display: block; width: 20px; height: 4px; background: var(--accent); transition: transform .15s, opacity .15s; }
+    .burger[aria-expanded='true'], .burger[aria-expanded='true']:hover:not(:disabled) { background: var(--accent); box-shadow: 0 3px 0 #92400e; }
+    .burger[aria-expanded='true'] i { background: #1b1b2f; }
+    .burger[aria-expanded='true'] i:nth-child(1) { transform: translateY(9px) rotate(45deg); }
+    .burger[aria-expanded='true'] i:nth-child(2) { opacity: 0; }
+    .burger[aria-expanded='true'] i:nth-child(3) { transform: translateY(-9px) rotate(-45deg); }
+    @media (prefers-reduced-motion: reduce) { .burger i { transition: none; } }
     .brand { grid-column: 2; text-align: center; color: var(--accent); text-decoration: none; letter-spacing: .08em; font-size: .8rem; white-space: nowrap; }
     .items { display: none; }
     .items.open { display: flex; flex-direction: column; gap: 8px; position: absolute; top: 100%; left: 0; right: 0; z-index: 30;

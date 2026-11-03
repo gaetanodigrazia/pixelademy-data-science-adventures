@@ -254,3 +254,24 @@ describe('Navbar: il menu della barra (telefono) si chiude cliccando fuori dalla
     expect(items().classList.contains('open')).toBe(false);
   });
 });
+
+describe('Navbar: il pulsante del menu (hamburger)', () => {
+  it('sono tre barre disegnate (non un carattere), in un pulsante di almeno 44 px, con stato annunciato', async () => {
+    const { TestBed: TB } = await import('@angular/core/testing');
+    const { provideRouter } = await import('@angular/router');
+    const { App } = await import('./app');
+    const { routes } = await import('./app.routes');
+    localStorage.clear(); sessionStorage.clear();
+    TB.resetTestingModule();
+    TB.configureTestingModule({ providers: [provideRouter(routes)] });
+    const f = TB.createComponent(App);
+    f.detectChanges(); await f.whenStable(); f.detectChanges();
+    const b = f.nativeElement.querySelector('.burger') as HTMLButtonElement;
+    expect(b.querySelectorAll('i').length).toBe(3);
+    expect(b.textContent!.trim()).toBe(''); // nessun glifo ☰/✕: lo stile non dipende dal font
+    expect(b.getAttribute('aria-expanded')).toBe('false');
+    b.click(); f.detectChanges();
+    expect(b.getAttribute('aria-expanded')).toBe('true');
+    expect(b.getAttribute('aria-label')).toMatch(/chiudi|close/i);
+  });
+});
