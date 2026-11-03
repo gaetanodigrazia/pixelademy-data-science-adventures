@@ -2,77 +2,80 @@ import { TestBed } from '@angular/core/testing';
 import { By } from '@angular/platform-browser';
 import { PACKS } from './core/data/packs.generated';
 import { BONUS_MAX_ERRORS, bonusEarned, bonusSettings, unlockBonus } from './core/utils/bonus';
-import { BONUS_KINDS } from './content/adventure-core/bonus-kinds';
-import { EXERCISES } from './content/adventure-core/exercises';
-import { AIR_Y, COIN_R, CoinSpec, PlatformerEngine, RUN_SECONDS, WORLD, clearGap, coinSpecs, isSmall } from './core/utils/platformer-engine';
+import { COIN_R, COIN_Y, CoinSpec, PlatformerEngine, RUN_SECONDS, WORLD, chooseThreshold, coinSpecs, ruleFor } from './core/utils/platformer-engine';
 import { Platformer } from './shared/components/games/platformer';
 import { ContentRegistryService } from './core/services/content-registry.service';
 import { MINI_PACK } from './testing/mini-pack';
 import { btn, goToTask, openMission, setup } from './testing/mission-harness';
 import { ComponentRef } from '@angular/core';
 
-const cfg = (over: Partial<Parameters<typeof coinSpecs>[0]> = {}) => ({ kind: 'index' as const, name: 'prezzi', v: [3, 8, 5, 12, 7, 4, 9], th: 6, level: 1, ...over });
+const cfg = (over: Partial<Parameters<typeof coinSpecs>[0]> = {}) => ({ name: 'prezzi', v: [3, 8, 5, 12, 7, 4, 9], level: 1, ...over });
 
-describe('bonus platform: generazione delle monete', () => {
-  it('index: la condizione dice il vero (verificato sui dati) e la spiegazione cita il valore', () => {
-    const v = [3, 8, 5, 12, 7, 4, 9];
-    const specs = coinSpecs(cfg(), 12);
-    expect(specs.length).toBe(12);
-    expect(Math.abs(specs.filter((c) => c.truth).length - 6)).toBeLessThanOrEqual(1); // metà vere e metà false (a meno di uno)
-    for (const c of specs) {
-      const m = /^prezzi\[(-?\d+)\] (>|<) (\d+)$/.exec(c.cond)!;
-      expect(m, c.cond).not.toBeNull();
-      const x = v[+m[1] < 0 ? v.length + +m[1] : +m[1]];
-      expect(c.truth).toBe(m[2] === '>' ? x > +m[3] : x < +m[3]);
-      expect(c.why).toContain(String(x));
+describe('bonus platform: la regola e le monete (nessuna operazione)', () => {
+  it('la soglia sta nella forbice più larga vicino al centro dei dati', () => {
+    expect(chooseThreshold([3, 8, 5, 12, 7, 4, 9])).toBe(6); // 3 4 5 | 7 8 9 12: la forbice 5→7 è la più larga
+    expect(chooseThreshold([17, 19, 22, 28, 31, 26, 21])).toBe(24); // 17 19 21 22 | 26 28 31
+    expect(chooseThreshold([310, 295, 340, 360, 325, 380, 300])).toBeGreaterThan(300);
+    expect(chooseThreshold([5])).toBe(5);
+  });
+
+  it('i livelli dispari prendono i numeri «maggiori di», quelli pari «minori di»', () => {
+    expect(ruleFor(cfg({ level: 1 }))).toEqual({ op: '>', th: 6, word: 'maggiori' });
+    expect(ruleFor(cfg({ level: 2 })).word).toBe('minori');
+  });
+
+  it('ogni moneta mostra un numero della serie e la verità segue la regola', () => {
+    for (const level of [1, 2, 3, 4]) {
+      const rule = ruleFor(cfg({ level }));
+      for (const c of coinSpecs(cfg({ level }), 20)) {
+        expect(cfg().v).toContain(c.value);
+        expect(c.truth).toBe(rule.op === '>' ? c.value > rule.th : c.value < rule.th);
+        expect(c.why).toContain(String(c.value));
+        expect(c.why).toMatch(/va presa|va evitata/);
+      }
     }
   });
 
-  it('solo `>` e `<`, mai indici negativi: niente trabocchetti', () => {
-    for (const level of [1, 2, 3, 5]) {
-      for (const c of coinSpecs(cfg({ level }), 16)) expect(c.cond, c.cond).not.toMatch(/>=|<=|==|\[-/);
+  it('vere e false si alternano: mai più di due uguali di fila, e mai lo stesso numero due volte di fila', () => {
+    const specs = coinSpecs(cfg(), 30);
+    let run = 1;
+    for (let i = 1; i < specs.length; i++) {
+      run = specs[i].truth === specs[i - 1].truth ? run + 1 : 1;
+      expect(run).toBeLessThanOrEqual(2);
+      expect(specs[i].value).not.toBe(specs[i - 1].value);
     }
+    const yes = specs.filter((c) => c.truth).length;
+    expect(yes).toBeGreaterThan(8);
+    expect(specs.length - yes).toBeGreaterThan(8);
   });
 
-  it('index: le soglie sono ben distanti dal valore (colpo d\'occhio)', () => {
-    const v = [3, 8, 5, 12, 7, 4, 9];
-    for (const c of coinSpecs(cfg(), 12)) {
-      const m = /^prezzi\[(\d+)\] (?:>|<) (\d+)$/.exec(c.cond)!;
-      expect(clearGap(v[+m[1]], +m[2]), c.cond).toBe(true);
-    }
-  });
-
-  it('pop: [..].pop() vale l\'ultimo elemento della lista scritta', () => {
-    for (const c of coinSpecs(cfg({ kind: 'pop', name: 'carrello', v: [4, 6, 9, 2, 5], th: 6, level: 2 }), 16)) {
-      const m = /^\[([\d, ]+)\]\.pop\(\) (>|<) (\d+)$/.exec(c.cond)!;
-      expect(m, c.cond).not.toBeNull();
-      const last = +m[1].split(',').pop()!;
-      expect(c.truth).toBe(m[2] === '>' ? last > +m[3] : last < +m[3]);
-    }
-  });
-
-  it('len: len([..]) conta davvero gli elementi', () => {
-    for (const c of coinSpecs(cfg({ kind: 'len', name: 'carrello', v: [4, 6, 9, 2, 5], level: 3 }), 16)) {
-      const m = /^len\(\[([\d, ]+)\]\) (>|==) (-?\d+)$/.exec(c.cond)!;
-      expect(m, c.cond).not.toBeNull();
-      const n = m[1].split(',').length;
-      expect(c.truth).toBe(m[2] === '>' ? n > +m[3] : n === +m[3]);
-    }
-  });
-
-  it('è deterministica e le serie con seed diversi sono diverse', () => {
+  it('è deterministica, e un altro seed dà un\'altra serie', () => {
     expect(JSON.stringify(coinSpecs(cfg()))).toBe(JSON.stringify(coinSpecs(cfg())));
-    expect(JSON.stringify(coinSpecs(cfg(), 12, 1))).not.toBe(JSON.stringify(coinSpecs(cfg(), 12, 2)));
+    expect(JSON.stringify(coinSpecs(cfg(), 16, 1))).not.toBe(JSON.stringify(coinSpecs(cfg(), 16, 2)));
+  });
+
+  it('senza due gruppi (tutti uguali) non c\'è gioco: nessuna moneta', () => {
+    expect(coinSpecs(cfg({ v: [5, 5, 5] }))).toEqual([]);
+  });
+
+  it('in ogni missione del pack: monete vere e false, solo numeri, regola chiara', () => {
+    for (const p of PACKS[0].paths) for (const m of p.missions) {
+      const c = m.bonus!.config as { name: string; v: number[]; level: number };
+      const specs = coinSpecs(c, 16);
+      expect(specs.length, m.id).toBe(16);
+      expect(specs.some((x) => x.truth), m.id).toBe(true);
+      expect(specs.some((x) => !x.truth), m.id).toBe(true);
+      expect(ruleFor(c).th, m.id).not.toBeNaN();
+    }
   });
 });
 
-/** Gioca come un bot: salta (o no) per prendere/evitare ogni moneta secondo la regola giusta. */
-function play(engine: PlatformerEngine, decide: (c: { air: boolean; truth: boolean }) => boolean): void {
+/** Gioca come un bot: salta quando la moneta sta per arrivare e va presa, non salta altrimenti. */
+function play(engine: PlatformerEngine, decide: (c: { truth: boolean }) => boolean): void {
   const dt = 1 / 60;
   while (!engine.finished) {
-    // la prossima moneta viva: se serve saltare, salta quando è a ~70 px (il salto dura ~0,65 s)
     const c = engine.coins.find((x) => x.state === 'live' && x.x > WORLD.heroX - 20);
-    if (c && c.x - WORLD.heroX < 55 && c.x - WORLD.heroX > 40 && decide(c) && engine.onGround) engine.jump();
+    if (c && c.x - WORLD.heroX < 50 && c.x - WORLD.heroX > 30 && decide(c) && engine.onGround) engine.jump();
     engine.step(dt);
   }
 }
@@ -86,79 +89,69 @@ describe('bonus platform: il motore', () => {
     expect(e.finished).toBe(true);
     const d = e.distance;
     e.step(1);
-    expect(e.distance).toBe(d); // fermo
+    expect(e.distance).toBe(d);
   });
 
-  it('il salto ha un arco: parte, sale di ~75 px, ricade e non si può rifare in aria', () => {
+  it('il salto è alto: picco di ~120 px, ~0,8 s in aria, niente doppio salto', () => {
     const e = new PlatformerEngine(specs());
     e.jump();
     let peak = 0, steps = 0;
     while (!e.onGround || steps === 0) { e.step(1 / 120); peak = Math.max(peak, e.y); steps++; if (steps > 400) break; }
-    expect(peak).toBeGreaterThan(65);
-    expect(peak).toBeLessThan(90);
-    expect(steps / 120).toBeGreaterThan(0.5);
-    expect(steps / 120).toBeLessThan(0.8);
-    e.jump(); e.step(1 / 60); // in aria: il doppio salto non esiste
-    const y1 = e.y;
-    e.jump();
-    e.step(1 / 60);
-    expect(e.vy).toBeLessThan(480); // non è stato rilanciato
-    expect(y1).toBeGreaterThan(0);
+    expect(peak).toBeGreaterThan(110);
+    expect(peak).toBeLessThan(130);
+    expect(steps / 120).toBeGreaterThan(0.7);
+    expect(steps / 120).toBeLessThan(0.9);
+    e.jump(); e.step(1 / 60);
+    e.jump(); e.step(1 / 60);
+    expect(e.vy).toBeLessThan(600); // non è stato rilanciato in aria
   });
 
-  it('chi risponde sempre bene ottiene tutte decisioni giuste e nessun errore', () => {
+  it('l\'eroe sta nel mondo: il picco del salto resta sotto il bordo alto', () => {
+    expect(WORLD.ground - 125 - WORLD.heroH).toBeGreaterThanOrEqual(0);
+  });
+
+  it('chi salta solo per le monete giuste non fa errori', () => {
     const e = new PlatformerEngine(specs(16));
-    // a terra: salta per evitare se falsa; in aria: salta per prendere se vera
-    play(e, (c) => (c.air ? c.truth : !c.truth));
+    play(e, (c) => c.truth);
     expect(e.mistakes).toBe(0);
     expect(e.correct).toBeGreaterThanOrEqual(9);
     expect(e.score).toBeGreaterThan(100);
     expect(e.best).toBe(e.correct);
   });
 
-  it('chi non salta mai prende le monete a terra (anche le false) e lascia passare quelle in aria (anche le vere)', () => {
+  it('chi non salta mai non prende nulla: le giuste sono errori, le altre si evitano', () => {
     const e = new PlatformerEngine(specs(16));
     play(e, () => false);
-    const resolved = e.coins.filter((c) => c.state !== 'live');
-    for (const c of resolved) {
-      expect(c.state).toBe(c.air ? 'passed' : 'taken');
-      expect(c.correct).toBe(c.air ? !c.truth : c.truth);
-    }
-    expect(e.mistakes).toBeGreaterThan(0);
-  });
-
-  it('chi salta sempre fa l\'opposto: prende quelle in aria, evita quelle a terra', () => {
-    const e = new PlatformerEngine(specs(16));
-    play(e, () => true);
     for (const c of e.coins.filter((x) => x.state !== 'live')) {
-      expect(c.state, `${c.cond} (${c.air ? 'aria' : 'terra'})`).toBe(c.air ? 'taken' : 'passed');
+      expect(c.state).toBe('passed');
+      expect(c.correct).toBe(!c.truth);
     }
+    expect(e.mistakes).toBe(e.coins.filter((c) => c.state === 'passed' && c.truth).length);
+    expect(e.score).toBeGreaterThan(0); // le monete sbagliate evitate valgono
   });
 
-  it('la serie azzera con un errore e dà punti extra', () => {
-    const e = new PlatformerEngine(specs(16));
-    play(e, (c) => (c.air ? c.truth : !c.truth));
-    const perfect = e.score;
-    const e2 = new PlatformerEngine(specs(16));
-    play(e2, () => false);
-    expect(perfect).toBeGreaterThan(e2.score);
-    expect(e2.streak).toBeLessThanOrEqual(e2.best);
-  });
-
-  it('quota alternata a coppie: mai più di due monete di fila alla stessa quota', () => {
-    const e = new PlatformerEngine(specs(16));
-    let run = 1;
-    for (let i = 1; i < e.coins.length; i++) {
-      run = e.coins[i].air === e.coins[i - 1].air ? run + 1 : 1;
-      expect(run).toBeLessThanOrEqual(2);
+  it('prendere una moneta falsa è un errore e azzera la serie', () => {
+    const e = new PlatformerEngine([{ value: 3, truth: false, why: 'x' }, { value: 9, truth: true, why: 'y' }]);
+    // salta in modo da prendere la prima (falsa)
+    for (let i = 0; i < 600 && e.coins[0].state === 'live'; i++) {
+      if (e.coins[0].x - WORLD.heroX < 45 && e.onGround) e.jump();
+      e.step(1 / 60);
     }
+    expect(e.coins[0].state).toBe('taken');
+    expect(e.mistakes).toBe(1);
+    expect(e.streak).toBe(0);
   });
 
-  it('le monete in aria stanno all\'altezza giusta e quelle a terra sul suolo (collisione con l\'eroe)', () => {
-    expect(AIR_Y).toBeGreaterThan(COIN_R);
+  it('le monete sono tutte alla stessa quota, raggiungibile solo saltando', () => {
+    expect(COIN_Y).toBeGreaterThan(WORLD.heroH + COIN_R); // da fermo l\'eroe non le tocca
     const e = new PlatformerEngine(specs());
-    expect(e.coins.some((c) => c.air)).toBe(true);
-    expect(e.coins.some((c) => !c.air)).toBe(true);
+    const c = e.coins[0];
+    c.x = WORLD.heroX; // proprio sopra l\'eroe, a terra: non la prende
+    e.step(0.001);
+    expect(c.state).toBe('live');
+    e.jump();
+    for (let i = 0; i < 60 && c.state === 'live'; i++) { c.x = WORLD.heroX; e.step(1 / 60); }
+    expect(c.state).toBe('taken'); // saltando sì
   });
 });
 
@@ -169,7 +162,7 @@ describe('bonus platform: il componente', () => {
     const fixture = TestBed.createComponent(Platformer);
     const ref = fixture.componentRef as ComponentRef<unknown>;
     ref.setInput('character', MINI_PACK.characters[0]);
-    ref.setInput('config', { kind: 'index', name: 'prezzi', v: [3, 8, 5, 12, 7, 4, 9], th: 6, level: 1 });
+    ref.setInput('config', { name: 'prezzi', v: [3, 8, 5, 12, 7, 4, 9], level: 1 });
     ref.setInput('onCleared', onCleared);
     fixture.detectChanges();
     return { fixture, g: fixture.componentInstance as unknown as G, el: fixture.nativeElement as HTMLElement };
@@ -191,10 +184,13 @@ describe('bonus platform: il componente', () => {
     expect(el.textContent).toContain('Tempo!');
   });
 
-  it('mostra la lista dei dati (indice) e dice la regola', () => {
+  it('dice la regola una volta sola, in parole semplici (nessuna operazione)', () => {
     const { el } = mount();
-    expect(el.textContent).toContain('prezzi = [3, 8, 5, 12, 7, 4, 9]');
-    expect(el.textContent).toContain('vera');
+    const goal = el.querySelector('.goal')!.textContent!;
+    expect(goal).toContain('Prendi i numeri maggiori di 6');
+    expect(goal).toContain('salta');
+    expect(goal).toContain('non saltare');
+    expect(goal).not.toMatch(/[<>]|sum\(|len\(|pop\(/); // niente codice
   });
 
   it('pausa: il tempo e il gioco si fermano, si riprende solo dal pulsante', () => {
@@ -259,16 +255,6 @@ describe('Le Liste: il bonus platform tra battaglia e task', () => {
   const liste = PACKS[0].paths.find((p) => p.id === 'adventure-core-liste')!;
   beforeEach(() => { vi.stubGlobal('matchMedia', undefined); bonusSettings.enabled = true; });
   afterEach(() => { vi.unstubAllGlobals(); vi.restoreAllMocks(); });
-
-  it('Le Liste: indici, pop e len; ogni missione dei percorsi di base ha un bonus, le sfide pandas (senza battaglia) no', () => {
-    expect(liste.missions.map((m) => (m.bonus!.config as { kind: string }).kind)).toEqual(['index', 'pop', 'len']);
-    for (const p of PACKS.flatMap((x) => x.paths)) {
-      for (const m of p.missions) {
-        if (m.challenge) expect(m.bonus, m.id).toBeUndefined();
-        else expect(m.bonus?.type, m.id).toBe('adventure-platformer');
-      }
-    }
-  });
 
   it('dopo una buona battaglia si va al bonus; «Salta il bonus» porta al task', async () => {
     setup();
@@ -384,94 +370,12 @@ describe('sblocco del bonus', () => {
   });
 });
 
-describe('bonus in ogni missione: monete adatte al concetto', () => {
-  it('ogni esercizio dichiara il suo tipo di moneta (e non ce ne sono di orfani)', () => {
-    for (const id of Object.keys(EXERCISES)) expect(BONUS_KINDS[id], `manca il tipo per «${id}» in bonus-kinds.ts`).toBeDefined();
-    for (const id of Object.keys(BONUS_KINDS)) expect(EXERCISES[id], `«${id}» non è un esercizio`).toBeDefined();
-  });
 
-  it('per ogni missione del pack le monete si generano, sono metà vere e metà false, e la condizione è vera davvero', () => {
-    for (const p of PACKS[0].paths) {
-      for (const m of p.missions) {
-        const c = m.bonus!.config as { kind: 'index'; name: string; v: number[]; th: number; level: number; d?: Record<string, number> };
-        const specs = coinSpecs(c, 16);
-        expect(specs.length, m.id).toBeGreaterThanOrEqual(8);
-        const yes = specs.filter((x) => x.truth).length;
-        expect(yes, `${m.id}: vere`).toBeGreaterThanOrEqual(Math.floor(specs.length / 2) - 2);
-        expect(specs.length - yes, `${m.id}: false`).toBeGreaterThanOrEqual(Math.floor(specs.length / 2) - 2);
-        for (const s of specs) expect(s.cond.length, m.id).toBeLessThan(34); // sta sulla moneta senza uscire dallo schermo
-        for (const s of specs) expect(evaluate(s.cond), `${m.id}: ${s.cond}`).toBe(s.truth);
-      }
-    }
-  });
-});
-
-/** Valuta una condizione di moneta con Python-in-JS (stesse regole per i soli costrutti usati dai generatori). */
-function evaluate(cond: string): boolean {
-  const js = cond
-    .replace(/(\w+)\[(-?\d+)\] /g, (_m, name, i) => `__r(${name}, ${i}) `) // lista o dizionario: gestito sotto
-    .replace(/sum\((\[[^\]]*\])\)/g, 'sumOf($1)').replace(/max\((\[[^\]]*\])\)/g, 'Math.max(...$1)').replace(/min\((\[[^\]]*\])\)/g, 'Math.min(...$1)')
-    .replace(/len\((\[[^\]]*\])\)/g, '($1).length').replace(/(\[[^\]]*\])\.pop\(\)/g, '($1).at(-1)')
-    .replace(/==/g, '===');
-  const world: Record<string, unknown> = {};
-  for (const c of PACKS[0].paths) {
-    const proj = (c as unknown as { project?: { a: { name: string; values: number[] }; b: { name: string; values: number[] }; c: { name: string; values: number[] }; registry: { name: string; entries: Record<string, number> } } }).project;
-    if (!proj) continue;
-    world[proj.a.name] = proj.a.values; world[proj.b.name] = proj.b.values; world[proj.c.name] = proj.c.values; world[proj.registry.name] = proj.registry.entries;
-  }
-  const names = Object.keys(world);
-  const keyed = js.replace(/(\w+)\['(\w+)'\]/g, (_m, n, k) => `${n}.${k}`);
-  // eslint-disable-next-line no-new-func
-  return new Function(...names, 'sumOf', '__r', `return (${keyed});`)(...names.map((n) => world[n]), (a: number[]) => a.reduce((x, y) => x + y, 0), (l: number[], i: number) => l.at(i)) as boolean;
-}
-
-describe('condizioni semplici: un gioco, non un esercizio', () => {
-  it('clearGap: distanti almeno 2 (o il 15%)', () => {
-    expect(clearGap(7, 6)).toBe(false);
-    expect(clearGap(9, 6)).toBe(true);
-    expect(clearGap(340, 300)).toBe(false);
-    expect(clearGap(380, 300)).toBe(true);
-  });
-
-  it('in tutte le missioni: mai un valore vicino alla soglia (niente «325 < 325»)', () => {
-    for (const p of PACKS[0].paths) for (const m of p.missions) {
-      for (const s of coinSpecs(m.bonus!.config as never, 16)) {
-        // confronti diretti «x > t» e «x < t», anche dopo [i], ['k'], max/min/sum/len/pop
-        const t = +/(\d+)$/.exec(s.cond)![1];
-        const val = +(/vale (-?[\d.]+)|ha (\d+) elementi|= (\d+):/.exec(s.why) ?? []).slice(1).find(Boolean)!;
-        if (Number.isFinite(val) && !/len\(/.test(s.cond) && t !== 0) expect(clearGap(val, t), `${m.id}: ${s.cond} (${s.why})`).toBe(true);
-      }
-    }
-  });
-
-  it('con numeri grandi (Officina dell\'Energia) si confrontano i valori: niente somme né liste', () => {
-    const energia = PACKS[0].paths.find((p) => p.id === 'adventure-core-energia')!;
-    for (const m of energia.missions) {
-      const c = m.bonus!.config as { kind: 'sum'; name: string; v: number[]; th: number; level: number };
-      expect(isSmall(c.v)).toBe(false);
-      if (!['sum', 'minmax', 'cmp'].includes(c.kind)) continue;
-      for (const s of coinSpecs(c, 16)) expect(s.cond, `${m.id}: ${s.cond}`).toMatch(/^\d+ (?:>|<) \d+$/);
-    }
-  });
-
-  it('con numeri piccoli, somme e massimi usano pochi numeri e la soglia è lontana', () => {
-    const c = { kind: 'sum' as const, name: 'v', v: [4, 7, 2, 9, 5], th: 6, level: 1 };
-    for (const s of coinSpecs(c, 16)) {
-      const nums = /\[([\d, ]+)\]/.exec(s.cond)![1].split(',').length;
-      expect(nums, s.cond).toBe(2);
-      const total = /\[(\d+), (\d+)\]/.exec(s.cond)!.slice(1).reduce((a, x) => a + +x, 0);
-      const t = +/> (\d+)$/.exec(s.cond)![1];
-      expect(Math.abs(total - t), s.cond).toBeGreaterThanOrEqual(2);
-    }
-    for (const s of coinSpecs({ ...c, kind: 'minmax' }, 16)) expect(/\[([\d, ]+)\]/.exec(s.cond)![1].split(',').length, s.cond).toBeLessThanOrEqual(3);
-  });
-
-  it('in tutte le missioni le liste scritte sulle monete hanno al massimo 4 numeri e le condizioni sono corte', () => {
-    for (const p of PACKS[0].paths) for (const m of p.missions) {
-      for (const s of coinSpecs(m.bonus!.config as never, 16)) {
-        for (const lst of s.cond.match(/\[[\d, ]+\]/g) ?? []) expect(lst.split(',').length, `${m.id}: ${s.cond}`).toBeLessThanOrEqual(4);
-        expect(s.cond.length, `${m.id}: ${s.cond}`).toBeLessThan(30);
-      }
+describe('bonus in ogni missione', () => {
+  it('ogni missione dei percorsi di base ha il bonus platform (le sfide pandas, senza battaglia, no)', () => {
+    for (const p of PACKS.flatMap((x) => x.paths)) for (const m of p.missions) {
+      if (m.challenge) expect(m.bonus, m.id).toBeUndefined();
+      else expect(m.bonus?.type, m.id).toBe('adventure-platformer');
     }
   });
 });
@@ -483,7 +387,7 @@ describe('bonus platform: audio nel gioco', () => {
     const fixture = TestBed.createComponent(Platformer);
     const ref = fixture.componentRef as ComponentRef<unknown>;
     ref.setInput('character', MINI_PACK.characters[0]);
-    ref.setInput('config', { kind: 'cmp', name: 'v', v: [3, 8, 5, 12, 7, 4, 9], th: 6, level: 1 });
+    ref.setInput('config', { name: 'v', v: [3, 8, 5, 12, 7, 4, 9], level: 1 });
     ref.setInput('onCleared', () => undefined);
     fixture.detectChanges();
     const g = fixture.componentInstance as unknown as G;
@@ -501,9 +405,9 @@ describe('bonus platform: audio nel gioco', () => {
   it('«ding» quando si prende una moneta giusta, «bonk» se si prende una sbagliata, silenzio se si evita', () => {
     const { g } = mount();
     g.startRun();
-    // il bot: prende tutto camminando (a terra) e non salta mai
+    // il bot salta a intervalli regolari e così prende alcune monete (giuste o sbagliate)
     const e = g.engine;
-    for (let i = 0; i < 60 * 15; i++) g.update(1 / 60);
+    for (let i = 0; i < 60 * 15; i++) { if (i % 50 === 0) e.jump(); g.update(1 / 60); }
     const takenRight = e.coins.filter((c) => c.state === 'taken' && c.correct).length;
     const takenWrong = e.coins.filter((c) => c.state === 'taken' && !c.correct).length;
     expect(takenRight + takenWrong).toBeGreaterThan(0);

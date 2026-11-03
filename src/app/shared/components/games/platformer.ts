@@ -2,8 +2,8 @@ import { AfterViewInit, ChangeDetectionStrategy, Component, ElementRef, HostList
 import { BonusAudio } from '../../../core/audio/bonus-audio';
 import { GameLoop } from '../../../core/graphics/game-loop';
 import { drawSprite } from '../../../core/graphics/sprite';
-import { AIR_Y, COIN_R, Coin, PlatformerConfig, PlatformerEngine, RUN_SECONDS, WORLD, coinSpecs } from '../../../core/utils/platformer-engine';
-import { BaseGame, list } from './base-game';
+import { COIN_R, COIN_Y, Coin, PlatformerConfig, PlatformerEngine, RUN_SECONDS, Rule, WORLD, coinSpecs, ruleFor } from '../../../core/utils/platformer-engine';
+import { BaseGame, fmt } from './base-game';
 
 interface Pop { x: number; y: number; text: string; good: boolean; age: number }
 
@@ -28,9 +28,8 @@ interface Pop { x: number; y: number; text: string; good: boolean; age: number }
           }
         </span>
       </header>
-      <p class="goal"><strong>🎯 Regola</strong> · Condizione <b>vera</b>: prendi la moneta. <b>Falsa</b>: evitala.
-        A terra: cammina per prenderla, salta per evitarla. In aria: il contrario.</p>
-      @if (listLine) { <p class="code"><code>{{ listLine }}</code></p> }
+      <p class="goal"><strong>🎯 Regola</strong> · Prendi i numeri <b>{{ rule.word }} di {{ th }}</b> ({{ name }}): <b>salta</b> per prenderli.
+        Con gli altri <b>non saltare</b>.</p>
 
       <div class="stage" role="group" aria-label="Area di gioco: tocca per saltare" (pointerdown)="onPointer($event)">
         <canvas #cv class="cv" aria-hidden="true"></canvas>
@@ -56,9 +55,7 @@ interface Pop { x: number; y: number; text: string; good: boolean; age: number }
     .stats { font-size: .55rem; color: var(--muted); } .stats b { color: var(--accent-2); } .hot { color: var(--accent-2); }
     .goal { margin: 0; padding: 6px 10px; font-size: .6rem; line-height: 1.6; background: #0b0b24; border-left: 4px solid var(--accent); }
     .goal strong { color: var(--accent-2); font-weight: normal; }
-    .code { margin: 0; padding: 6px 10px; background: #020617; border: 2px solid var(--line); }
-    .code code { font: .62rem/1.7 var(--mono); color: #e2e8f0; overflow-wrap: anywhere; }
-    .stage { position: relative; width: 100%; max-width: 760px; align-self: center; aspect-ratio: 360 / 170; border: 2px solid var(--line); background: #5c94fc; cursor: pointer; touch-action: manipulation; user-select: none; }
+    .stage { position: relative; width: 100%; max-width: 760px; align-self: center; aspect-ratio: 360 / 188; border: 2px solid var(--line); background: #5c94fc; cursor: pointer; touch-action: manipulation; user-select: none; }
     .cv { position: absolute; inset: 0; width: 100%; height: 100%; display: block; image-rendering: pixelated; }
     .veil { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px; background: rgba(2, 6, 23, .55); }
     .veil p { margin: 0; font-size: .8rem; color: #fff; text-shadow: 0 2px 0 #000; } .veil .sm { font-size: .55rem; }
@@ -75,7 +72,9 @@ export class Platformer extends BaseGame implements OnInit, AfterViewInit {
   private readonly zone = inject(NgZone);
   private readonly cv = viewChild.required<ElementRef<HTMLCanvasElement>>('cv');
   protected engine!: PlatformerEngine;
-  protected listLine = '';
+  protected rule: Rule = { op: '>', th: 0, word: 'maggiori' };
+  protected th = '';
+  protected name = '';
   protected readonly phase = signal<'ready' | 'running' | 'done'>('ready');
   protected readonly score = signal(0);
   protected readonly streak = signal(0);
@@ -96,17 +95,12 @@ export class Platformer extends BaseGame implements OnInit, AfterViewInit {
   private announced = new Set<number>();
 
   ngOnInit(): void {
-    const cfg: PlatformerConfig = {
-      kind: (['pop', 'len', 'sum', 'minmax', 'dict', 'cmp'] as const).find((k) => k === this.str('kind', 'index')) ?? 'index',
-      name: this.str('name', 'valori'),
-      v: this.nums('v', [1, 2, 3, 4, 5]),
-      th: this.num('th', 3),
-      level: this.level,
-      d: this.dict({}),
-    };
+    const cfg: PlatformerConfig = { name: this.str('name', 'valori'), v: this.nums('v', [1, 2, 3, 4, 5]), level: this.level };
     this.reducedMotion = typeof window !== 'undefined' && typeof window.matchMedia === 'function' && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
     this.engine = new PlatformerEngine(coinSpecs(cfg, 16), this.reducedMotion ? 0.8 : 1);
-    this.listLine = cfg.kind === 'index' ? `${cfg.name} = ${list(cfg.v)}` : cfg.kind === 'dict' ? `${cfg.name} = {${Object.entries(cfg.d ?? {}).map(([k, x]) => `'${k}': ${x}`).join(', ')}}` : '';
+    this.rule = ruleFor(cfg);
+    this.th = fmt(this.rule.th);
+    this.name = cfg.name;
   }
 
   ngAfterViewInit(): void {
@@ -188,15 +182,14 @@ export class Platformer extends BaseGame implements OnInit, AfterViewInit {
     this.pops = this.pops.filter((p) => p.age < 0.8);
     if (e.lastEvent && e.lastEvent !== before) this.onResolved(e.lastEvent);
     const next = e.coins.find((c) => c.state === 'live' && c.x < WORLD.w && !this.announced.has(c.id));
-    if (next) { this.announced.add(next.id); this.zone.run(() => this.sr.set(`Moneta ${next.air ? 'in aria' : 'a terra'}: ${next.cond}`)); }
+    if (next) { this.announced.add(next.id); this.zone.run(() => this.sr.set(`Moneta ${fmt(next.value)}: ${this.rule.word === 'maggiori' ? 'maggiore' : 'minore'} di ${this.th}? ${next.truth ? 'Va presa: salta.' : 'Va evitata: non saltare.'}`)); }
     const left = Math.max(0, Math.ceil(RUN_SECONDS - e.t));
     if (left !== this.secondsLeft() || e.score !== this.score()) this.zone.run(() => { this.secondsLeft.set(left); this.score.set(e.score); this.streak.set(e.streak); });
     if (e.finished) this.zone.run(() => this.finish());
   }
 
   private onResolved(c: Coin): void {
-    const y = c.air ? WORLD.ground - AIR_Y : WORLD.ground - COIN_R;
-    this.pops.push({ x: WORLD.heroX, y: y - 28, text: c.correct ? '+10' : '✗', good: !!c.correct, age: 0 });
+    this.pops.push({ x: WORLD.heroX, y: WORLD.ground - COIN_Y - 30, text: c.correct ? '+10' : '✗', good: !!c.correct, age: 0 });
     // suoni: «ding» quando si prende una moneta giusta, «bonk» quando se ne prende una sbagliata
     if (c.state === 'taken') { if (c.correct) this.audio.coin(); else this.audio.bonk(); }
     this.zone.run(() => {
@@ -204,7 +197,7 @@ export class Platformer extends BaseGame implements OnInit, AfterViewInit {
       this.best.set(this.engine.best);
       this.mistakes.set(this.engine.mistakes);
       if (c.correct) this.hit(`${c.why}${this.engine.streak >= 3 ? ` 🔥 Serie di ${this.engine.streak}!` : ''}`);
-      else this.say(`${c.why} ${c.truth ? 'Andava presa.' : 'Andava evitata.'}`, 'err');
+      else this.say(c.why, 'err');
     });
   }
 
@@ -259,18 +252,14 @@ export class Platformer extends BaseGame implements OnInit, AfterViewInit {
     for (let x = -off; x < WORLD.w; x += 32) ctx.fillRect(x, WORLD.ground + 14, 2, WORLD.h - WORLD.ground);
     ctx.fillRect(0, WORLD.ground + 14, WORLD.w, 2);
 
-    // monete
+    // monete: tutte alla stessa quota, piccole, con il numero dentro (niente riquadri)
     for (const c of this.engine.coins) {
-      if (c.state !== 'live' || c.x < -90 || c.x > WORLD.w + 90) continue;
-      const cy = WORLD.ground - (c.air ? AIR_Y : COIN_R);
+      if (c.state !== 'live' || c.x < -40 || c.x > WORLD.w + 40) continue;
+      const cy = WORLD.ground - COIN_Y;
       ctx.fillStyle = '#7a5b00'; ctx.beginPath(); ctx.arc(c.x, cy, COIN_R, 0, Math.PI * 2); ctx.fill();
-      ctx.fillStyle = '#ffd23f'; ctx.beginPath(); ctx.arc(c.x, cy, COIN_R - 2.5, 0, Math.PI * 2); ctx.fill();
-      ctx.fillStyle = '#fff3b0'; ctx.fillRect(c.x - 3, cy - 6, 2.5, 10);
-      ctx.font = 'bold 11px monospace'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-      const tw = ctx.measureText(c.cond).width + 8;
-      const ly = cy - COIN_R - 10;
-      ctx.fillStyle = 'rgba(2, 6, 23, .82)'; ctx.fillRect(c.x - tw / 2, ly - 9, tw, 18);
-      ctx.fillStyle = '#ffffff'; ctx.fillText(c.cond, c.x, ly);
+      ctx.fillStyle = '#ffd23f'; ctx.beginPath(); ctx.arc(c.x, cy, COIN_R - 2, 0, Math.PI * 2); ctx.fill();
+      ctx.font = 'bold 10px monospace'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+      ctx.fillStyle = '#3b2a00'; ctx.fillText(fmt(c.value), c.x, cy + 1);
     }
 
     // eroe
