@@ -184,8 +184,31 @@ describe('bonus platform: il componente', () => {
     expect(el.textContent).toContain('Tempo!');
   });
 
-  it('dice la regola una volta sola, in parole semplici (nessuna operazione)', () => {
+  it('la schermata iniziale spiega l\'obiettivo e i comandi prima del «Via!»', () => {
     const { el } = mount();
+    const veil = el.querySelector('.veil.start')!;
+    expect(veil.textContent).toContain('Obiettivo');
+    expect(veil.textContent).toContain('Prendi i numeri maggiori di 6');
+    expect(veil.textContent).toContain('Salta per prenderli');
+    expect(veil.textContent).toContain('non saltare');
+    expect(veil.textContent).toMatch(/tocco|Spazio/);
+    expect(veil.textContent).toContain('15 secondi');
+    expect(veil.querySelector('button')!.textContent).toContain('Via!');
+  });
+
+  it('dopo il «Via!» la schermata iniziale sparisce e resta la regola sopra il gioco', () => {
+    const { fixture, g, el } = mount();
+    g.startRun();
+    fixture.detectChanges();
+    expect(el.querySelector('.veil.start')).toBeNull();
+    expect(el.querySelector('.goal')!.textContent).toContain('Prendi i numeri maggiori di 6');
+  });
+
+  it('la riga della regola compare durante la corsa (prima c\'è la schermata iniziale), in parole semplici e senza operazioni', () => {
+    const { fixture, g, el } = mount();
+    expect(el.querySelector('.goal')).toBeNull();
+    g.startRun();
+    fixture.detectChanges();
     const goal = el.querySelector('.goal')!.textContent!;
     expect(goal).toContain('Prendi i numeri maggiori di 6');
     expect(goal).toContain('salta');
