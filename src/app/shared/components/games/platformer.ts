@@ -1,4 +1,5 @@
 import { AfterViewInit, ChangeDetectionStrategy, Component, ElementRef, HostListener, NgZone, OnInit, computed, inject, signal, viewChild } from '@angular/core';
+import { BonusAudio } from '../../../core/audio/bonus-audio';
 import { GameLoop } from '../../../core/graphics/game-loop';
 import { drawSprite } from '../../../core/graphics/sprite';
 import { AIR_Y, COIN_R, Coin, PlatformerConfig, PlatformerEngine, RUN_SECONDS, WORLD, coinSpecs } from '../../../core/utils/platformer-engine';
@@ -20,9 +21,12 @@ interface Pop { x: number; y: number; text: string; good: boolean; age: number }
       <header class="top">
         <h2>🎁 Bonus: salta e raccogli</h2>
         <span class="stats">⏱ <b>{{ secondsLeft() }}</b> s · Punti <b>{{ score() }}</b> · Errori {{ mistakes() }}@if (streak() >= 2) { · <span class="hot">🔥 {{ streak() }}</span> }</span>
-        @if (phase() === 'running') {
-          <button type="button" class="btn pause" (click)="togglePause()" [attr.aria-pressed]="paused()" aria-label="Pausa (P o Esc)">{{ paused() ? '▶ Riprendi' : '⏸ Pausa' }}</button>
-        }
+        <span class="ctl">
+          <button type="button" class="btn pause" (click)="toggleSound()" [attr.aria-pressed]="!muted()" [attr.aria-label]="muted() ? 'Attiva audio' : 'Disattiva audio'">{{ muted() ? '🔇' : '🔊' }}</button>
+          @if (phase() === 'running') {
+            <button type="button" class="btn pause" (click)="togglePause()" [attr.aria-pressed]="paused()" aria-label="Pausa (P o Esc)">{{ paused() ? '▶ Riprendi' : '⏸ Pausa' }}</button>
+          }
+        </span>
       </header>
       <p class="goal"><strong>🎯 Regola</strong> · Condizione <b>vera</b>: prendi la moneta. <b>Falsa</b>: evitala.
         A terra: cammina per prenderla, salta per evitarla. In aria: il contrario.</p>
@@ -59,6 +63,7 @@ interface Pop { x: number; y: number; text: string; good: boolean; age: number }
     .veil { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px; background: rgba(2, 6, 23, .55); }
     .veil p { margin: 0; font-size: .8rem; color: #fff; text-shadow: 0 2px 0 #000; } .veil .sm { font-size: .55rem; }
     .veil b { color: var(--accent-2); }
+    .ctl { display: inline-flex; gap: 6px; }
     .pause { padding: 4px 10px; font-size: .55rem; }
     .hint { margin: 0; text-align: center; font-size: .5rem; color: var(--muted); }
     .msg { margin: 0; min-height: 2.6em; padding: 5px 8px; font-size: .58rem; line-height: 1.5; color: var(--muted); background: #020617; border-left: 4px solid var(--line); }
@@ -80,6 +85,9 @@ export class Platformer extends BaseGame implements OnInit, AfterViewInit {
   protected readonly sr = signal('');
   /** In pausa: il tempo e il gioco sono fermi; si riprende solo dal pulsante (un tocco sull'area non basta). */
   protected readonly paused = signal(false);
+  /** Audio spento (preferenza ricordata). */
+  protected readonly muted = signal(BonusAudio.savedMuted());
+  protected audio = new BonusAudio();
   protected readonly reduced = computed(() => this.reducedMotion);
   private reducedMotion = false;
   private loop?: GameLoop;
@@ -89,7 +97,7 @@ export class Platformer extends BaseGame implements OnInit, AfterViewInit {
 
   ngOnInit(): void {
     const cfg: PlatformerConfig = {
-      kind: (['pop', 'len', 'sum', 'mean', 'minmax', 'dict', 'cmp'] as const).find((k) => k === this.str('kind', 'index')) ?? 'index',
+      kind: (['pop', 'len', 'sum', 'minmax', 'dict', 'cmp'] as const).find((k) => k === this.str('kind', 'index')) ?? 'index',
       name: this.str('name', 'valori'),
       v: this.nums('v', [1, 2, 3, 4, 5]),
       th: this.num('th', 3),
@@ -111,11 +119,19 @@ export class Platformer extends BaseGame implements OnInit, AfterViewInit {
 
   override ngOnDestroy(): void {
     this.loop?.stop();
+    this.audio.dispose();
     super.ngOnDestroy();
   }
 
   protected startRun(): void {
-    if (this.phase() === 'ready') this.phase.set('running');
+    if (this.phase() !== 'ready') return;
+    this.phase.set('running');
+    this.audio.start(); // dentro il gesto dell'utente («Via!»): i browser permettono l'audio solo così
+  }
+
+  protected toggleSound(): void {
+    this.audio.setMuted(!this.audio.isMuted);
+    this.muted.set(this.audio.isMuted);
   }
 
   protected onPointer(e: Event): void {
@@ -128,6 +144,7 @@ export class Platformer extends BaseGame implements OnInit, AfterViewInit {
   protected togglePause(): void {
     if (this.phase() !== 'running') return;
     this.paused.update((p) => !p);
+    if (this.paused()) this.audio.pause(); else this.audio.resume();
     this.say(this.paused() ? 'Gioco in pausa: il tempo è fermo.' : 'Si riparte!', 'info');
     this.zone.run(() => this.sr.set(this.paused() ? 'Pausa' : 'Si riparte'));
   }
@@ -157,7 +174,7 @@ export class Platformer extends BaseGame implements OnInit, AfterViewInit {
   }
 
   private press(): void {
-    if (this.phase() === 'ready') { this.phase.set('running'); return; }
+    if (this.phase() === 'ready') { this.startRun(); return; }
     if (this.phase() === 'running' && !this.paused()) this.engine.jump();
   }
 
@@ -180,6 +197,8 @@ export class Platformer extends BaseGame implements OnInit, AfterViewInit {
   private onResolved(c: Coin): void {
     const y = c.air ? WORLD.ground - AIR_Y : WORLD.ground - COIN_R;
     this.pops.push({ x: WORLD.heroX, y: y - 28, text: c.correct ? '+10' : '✗', good: !!c.correct, age: 0 });
+    // suoni: «ding» quando si prende una moneta giusta, «bonk» quando se ne prende una sbagliata
+    if (c.state === 'taken') { if (c.correct) this.audio.coin(); else this.audio.bonk(); }
     this.zone.run(() => {
       this.correct.set(this.engine.correct);
       this.best.set(this.engine.best);
@@ -198,6 +217,8 @@ export class Platformer extends BaseGame implements OnInit, AfterViewInit {
     this.secondsLeft.set(0);
     this.phase.set('done');
     this.loop?.stop();
+    this.audio.stop();
+    this.audio.fanfare();
     this.win();
   }
 
