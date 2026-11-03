@@ -55,7 +55,7 @@ I test «per percorso» (`games`, `viz`, `content`, `validator`, `python-solutio
 3. Riepiloga all'utente: percorso, titolo, esercizio, riga che stampa, cosa è cambiato per i giocatori (sotto).
 
 ## Bonus platform (automatico)
-Ogni missione ha il bonus platform, facoltativo e da sbloccare (al massimo 1 errore in battaglia): il tipo di moneta si deduce dall'esercizio (`BONUS_KINDS` in `content/adventure-core/bonus-kinds.ts`). **Se aggiungi un esercizio nuovo, aggiungi anche la sua riga lì** (un test fallisce se manca): scegli il tipo che esercita lo stesso concetto (`index`, `pop`, `len`, `sum`, `minmax`, `dict`, `cmp`) o crea un generatore in `core/utils/platformer-engine.ts`. Per una missione con un esercizio esistente non serve fare altro.
+Ogni missione ha il bonus platform, facoltativo e da sbloccare con al massimo 1 errore in battaglia: **nessuna operazione**, la regola è una sola («prendi i numeri maggiori di 6») e le monete mostrano solo un numero della serie `a` del progetto (vedi `core/utils/platformer-engine.ts`). Per una missione nuova non serve fare nulla: si costruisce dai dati del progetto.
 
 ## Effetti da dire sempre all'utente
 - **Aggiungi in fondo**: gli id delle missioni sono per posizione (`adventure-core-<slug>-NN`). Inserire una missione **in mezzo** sposta le successive e i progressi già salvati puntano alla missione sbagliata: lo si fa solo se l'utente accetta di perdere quei progressi.

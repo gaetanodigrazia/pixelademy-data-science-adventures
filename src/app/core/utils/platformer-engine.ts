@@ -1,25 +1,26 @@
-import { fmt, list } from '../../shared/components/games/base-game';
+import { fmt } from '../../shared/components/games/base-game';
 
 /* ──────────────── Il motore del bonus platform: logica pura, senza disegno ──────────────── */
 
 /** Dimensioni del mondo di gioco (coordinate logiche: il disegno le scala allo schermo). */
-export const WORLD = { w: 360, h: 170, ground: 140, heroX: 64, heroW: 24, heroH: 26 } as const;
+export const WORLD = { w: 360, h: 188, ground: 160, heroX: 64, heroW: 24, heroH: 26 } as const;
 export const RUN_SECONDS = 15;
-export const COIN_R = 11;
-/** Altezza (dal suolo, centro) di una moneta in aria. */
-export const AIR_Y = 60;
+export const COIN_R = 10;
+/** Altezza (dal suolo, centro) delle monete: per prenderle bisogna saltare in alto. */
+export const COIN_Y = 80;
 
 const GRAVITY = 1500;
-const JUMP_V = 480;
+/** Salto alto: ~120 px di picco, ~0,8 s in aria (prima ~77 px). */
+const JUMP_V = 600;
 
-/** Una moneta: la condizione scritta sopra decide se va presa (vera) o evitata (falsa). */
+/** Una moneta: porta un numero; se rispetta la regola («maggiori di 6») va presa, altrimenti evitata. */
 export interface Coin {
   id: number;
-  /** Posizione orizzontale del centro nel mondo (px dal bordo sinistro dello schermo al via). */
+  /** Posizione orizzontale del centro nel mondo (px). */
   x: number;
-  /** In aria (si prende saltando) oppure a terra (si prende camminandoci). */
-  air: boolean;
-  cond: string;
+  /** Il numero scritto sulla moneta. */
+  value: number;
+  /** Rispetta la regola? */
   truth: boolean;
   why: string;
   /** `taken`: toccata; `passed`: superata senza toccarla; `live`: ancora in gioco. */
@@ -29,29 +30,31 @@ export interface Coin {
 }
 
 export interface CoinSpec {
-  cond: string;
+  value: number;
   truth: boolean;
   why: string;
 }
 
-/** Il tipo di condizione sulle monete: dipende dal concetto della missione. */
-export type BonusKind = 'index' | 'pop' | 'len' | 'sum' | 'minmax' | 'dict' | 'cmp';
-
 export interface PlatformerConfig {
-  kind: BonusKind;
+  /** Il nome della serie di dati (compare nella regola). */
   name: string;
   v: number[];
-  th: number;
+  /** Difficoltà della missione: i livelli dispari prendono i valori «maggiori di», quelli pari «minori di». */
   level: number;
-  /** Il dizionario (solo per `dict`). */
-  d?: Record<string, number>;
+}
+
+/** La regola della corsa, letta una sola volta sopra il gioco: «prendi i numeri maggiori di 6». */
+export interface Rule {
+  op: '>' | '<';
+  th: number;
+  /** «maggiori» o «minori». */
+  word: string;
 }
 
 /* ───────────────────────── generazione delle monete ───────────────────────── */
 /*
- * Il bonus è un gioco di salti, non un esercizio: ogni condizione si deve cogliere a colpo d'occhio.
- * Quindi: solo `>` e `<`, numeri piccoli, soglie ben distanti dal valore (mai «quasi uguali») e nessun calcolo con numeri grandi:
- * se i dati sono grandi si confrontano direttamente i valori (`340 > 300`).
+ * Nessuna operazione: la condizione è una sola, scritta sopra il gioco, e ogni moneta mostra solo un numero.
+ * La soglia sta nel punto in cui i dati si separano di più (la «forbice» più larga vicino al centro): i valori sono sempre ben distanti.
  */
 
 function rng(seed: number): () => number {
@@ -64,133 +67,52 @@ function rng(seed: number): () => number {
   };
 }
 
-function shuffled<T>(items: T[], rnd: () => number): T[] {
-  const out = [...items];
-  for (let i = out.length - 1; i > 0; i--) {
-    const j = Math.floor(rnd() * (i + 1));
-    [out[i], out[j]] = [out[j], out[i]];
-  }
-  return out;
-}
-
-const CMP: Record<string, (a: number, b: number) => boolean> = {
-  '>': (a, b) => a > b, '<': (a, b) => a < b,
-};
-
-/** Valori «piccoli»: somme e massimi di pochi numeri si fanno a mente senza fatica. */
-export const isSmall = (v: number[]): boolean => Math.max(...v) <= 30;
-
-/** `x` e `t` sono abbastanza distanti da distinguerli a colpo d'occhio (almeno 2, o il 15% di `t`). */
-export const clearGap = (x: number, t: number): boolean => Math.abs(x - t) >= Math.max(2, Math.round(Math.abs(t) * 0.15));
-
-/** Prende metà vere e metà false (al massimo quante ce ne sono), mescolate. */
-function balanced(all: CoinSpec[], count: number, rnd: () => number): CoinSpec[] {
-  const yes = shuffled(all.filter((c) => c.truth), rnd);
-  const no = shuffled(all.filter((c) => !c.truth), rnd);
-  const half = Math.floor(count / 2);
-  const picked = [...yes.slice(0, half), ...no.slice(0, count - half)];
-  for (const c of [...yes.slice(half), ...no.slice(count - half)]) if (picked.length < count) picked.push(c);
-  return shuffled(picked, rnd);
-}
-
 /**
- * Quattro modi di confrontare `x` con una soglia **lontana** (e tonda): `x > basso` e `x < alto` sono veri, `x < basso` e `x > alto` falsi.
- * La distanza è almeno 2 (o il 20% di `x`): a colpo d'occhio, anche con numeri grandi (325 → «> 260» oppure «< 390»).
+ * La soglia: nel mezzo della forbice più larga tra due valori consecutivi (in ordine), cercandola tra il terzo e i due terzi dei dati
+ * così le monete «giuste» e «sbagliate» sono più o meno in egual numero. Con interi distanti almeno 2 è un intero.
  */
-function farCompares(x: number, what: string, label: (op: '>' | '<', t: number) => string): CoinSpec[] {
-  const gap = Math.max(2, Math.ceil(Math.abs(x) * 0.2));
-  const step = Math.abs(x) >= 100 ? 10 : Math.abs(x) >= 30 ? 5 : 1;
-  const low = Math.max(0, Math.floor((x - gap) / step) * step);
-  const high = Math.ceil((x + gap) / step) * step;
-  const mk = (op: '>' | '<', t: number): CoinSpec => {
-    const truth = CMP[op](x, t);
-    return { cond: label(op, t), truth, why: `${what} vale ${fmt(x)}: ${fmt(x)} ${op} ${fmt(t)} è ${truth ? 'vero' : 'falso'}.` };
-  };
-  return [mk('>', low), mk('<', low), mk('<', high), mk('>', high)];
-}
-
-/** `prezzi[3] > 6`: leggere un elemento con l'indice (la lista è scritta sopra il gioco). */
-function indexCoins(c: PlatformerConfig): CoinSpec[] {
-  return c.v.flatMap((x, i) => farCompares(x, `${c.name}[${i}]`, (op, t) => `${c.name}[${i}] ${op} ${t}`));
-}
-
-/** `[4, 6, 9].pop() > 5`: pop() restituisce l'ultimo elemento. */
-function popCoins(c: PlatformerConfig, rnd: () => number): CoinSpec[] {
-  const out: CoinSpec[] = [];
-  for (let k = 0; k < 24; k++) {
-    const len = 2 + Math.floor(rnd() * Math.min(2, Math.max(1, c.v.length - 1)));
-    const start = Math.floor(rnd() * Math.max(1, c.v.length - len + 1));
-    const part = c.v.slice(start, start + len);
-    out.push(...farCompares(part[part.length - 1], 'pop() toglie e restituisce l\'ultimo elemento, che', (op, t) => `${list(part)}.pop() ${op} ${t}`));
+export function chooseThreshold(values: number[]): number {
+  const u = [...new Set(values)].sort((a, b) => a - b);
+  if (u.length < 2) return u[0] ?? 0;
+  const lo = Math.max(1, Math.floor(u.length / 3));
+  const hi = Math.min(u.length - 1, Math.ceil((u.length * 2) / 3));
+  let best = lo;
+  for (let k = lo; k <= hi; k++) {
+    const gap = u[k] - u[k - 1];
+    const bestGap = u[best] - u[best - 1];
+    if (gap > bestGap || (gap === bestGap && Math.abs(k - u.length / 2) < Math.abs(best - u.length / 2))) best = k;
   }
-  return out;
+  const mid = (u[best - 1] + u[best]) / 2;
+  return Number.isInteger(mid) ? mid : u[best] - u[best - 1] >= 2 ? Math.round(mid) : mid;
 }
 
-/** `len([4, 6, 9]) > 2`: contare gli elementi (liste di 2–4). */
-function lenCoins(c: PlatformerConfig, rnd: () => number): CoinSpec[] {
-  const out: CoinSpec[] = [];
-  for (let k = 0; k < 40; k++) {
-    const len = 2 + Math.floor(rnd() * Math.min(3, Math.max(1, c.v.length - 1)));
-    const part = c.v.slice(0, len);
-    const wantTrue = k % 2 === 0;
-    const t = wantTrue ? len - 1 : len + (rnd() < 0.5 ? 0 : 1);
-    const truth = len > t;
-    out.push({ cond: `len(${list(part)}) > ${t}`, truth, why: `La lista ha ${len} elementi: ${len} > ${t} è ${truth ? 'vero' : 'falso'}.` });
-  }
-  return out;
+export function ruleFor(c: PlatformerConfig): Rule {
+  const op = c.level % 2 === 1 ? '>' : '<';
+  return { op, th: chooseThreshold(c.v), word: op === '>' ? 'maggiori' : 'minori' };
 }
 
-/** `sum([4, 6]) > 15`: la somma di **due** numeri piccoli, con la soglia lontana. Con numeri grandi si confrontano i valori. */
-function sumCoins(c: PlatformerConfig, rnd: () => number): CoinSpec[] {
-  if (!isSmall(c.v)) return cmpCoins(c);
-  const out: CoinSpec[] = [];
-  for (let k = 0; k < 40; k++) {
-    const i = Math.floor(rnd() * (c.v.length - 1));
-    const part = c.v.slice(i, i + 2);
-    const total = part[0] + part[1];
-    const t = k % 2 === 0 ? total - 3 - Math.floor(rnd() * 3) : total + 2 + Math.floor(rnd() * 3);
-    const truth = total > t;
-    out.push({ cond: `sum(${list(part)}) > ${t}`, truth, why: `${fmt(part[0])} + ${fmt(part[1])} = ${fmt(total)}: ${fmt(total)} > ${t} è ${truth ? 'vero' : 'falso'}.` });
-  }
-  return out;
-}
+const holds = (x: number, r: Rule): boolean => (r.op === '>' ? x > r.th : x < r.th);
 
-/** `max([4, 7, 9]) > 5` e `min([...]) < 8`: guardare tre numeri piccoli. Con numeri grandi si confrontano i valori. */
-function minmaxCoins(c: PlatformerConfig, rnd: () => number): CoinSpec[] {
-  if (!isSmall(c.v)) return cmpCoins(c);
-  const out: CoinSpec[] = [];
-  for (let k = 0; k < 24; k++) {
-    const len = Math.min(3, c.v.length);
-    const start = Math.floor(rnd() * Math.max(1, c.v.length - len + 1));
-    const part = c.v.slice(start, start + len);
-    const useMax = k % 2 === 0;
-    const ext = useMax ? Math.max(...part) : Math.min(...part);
-    out.push(...farCompares(ext, useMax ? 'Il massimo' : 'Il minimo', (op, t) => `${useMax ? 'max' : 'min'}(${list(part)}) ${op} ${t}`));
-  }
-  return out;
-}
-
-/** `venti['sud'] > 20`: leggere un dizionario con la chiave (il dizionario è scritto sopra il gioco). */
-function dictCoins(c: PlatformerConfig): CoinSpec[] {
-  return Object.entries(c.d ?? {}).flatMap(([key, x]) => farCompares(x, `${c.name}['${key}']`, (op, t) => `${c.name}['${key}'] ${op} ${t}`));
-}
-
-/** `28 > 22`: un confronto tra un valore e una soglia (condizionali). */
-function cmpCoins(c: PlatformerConfig): CoinSpec[] {
-  return c.v.flatMap((x) => farCompares(x, 'Il valore', (op, t) => `${fmt(x)} ${op} ${t}`));
-}
-
-/** Le monete di una corsa: stesse condizioni per gli stessi dati, metà vere e metà false. */
+/** Le monete di una corsa: stessi dati, stessa corsa; vere e false alternate (mai più di due uguali di fila) e mai lo stesso numero due volte di fila. */
 export function coinSpecs(c: PlatformerConfig, count = 16, seed = 0): CoinSpec[] {
+  const rule = ruleFor(c);
+  const yes = [...new Set(c.v)].filter((x) => holds(x, rule));
+  const no = [...new Set(c.v)].filter((x) => !holds(x, rule));
+  if (!yes.length || !no.length) return [];
   const rnd = rng(c.level * 7919 + c.v.length + seed * 31337);
-  const pool = {
-    pop: () => popCoins(c, rnd), len: () => lenCoins(c, rnd), sum: () => sumCoins(c, rnd),
-    minmax: () => minmaxCoins(c, rnd), dict: () => dictCoins(c), cmp: () => cmpCoins(c), index: () => indexCoins(c),
-  }[c.kind]();
-  if (!pool.length) return [];
   const out: CoinSpec[] = [];
-  for (let s = 0; out.length < count && s < 10; s++) out.push(...balanced(pool, Math.min(count, pool.length), rng(c.level * 104729 + s + seed * 31337)));
-  return out.slice(0, count);
+  let run = 0, last = true, prev = NaN;
+  for (let i = 0; i < count; i++) {
+    let truth: boolean = i === 0 ? true : rnd() < 0.5 ? last : !last;
+    if (run >= 2 && truth === last) truth = !last;
+    const pool = truth ? yes : no;
+    let x = pool[Math.floor(rnd() * pool.length)];
+    if (x === prev && pool.length > 1) x = pool[(pool.indexOf(x) + 1) % pool.length];
+    run = truth === last && i > 0 ? run + 1 : 1;
+    last = truth; prev = x;
+    out.push({ value: x, truth, why: `${fmt(x)} ${truth ? 'è' : 'non è'} ${rule.word === 'maggiori' ? 'maggiore' : 'minore'} di ${fmt(rule.th)}: ${truth ? 'va presa' : 'va evitata'}.` });
+  }
+  return out;
 }
 
 /* ───────────────────────────────── il motore ───────────────────────────────── */
@@ -213,13 +135,9 @@ export class PlatformerEngine {
   lastEvent: Coin | null = null;
 
   constructor(specs: CoinSpec[], private readonly speedScale = 1) {
-    // la prima moneta arriva dopo un secondo; poi una ogni ~1,35 s di corsa, a quota alterna
-    const rnd = rng(specs.length * 977 + 13);
-    // a coppie casuali (una in aria e una a terra): niente lunghe serie della stessa quota
-    const airs = specs.flatMap((_, i) => (i % 2 === 0 ? (rnd() < 0.5 ? [true, false] : [false, true]) : [])).slice(0, specs.length);
     let x = WORLD.w + 40;
     this.coins = specs.map((s, i) => {
-      const coin: Coin = { id: i, x, air: airs[i], ...s, state: 'live' };
+      const coin: Coin = { id: i, x, ...s, state: 'live' };
       x += this.gap();
       return coin;
     });
@@ -227,7 +145,7 @@ export class PlatformerEngine {
 
   private gap(): number { return 280 * this.speedScale; }
 
-  /** Velocità di scorrimento (px/s): cresce con il tempo. */
+  /** Velocità di scorrimento (px/s): cresce poco con il tempo. */
   get speed(): number { return (150 + (this.t / RUN_SECONDS) * 50) * this.speedScale; }
   get onGround(): boolean { return this.y <= 0 && this.vy <= 0; }
   get finished(): boolean { return this.t >= RUN_SECONDS; }
@@ -259,8 +177,8 @@ export class PlatformerEngine {
   private touches(c: Coin): boolean {
     const hx0 = WORLD.heroX - WORLD.heroW / 2, hx1 = WORLD.heroX + WORLD.heroW / 2;
     if (c.x + COIN_R < hx0 || c.x - COIN_R > hx1) return false;
-    const cy = c.air ? AIR_Y : COIN_R; // centro, dal suolo
-    return this.y + WORLD.heroH >= cy - COIN_R && this.y <= cy + COIN_R;
+    // l'eroe occupa [y, y + altezza] dal suolo; la moneta [COIN_Y - R, COIN_Y + R]
+    return this.y + WORLD.heroH >= COIN_Y - COIN_R && this.y <= COIN_Y + COIN_R;
   }
 
   private resolve(c: Coin, how: 'taken' | 'passed'): void {

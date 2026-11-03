@@ -117,3 +117,4 @@
 | E05 | BUG-05.6 Il menu della barra in alto (mobile) non si chiude cliccando fuori | #239 | #240 | `docs/issues/BUG-05.6.md` | fatto |
 | E04 | US-04.15 Bonus platform: musichetta, suono alla moneta e condizioni molto più semplici | #241 | #242 | `docs/issues/US-04.15.md` | fatto |
 | E05 | UX-05.7 Menu hamburger: centrato e nello stile dell'applicazione | #244 | #245 | `docs/issues/UX-05.7.md` | fatto |
+| E04 | US-04.16 Bonus platform: niente operazioni, monete piccole, salto più alto | #243 | #246 | `docs/issues/US-04.16.md` | fatto |

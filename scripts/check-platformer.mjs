@@ -11,7 +11,7 @@ const browser = await chromium.launch();
 const problems = [];
 
 for (const [name, vp, mobile] of [['telefono', { width: 393, height: 852 }, true], ['desktop', { width: 1280, height: 800 }, false]]) {
-  // una missione per tipo di moneta: indice, pop, len, dizionario (nuvole-07), somma, media, minimo/massimo, confronto
+  // una missione per percorso: la regola cambia con i dati e con la difficoltà («maggiori di» / «minori di»)
   for (const mission of ['liste-01', 'liste-02', 'liste-03', 'nuvole-07', 'nuvole-04', 'statistica-01', 'energia-03', 'outlier-02']) {
     const ctx = await browser.newContext({ viewport: vp, hasTouch: mobile, isMobile: mobile });
     const page = await ctx.newPage();
