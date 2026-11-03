@@ -114,11 +114,11 @@ export abstract class BaseGame implements GameComponentInputs, OnDestroy {
   }
 
   /** Segnala la vittoria: `onCleared` viene invocato una sola volta, con gli errori commessi nel gioco. */
-  protected win(): void {
+  protected win(extra: Partial<GameResult> = {}): void {
     if (this.cleared) return;
     this.cleared = true;
     this.stopTimers();
-    this.onCleared({ mistakes: this.mistakes() });
+    this.onCleared({ mistakes: this.mistakes(), ...extra });
   }
 
   ngOnDestroy(): void {

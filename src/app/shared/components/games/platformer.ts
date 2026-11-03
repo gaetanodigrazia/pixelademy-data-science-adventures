@@ -3,6 +3,7 @@ import { BonusAudio } from '../../../core/audio/bonus-audio';
 import { GameLoop } from '../../../core/graphics/game-loop';
 import { drawSprite } from '../../../core/graphics/sprite';
 import { COIN_R, COIN_Y, Coin, PlatformerConfig, PlatformerEngine, RUN_SECONDS, Rule, WORLD, coinSpecs, ruleFor } from '../../../core/utils/platformer-engine';
+import { bonusXpFor } from '../../../core/utils/scoring';
 import { BaseGame, fmt } from './base-game';
 
 interface Pop { x: number; y: number; text: string; good: boolean; age: number }
@@ -11,7 +12,7 @@ interface Pop { x: number; y: number; text: string; good: boolean; age: number }
  * Bonus platform (15 secondi), stile Super Mario: il personaggio corre da solo, si salta con un tocco, con Spazio o con ↑.
  * Le monete portano una condizione Python: se è **vera** va presa, se è **falsa** evitata. Quelle a terra si prendono
  * camminandoci e si evitano saltando; quelle in aria il contrario. La logica sta in `PlatformerEngine` (testata); qui ci sono
- * disegno, ingressi e messaggi. Il bonus è facoltativo e non cambia gli XP.
+ * disegno, ingressi e messaggi. Il bonus è facoltativo: dà fino al 15% di XP extra della missione (`bonusRatio`), riscossi al completamento del task.
  */
 @Component({
   selector: 'app-platformer',
@@ -47,7 +48,8 @@ interface Pop { x: number; y: number; text: string; good: boolean; age: number }
         } @else if (paused()) {
           <div class="veil"><p>⏸ In pausa</p><button type="button" class="btn primary" (click)="togglePause()">▶ Riprendi (P)</button></div>
         } @else if (phase() === 'done') {
-          <div class="veil end"><p>⏱ Tempo! <b>{{ score() }}</b> punti</p><p class="sm">{{ correct() }} decisioni giuste · {{ mistakes() }} sbagliate · serie migliore {{ best() }}</p></div>
+          <div class="veil end"><p>⏱ Tempo! <b>{{ score() }}</b> punti</p><p class="sm">{{ correct() }} decisioni giuste · {{ mistakes() }} sbagliate · serie migliore {{ best() }}</p>
+            @if (bonusXp() > 0) { <p class="sm xp">🎁 +{{ bonusXp() }} XP extra: li ricevi quando completi il task</p> } @else { <p class="sm">Prendi più monete giuste per vincere XP extra.</p> }</div>
         }
       </div>
       <p class="hint" aria-hidden="true">Salta: tocco · Spazio · ↑</p>
@@ -70,7 +72,7 @@ interface Pop { x: number; y: number; text: string; good: boolean; age: number }
     .cv { position: absolute; inset: 0; width: 100%; height: 100%; display: block; image-rendering: pixelated; }
     .veil { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px; background: rgba(2, 6, 23, .55); }
     .veil p { margin: 0; font-size: .8rem; color: #fff; text-shadow: 0 2px 0 #000; } .veil .sm { font-size: .55rem; }
-    .veil b { color: var(--accent-2); }
+    .veil b { color: var(--accent-2); } .veil .xp { color: var(--accent-2); }
     .veil.start { gap: 4px; padding: 8px 12px; text-align: center; background: rgba(2, 6, 23, .78); }
     .veil.start .ttl { font-size: .7rem; color: var(--accent-2); }
     .veil.start .rule { font-size: .72rem; line-height: 1.5; }
@@ -101,6 +103,9 @@ export class Platformer extends BaseGame implements OnInit, AfterViewInit {
   protected readonly sr = signal('');
   /** In pausa: il tempo e il gioco sono fermi; si riprende solo dal pulsante (un tocco sull'area non basta). */
   protected readonly paused = signal(false);
+  /** Bravura nella corsa (0..1) e XP extra che ne derivano al completamento del task. */
+  protected readonly bonusRatio = signal(0);
+  protected bonusXp = computed(() => bonusXpFor(this.num('xp', 0), this.bonusRatio()));
   /** Audio spento (preferenza ricordata). */
   protected readonly muted = signal(BonusAudio.savedMuted());
   protected audio = new BonusAudio();
@@ -229,7 +234,8 @@ export class Platformer extends BaseGame implements OnInit, AfterViewInit {
     this.loop?.stop();
     this.audio.stop();
     this.audio.fanfare();
-    this.win();
+    this.bonusRatio.set(this.engine.bonusRatio);
+    this.win({ bonusRatio: this.engine.bonusRatio });
   }
 
   /* ─────────────────────────────── disegno ─────────────────────────────── */

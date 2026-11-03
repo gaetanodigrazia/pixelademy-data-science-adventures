@@ -20,6 +20,8 @@ export interface ScoreInput {
   solutionViewed: boolean;
   /** Caratteri incollati nell'editor durante il task (0 se ha scritto a mano). */
   pastedChars?: number;
+  /** Bravura nel bonus platform, da 0 a 1 (assente = bonus saltato o non giocato). */
+  bonusRatio?: number;
 }
 
 export interface ScoreBreakdown {
@@ -37,6 +39,13 @@ export interface ScoreBreakdown {
   viewedFactor: number;
   /** 1, oppure il fattore anti-incolla se il codice è stato incollato quasi identico alla soluzione in pochi secondi. */
   pasteFactor: number;
+  /** XP senza il bonus platform. */
+  xpBeforeBonus: number;
+  /** Bravura nel bonus, 0..1 (0 se saltato). */
+  bonusRatio: number;
+  /** XP extra del bonus platform: al massimo il 15% degli XP della missione. */
+  bonusXp: number;
+  /** XP totali (compreso il bonus). */
   xp: number;
 }
 
@@ -66,13 +75,20 @@ export function codeSimilarity(a: string, b: string): number {
  * - errori: −10% per ogni errore della missione, cioè del minigioco della battaglia **più** le esecuzioni fallite del task (minimo 0,5);
  * - somiglianza: da 0,7 (codice molto diverso) a 1 (identico alla soluzione di riferimento);
  * - soluzione: **azzera** gli XP se è stata aperta prima di superare il task;
- * - incolla: ×0,6 se il codice è stato incollato (≥ 40 caratteri), quasi identico alla soluzione, entro 5 secondi.
+ * - incolla: ×0,6 se il codice è stato incollato (≥ 40 caratteri), quasi identico alla soluzione, entro 5 secondi;
+ * - **bonus platform**: + fino al 15% degli XP della missione, in proporzione a quanto si è giocato bene (non si riscuote con la soluzione aperta).
  * I parametri sono in `scoring-config.ts`.
  */
 /** Codice incollato in blocco, quasi uguale alla soluzione, consegnato in pochi secondi: non è un'attività di apprendimento. */
 export function isSuspiciousPaste(i: Pick<ScoreInput, 'pastedChars' | 'seconds'>, similarity: number): boolean {
   const c = SCORING.paste;
   return (i.pastedChars ?? 0) >= c.minChars && similarity >= c.minSimilarity && i.seconds <= c.maxSeconds;
+}
+
+/** XP extra del bonus platform: al massimo `SCORING.bonusMax` (15%) degli XP della missione, in proporzione alla bravura (0..1). */
+export function bonusXpFor(baseXp: number, ratio: number): number {
+  const r = Number.isFinite(ratio) ? Math.min(1, Math.max(0, ratio)) : 0;
+  return Math.round(baseXp * SCORING.bonusMax * r);
 }
 
 export function scoreAttempt(i: ScoreInput): ScoreBreakdown {
@@ -86,8 +102,11 @@ export function scoreAttempt(i: ScoreInput): ScoreBreakdown {
   const viewedFactor = i.solutionViewed ? SCORING.viewedFactor : 1;
   const pasteFactor = isSuspiciousPaste(i, similarity) ? SCORING.paste.factor : 1;
   // soluzione vista prima di superare il task: 0 XP; altrimenti almeno 1
-  const xp = i.solutionViewed ? 0 : Math.max(1, Math.round(i.baseXp * timeFactor * errorFactor * similarityFactor * viewedFactor * pasteFactor));
-  return { baseXp: i.baseXp, seconds: i.seconds, errors: i.errors, battleErrors, timeFactor, errorFactor, similarity, similarityFactor, viewedFactor, pasteFactor, xp };
+  const xpBeforeBonus = i.solutionViewed ? 0 : Math.max(1, Math.round(i.baseXp * timeFactor * errorFactor * similarityFactor * viewedFactor * pasteFactor));
+  // il bonus platform è un extra: con la soluzione aperta (XP azzerati) non c'è premio
+  const bonusRatio = i.solutionViewed ? 0 : Math.min(1, Math.max(0, i.bonusRatio ?? 0));
+  const bonusXp = bonusXpFor(i.baseXp, bonusRatio);
+  return { baseXp: i.baseXp, seconds: i.seconds, errors: i.errors, battleErrors, timeFactor, errorFactor, similarity, similarityFactor, viewedFactor, pasteFactor, xpBeforeBonus, bonusRatio, bonusXp, xp: xpBeforeBonus + bonusXp };
 }
 
 /** Toglie dal codice la parte di progetto già scritta nelle missioni precedenti: la somiglianza conta solo la sezione nuova. */
