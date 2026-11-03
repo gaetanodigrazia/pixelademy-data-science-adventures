@@ -119,3 +119,4 @@
 | E05 | UX-05.7 Menu hamburger: centrato e nello stile dell'applicazione | #244 | #245 | `docs/issues/UX-05.7.md` | fatto |
 | E04 | US-04.16 Bonus platform: niente operazioni, monete piccole, salto più alto | #243 | #246 | `docs/issues/US-04.16.md` | fatto |
 | E04 | UX-04.17 Bonus platform: numero sopra la moneta e obiettivo nella schermata iniziale | #247 | #248 | `docs/issues/UX-04.17.md` | fatto |
+| E03 | US-04.18 Il bonus platform dà fino al 15% di XP extra | #249 | #250 | `docs/issues/US-04.18.md` | fatto |
