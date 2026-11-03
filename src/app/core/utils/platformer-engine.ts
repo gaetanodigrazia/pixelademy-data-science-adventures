@@ -3,7 +3,7 @@ import { fmt, list } from '../../shared/components/games/base-game';
 /* ──────────────── Il motore del bonus platform: logica pura, senza disegno ──────────────── */
 
 /** Dimensioni del mondo di gioco (coordinate logiche: il disegno le scala allo schermo). */
-export const WORLD = { w: 360, h: 170, ground: 140, heroX: 64, heroW: 18, heroH: 26 } as const;
+export const WORLD = { w: 360, h: 170, ground: 140, heroX: 64, heroW: 24, heroH: 26 } as const;
 export const RUN_SECONDS = 15;
 export const COIN_R = 11;
 /** Altezza (dal suolo, centro) di una moneta in aria. */
@@ -35,7 +35,7 @@ export interface CoinSpec {
 }
 
 /** Il tipo di condizione sulle monete: dipende dal concetto della missione. */
-export type BonusKind = 'index' | 'pop' | 'len' | 'sum' | 'mean' | 'minmax' | 'dict' | 'cmp';
+export type BonusKind = 'index' | 'pop' | 'len' | 'sum' | 'minmax' | 'dict' | 'cmp';
 
 export interface PlatformerConfig {
   kind: BonusKind;
@@ -48,6 +48,11 @@ export interface PlatformerConfig {
 }
 
 /* ───────────────────────── generazione delle monete ───────────────────────── */
+/*
+ * Il bonus è un gioco di salti, non un esercizio: ogni condizione si deve cogliere a colpo d'occhio.
+ * Quindi: solo `>` e `<`, numeri piccoli, soglie ben distanti dal valore (mai «quasi uguali») e nessun calcolo con numeri grandi:
+ * se i dati sono grandi si confrontano direttamente i valori (`340 > 300`).
+ */
 
 function rng(seed: number): () => number {
   let s = (seed * 2654435761) >>> 0 || 1;
@@ -69,8 +74,14 @@ function shuffled<T>(items: T[], rnd: () => number): T[] {
 }
 
 const CMP: Record<string, (a: number, b: number) => boolean> = {
-  '>': (a, b) => a > b, '<': (a, b) => a < b, '>=': (a, b) => a >= b, '<=': (a, b) => a <= b,
+  '>': (a, b) => a > b, '<': (a, b) => a < b,
 };
+
+/** Valori «piccoli»: somme e massimi di pochi numeri si fanno a mente senza fatica. */
+export const isSmall = (v: number[]): boolean => Math.max(...v) <= 30;
+
+/** `x` e `t` sono abbastanza distanti da distinguerli a colpo d'occhio (almeno 2, o il 15% di `t`). */
+export const clearGap = (x: number, t: number): boolean => Math.abs(x - t) >= Math.max(2, Math.round(Math.abs(t) * 0.15));
 
 /** Prende metà vere e metà false (al massimo quante ce ne sono), mescolate. */
 function balanced(all: CoinSpec[], count: number, rnd: () => number): CoinSpec[] {
@@ -82,162 +93,98 @@ function balanced(all: CoinSpec[], count: number, rnd: () => number): CoinSpec[]
   return shuffled(picked, rnd);
 }
 
-/** `prezzi[3] > 6`: leggere un elemento con l'indice (da livello 2 anche negativo, e >=, <=). */
+/**
+ * Quattro modi di confrontare `x` con una soglia **lontana** (e tonda): `x > basso` e `x < alto` sono veri, `x < basso` e `x > alto` falsi.
+ * La distanza è almeno 2 (o il 20% di `x`): a colpo d'occhio, anche con numeri grandi (325 → «> 260» oppure «< 390»).
+ */
+function farCompares(x: number, what: string, label: (op: '>' | '<', t: number) => string): CoinSpec[] {
+  const gap = Math.max(2, Math.ceil(Math.abs(x) * 0.2));
+  const step = Math.abs(x) >= 100 ? 10 : Math.abs(x) >= 30 ? 5 : 1;
+  const low = Math.max(0, Math.floor((x - gap) / step) * step);
+  const high = Math.ceil((x + gap) / step) * step;
+  const mk = (op: '>' | '<', t: number): CoinSpec => {
+    const truth = CMP[op](x, t);
+    return { cond: label(op, t), truth, why: `${what} vale ${fmt(x)}: ${fmt(x)} ${op} ${fmt(t)} è ${truth ? 'vero' : 'falso'}.` };
+  };
+  return [mk('>', low), mk('<', low), mk('<', high), mk('>', high)];
+}
+
+/** `prezzi[3] > 6`: leggere un elemento con l'indice (la lista è scritta sopra il gioco). */
 function indexCoins(c: PlatformerConfig): CoinSpec[] {
-  const n = c.v.length;
-  const ops = c.level >= 2 ? ['>', '<', '>=', '<='] : ['>', '<'];
-  const idxs = Array.from({ length: n }, (_, i) => i).concat(c.level >= 2 ? Array.from({ length: n }, (_, i) => -(i + 1)) : []);
-  const out: CoinSpec[] = [];
-  for (const idx of idxs) {
-    for (const op of ops) {
-      const x = c.v[idx < 0 ? n + idx : idx];
-      const truth = CMP[op](x, c.th);
-      out.push({ cond: `${c.name}[${idx}] ${op} ${fmt(c.th)}`, truth, why: `${c.name}[${idx}] vale ${fmt(x)}: ${fmt(x)} ${op} ${fmt(c.th)} è ${truth ? 'vero' : 'falso'}.` });
-    }
-  }
-  return out;
+  return c.v.flatMap((x, i) => farCompares(x, `${c.name}[${i}]`, (op, t) => `${c.name}[${i}] ${op} ${t}`));
 }
 
 /** `[4, 6, 9].pop() > 5`: pop() restituisce l'ultimo elemento. */
 function popCoins(c: PlatformerConfig, rnd: () => number): CoinSpec[] {
   const out: CoinSpec[] = [];
-  const ops = ['>', '<'];
-  for (let k = 0; k < 40; k++) {
-    const len = 2 + Math.floor(rnd() * Math.min(3, Math.max(1, c.v.length - 1)));
+  for (let k = 0; k < 24; k++) {
+    const len = 2 + Math.floor(rnd() * Math.min(2, Math.max(1, c.v.length - 1)));
     const start = Math.floor(rnd() * Math.max(1, c.v.length - len + 1));
     const part = c.v.slice(start, start + len);
-    const last = part[part.length - 1];
-    const op = ops[k % 2];
-    const truth = CMP[op](last, c.th);
-    out.push({ cond: `${list(part)}.pop() ${op} ${fmt(c.th)}`, truth, why: `pop() toglie e restituisce l'ultimo elemento, ${fmt(last)}: ${fmt(last)} ${op} ${fmt(c.th)} è ${truth ? 'vero' : 'falso'}.` });
+    out.push(...farCompares(part[part.length - 1], 'pop() toglie e restituisce l\'ultimo elemento, che', (op, t) => `${list(part)}.pop() ${op} ${t}`));
   }
   return out;
 }
 
-/** `len([4, 6, 9]) > 2`: contare gli elementi. */
+/** `len([4, 6, 9]) > 2`: contare gli elementi (liste di 2–4). */
 function lenCoins(c: PlatformerConfig, rnd: () => number): CoinSpec[] {
   const out: CoinSpec[] = [];
   for (let k = 0; k < 40; k++) {
-    const len = 2 + Math.floor(rnd() * Math.min(4, Math.max(1, c.v.length - 1)));
+    const len = 2 + Math.floor(rnd() * Math.min(3, Math.max(1, c.v.length - 1)));
     const part = c.v.slice(0, len);
-    const eq = rnd() < 0.5;
-    const t = eq ? len + (rnd() < 0.5 ? 0 : (rnd() < 0.5 ? 1 : -1)) : len - 1 + (rnd() < 0.5 ? 0 : 1);
-    const truth = eq ? len === t : len > t;
-    const cond = `len(${list(part)}) ${eq ? '==' : '>'} ${t}`;
-    out.push({ cond, truth, why: `La lista ha ${len} elementi: ${len} ${eq ? '==' : '>'} ${t} è ${truth ? 'vero' : 'falso'}.` });
-  }
-  return out;
-}
-
-/** Con numeri grandi (≥100) bastano due valori: la somma a mente resta fattibile in pochi secondi. */
-const isBig = (v: number[]): boolean => Math.max(...v) >= 100;
-
-/** Il passo «tondo» (1, 2 o 5 per una potenza di 10) più vicino per difetto a `r`. */
-function niceStep(r: number): number {
-  const p = 10 ** Math.floor(Math.log10(r));
-  const m = r / p;
-  return (m >= 5 ? 5 : m >= 2 ? 2 : 1) * p;
-}
-
-/**
- * Una soglia «tonda» e lontana da `x`, così basta una stima: sotto di `x` (la condizione `x > t` è vera) o sopra (falsa).
- * Per i numeri piccoli resta vicina (±1…3); da 30 in su è un multiplo tondo di circa un decimo di `x`
- * (x = 705 → 650 oppure 750; x = 1065 → 1000 oppure 1200).
- */
-export function roundThreshold(x: number, below: boolean, rnd: () => number): number {
-  if (x < 30) return below ? Math.floor(x) - 1 - Math.floor(rnd() * 2) : Math.ceil(x) + Math.floor(rnd() * 2);
-  const step = niceStep(x / 10);
-  return below ? Math.floor((x - step / 2) / step) * step : Math.ceil((x + step / 2) / step) * step;
-}
-
-/** Un pezzo di lista di 3 elementi (2 con numeri grandi), a partire da un punto a caso. */
-function slice3(v: number[], rnd: () => number): number[] {
-  const len = Math.min(isBig(v) ? 2 : 3, v.length);
-  const start = Math.floor(rnd() * Math.max(1, v.length - len + 1));
-  return v.slice(start, start + len);
-}
-
-/** `sum([4, 6, 9]) > 18`: sommare. La soglia è scelta per avere metà vere e metà false. */
-function sumCoins(c: PlatformerConfig, rnd: () => number): CoinSpec[] {
-  const out: CoinSpec[] = [];
-  for (let k = 0; k < 40; k++) {
-    const part = slice3(c.v, rnd);
-    const total = part.reduce((a, b) => a + b, 0);
-    const t = roundThreshold(total, k % 2 === 0, rnd);
-    const truth = total > t;
-    out.push({ cond: `sum(${list(part)}) > ${t}`, truth, why: `${part.map(fmt).join(' + ')} = ${fmt(total)}: ${fmt(total)} > ${t} è ${truth ? 'vero' : 'falso'}.` });
-  }
-  return out;
-}
-
-/** `sum([4, 6, 8]) / 3 > 5`: la media di tre valori. */
-function meanCoins(c: PlatformerConfig, rnd: () => number): CoinSpec[] {
-  const out: CoinSpec[] = [];
-  for (let k = 0; k < 40; k++) {
-    const part = slice3(c.v, rnd);
-    const mean = part.reduce((a, b) => a + b, 0) / part.length;
-    const t = roundThreshold(mean, k % 2 === 0, rnd);
-    const truth = mean > t;
-    out.push({ cond: `sum(${list(part)}) / ${part.length} > ${t}`, truth, why: `La media è ${fmt(mean)}: ${fmt(mean)} > ${t} è ${truth ? 'vero' : 'falso'}.` });
-  }
-  return out;
-}
-
-/** `max([4, 6, 9]) > 8` e `min([...]) < 5`: gli estremi. */
-function minmaxCoins(c: PlatformerConfig, rnd: () => number): CoinSpec[] {
-  const out: CoinSpec[] = [];
-  for (let k = 0; k < 40; k++) {
-    const part = slice3(c.v, rnd);
-    const useMax = k % 4 < 2;
-    const ext = useMax ? Math.max(...part) : Math.min(...part);
     const wantTrue = k % 2 === 0;
-    const op = useMax ? '>' : '<';
-    // max > t: vera con t sotto il massimo; min < t: vera con t sopra il minimo
-    const t = useMax ? roundThreshold(ext, wantTrue, rnd) : roundThreshold(ext, !wantTrue, rnd);
-    const truth = CMP[op](ext, t);
-    out.push({ cond: `${useMax ? 'max' : 'min'}(${list(part)}) ${op} ${t}`, truth, why: `${useMax ? 'Il massimo' : 'Il minimo'} è ${fmt(ext)}: ${fmt(ext)} ${op} ${t} è ${truth ? 'vero' : 'falso'}.` });
+    const t = wantTrue ? len - 1 : len + (rnd() < 0.5 ? 0 : 1);
+    const truth = len > t;
+    out.push({ cond: `len(${list(part)}) > ${t}`, truth, why: `La lista ha ${len} elementi: ${len} > ${t} è ${truth ? 'vero' : 'falso'}.` });
   }
   return out;
 }
 
-/** `venti['sud'] > 20`: leggere un dizionario con la chiave. */
+/** `sum([4, 6]) > 15`: la somma di **due** numeri piccoli, con la soglia lontana. Con numeri grandi si confrontano i valori. */
+function sumCoins(c: PlatformerConfig, rnd: () => number): CoinSpec[] {
+  if (!isSmall(c.v)) return cmpCoins(c);
+  const out: CoinSpec[] = [];
+  for (let k = 0; k < 40; k++) {
+    const i = Math.floor(rnd() * (c.v.length - 1));
+    const part = c.v.slice(i, i + 2);
+    const total = part[0] + part[1];
+    const t = k % 2 === 0 ? total - 3 - Math.floor(rnd() * 3) : total + 2 + Math.floor(rnd() * 3);
+    const truth = total > t;
+    out.push({ cond: `sum(${list(part)}) > ${t}`, truth, why: `${fmt(part[0])} + ${fmt(part[1])} = ${fmt(total)}: ${fmt(total)} > ${t} è ${truth ? 'vero' : 'falso'}.` });
+  }
+  return out;
+}
+
+/** `max([4, 7, 9]) > 5` e `min([...]) < 8`: guardare tre numeri piccoli. Con numeri grandi si confrontano i valori. */
+function minmaxCoins(c: PlatformerConfig, rnd: () => number): CoinSpec[] {
+  if (!isSmall(c.v)) return cmpCoins(c);
+  const out: CoinSpec[] = [];
+  for (let k = 0; k < 24; k++) {
+    const len = Math.min(3, c.v.length);
+    const start = Math.floor(rnd() * Math.max(1, c.v.length - len + 1));
+    const part = c.v.slice(start, start + len);
+    const useMax = k % 2 === 0;
+    const ext = useMax ? Math.max(...part) : Math.min(...part);
+    out.push(...farCompares(ext, useMax ? 'Il massimo' : 'Il minimo', (op, t) => `${useMax ? 'max' : 'min'}(${list(part)}) ${op} ${t}`));
+  }
+  return out;
+}
+
+/** `venti['sud'] > 20`: leggere un dizionario con la chiave (il dizionario è scritto sopra il gioco). */
 function dictCoins(c: PlatformerConfig): CoinSpec[] {
-  const d = c.d ?? {};
-  const entries = Object.entries(d);
-  if (!entries.length) return [];
-  const values = entries.map(([, x]) => x);
-  const mid = Math.round(values.reduce((a, b) => a + b, 0) / values.length);
-  const out: CoinSpec[] = [];
-  for (const [key, x] of entries) {
-    for (const op of ['>', '<']) {
-      for (const t of [mid, Math.round((mid + x) / 2)]) {
-        if (t === x) continue;
-        const truth = CMP[op](x, t);
-        out.push({ cond: `${c.name}['${key}'] ${op} ${t}`, truth, why: `${c.name}['${key}'] vale ${fmt(x)}: ${fmt(x)} ${op} ${t} è ${truth ? 'vero' : 'falso'}.` });
-      }
-    }
-  }
-  return out;
+  return Object.entries(c.d ?? {}).flatMap(([key, x]) => farCompares(x, `${c.name}['${key}']`, (op, t) => `${c.name}['${key}'] ${op} ${t}`));
 }
 
-/** `28 > 22`: un confronto (condizionali). */
+/** `28 > 22`: un confronto tra un valore e una soglia (condizionali). */
 function cmpCoins(c: PlatformerConfig): CoinSpec[] {
-  const out: CoinSpec[] = [];
-  const ops = c.level >= 4 ? ['>', '<', '>=', '<='] : ['>', '<'];
-  for (const x of c.v) {
-    for (const op of ops) {
-      const truth = CMP[op](x, c.th);
-      out.push({ cond: `${fmt(x)} ${op} ${fmt(c.th)}`, truth, why: `${fmt(x)} ${op} ${fmt(c.th)} è ${truth ? 'vero' : 'falso'}.` });
-    }
-  }
-  return out;
+  return c.v.flatMap((x) => farCompares(x, 'Il valore', (op, t) => `${fmt(x)} ${op} ${t}`));
 }
 
 /** Le monete di una corsa: stesse condizioni per gli stessi dati, metà vere e metà false. */
 export function coinSpecs(c: PlatformerConfig, count = 16, seed = 0): CoinSpec[] {
   const rnd = rng(c.level * 7919 + c.v.length + seed * 31337);
   const pool = {
-    pop: () => popCoins(c, rnd), len: () => lenCoins(c, rnd), sum: () => sumCoins(c, rnd), mean: () => meanCoins(c, rnd),
+    pop: () => popCoins(c, rnd), len: () => lenCoins(c, rnd), sum: () => sumCoins(c, rnd),
     minmax: () => minmaxCoins(c, rnd), dict: () => dictCoins(c), cmp: () => cmpCoins(c), index: () => indexCoins(c),
   }[c.kind]();
   if (!pool.length) return [];
@@ -278,10 +225,10 @@ export class PlatformerEngine {
     });
   }
 
-  private gap(): number { return 250 * this.speedScale; }
+  private gap(): number { return 280 * this.speedScale; }
 
   /** Velocità di scorrimento (px/s): cresce con il tempo. */
-  get speed(): number { return (170 + (this.t / RUN_SECONDS) * 90) * this.speedScale; }
+  get speed(): number { return (150 + (this.t / RUN_SECONDS) * 50) * this.speedScale; }
   get onGround(): boolean { return this.y <= 0 && this.vy <= 0; }
   get finished(): boolean { return this.t >= RUN_SECONDS; }
 

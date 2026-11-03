@@ -10,7 +10,7 @@ export const BONUS_KINDS: Record<string, BonusKind> = {
   'std-2': 'len',       // contare: len([4, 6, 9]) > 2
   'std-3': 'cmp',       // filtrare con una soglia: 28 > 22
   'std-4': 'sum',       // sommare
-  'std-5': 'mean',      // la media
+  'std-5': 'cmp',      // la media: si confronta il valore con la soglia
   'std-6': 'cmp',       // confrontare con una soglia
   'std-7': 'dict',      // dizionari: venti['sud'] > 20
   'std-8': 'minmax',    // minimo e massimo
@@ -18,8 +18,8 @@ export const BONUS_KINDS: Record<string, BonusKind> = {
   'std-10': 'sum',      // pipeline: somme di valori filtrati
   // esercizi propri
   delta: 'index', ordina: 'minmax', percentuale: 'cmp', conversione: 'cmp', posizione: 'index', 'somma-sopra': 'sum',
-  media: 'mean', mediana: 'minmax', moda: 'cmp', campo: 'minmax', varianza: 'mean', deviazione: 'mean', zscore: 'cmp', outlier: 'cmp',
-  frequenza: 'cmp', 'valore-atteso': 'mean', scostamento: 'cmp', 'somma-dadi': 'sum',
+  media: 'cmp', mediana: 'minmax', moda: 'cmp', campo: 'minmax', varianza: 'cmp', deviazione: 'cmp', zscore: 'cmp', outlier: 'cmp',
+  frequenza: 'cmp', 'valore-atteso': 'cmp', scostamento: 'cmp', 'somma-dadi': 'sum',
   'var-assegna': 'cmp', 'var-calcola': 'cmp',
   'liste-modifica': 'pop',
 };

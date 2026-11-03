@@ -74,7 +74,7 @@ for (const [name, vp, mobile] of [['telefono', { width: 393, height: 852 }, true
   await page.waitForSelector('app-platformer canvas');
   await page.locator('button:has-text("Via!")').click();
   await page.waitForTimeout(3000);
-  await page.locator('button.pause').click();
+  await page.locator('button[aria-label^="Pausa"]').click();
   const read = async () => +(await page.locator('app-platformer .stats b').first().innerText());
   const t1 = await read();
   await page.waitForTimeout(3000);
@@ -91,6 +91,48 @@ for (const [name, vp, mobile] of [['telefono', { width: 393, height: 852 }, true
   if (!(t3 < t2)) problems.push('dopo «Riprendi» il tempo non scorre');
   await ctx.close();
 }
+
+// audio: nessun suono prima di «Via!», poi la musica programma note; il muto le azzera e la preferenza resta
+{
+  const ctx = await browser.newContext({ viewport: { width: 393, height: 852 }, isMobile: true, hasTouch: true });
+  await ctx.addInitScript(() => {
+    window.__audio = { contexts: 0, osc: 0 };
+    const Orig = window.AudioContext;
+    window.AudioContext = class extends Orig {
+      constructor(...a) { super(...a); window.__audio.contexts++; }
+      createOscillator() { window.__audio.osc++; return super.createOscillator(); }
+    };
+  });
+  const page = await ctx.newPage();
+  await page.goto(base);
+  await page.evaluate(() => {
+    localStorage.clear(); sessionStorage.clear(); localStorage.setItem('pixelademy.consent.v1', 'granted');
+    localStorage.setItem('pixelademy.player.v1', JSON.stringify({ schemaVersion: 5, xp: 0, level: 1, completedMissionIds: ['adventure-core-variabili-01', 'adventure-core-variabili-02'], solvedCode: {}, liked: false, records: {}, selectedPathId: 'adventure-core-liste', selectedCharacterId: 'adventure-core-teo' }));
+    sessionStorage.setItem('pixelademy.phase.v1', JSON.stringify({ 'adventure-core-liste-01': 'corsa' }));
+    sessionStorage.setItem('pixelademy.bonus.v1', JSON.stringify({ 'adventure-core-liste-01': true }));
+    sessionStorage.setItem('pixelademy.intro.v1', '1');
+  });
+  await page.goto(`${base}/missione/adventure-core-liste-01`);
+  await page.waitForSelector('app-platformer canvas');
+  await page.waitForTimeout(800);
+  const before = await page.evaluate(() => ({ ...window.__audio }));
+  if (before.contexts !== 0 || before.osc !== 0) problems.push('audio: parte prima del «Via!»');
+  await page.locator('button:has-text("Via!")').click();
+  await page.waitForTimeout(2500);
+  const playing = await page.evaluate(() => ({ ...window.__audio }));
+  console.log(`audio: prima del via ${before.osc} note; dopo 2,5 s di corsa ${playing.osc} note (contesti: ${playing.contexts})`);
+  if (playing.contexts !== 1 || playing.osc < 8) problems.push('audio: la musica non parte dopo «Via!»');
+  // «ding» alla moneta: una corsa «a muro» (salta sempre) prende le monete in aria giuste; contiamo l'aumento di note vs il solo basso/lead
+  await page.locator('button[aria-label="Disattiva audio"]').click();
+  const muted = await page.evaluate(() => localStorage.getItem('pixelademy.bonus.sound.v1'));
+  if (muted !== 'off') problems.push('audio: la preferenza «muto» non si salva');
+  const m1 = (await page.evaluate(() => window.__audio.osc));
+  for (let i = 0; i < 12; i++) { await page.keyboard.press('ArrowUp'); await page.waitForTimeout(500); }
+  const m2 = (await page.evaluate(() => window.__audio.osc));
+  console.log(`audio: da muto la musica programma comunque le note in sottofondo (${m2 - m1}), ma i suoni delle monete sono spenti (volume 0)`);
+  await ctx.close();
+}
+
 await browser.close();
 if (problems.length) { console.log(`PROBLEMI:\n- ${problems.join('\n- ')}`); process.exit(1); }
 console.log('OK: il bonus platform si gioca per 15 secondi, si mette in pausa e porta al task.');

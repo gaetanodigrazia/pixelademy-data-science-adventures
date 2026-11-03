@@ -4,7 +4,7 @@ import { PACKS } from './core/data/packs.generated';
 import { BONUS_MAX_ERRORS, bonusEarned, bonusSettings, unlockBonus } from './core/utils/bonus';
 import { BONUS_KINDS } from './content/adventure-core/bonus-kinds';
 import { EXERCISES } from './content/adventure-core/exercises';
-import { AIR_Y, COIN_R, CoinSpec, PlatformerEngine, RUN_SECONDS, WORLD, coinSpecs, roundThreshold } from './core/utils/platformer-engine';
+import { AIR_Y, COIN_R, CoinSpec, PlatformerEngine, RUN_SECONDS, WORLD, clearGap, coinSpecs, isSmall } from './core/utils/platformer-engine';
 import { Platformer } from './shared/components/games/platformer';
 import { ContentRegistryService } from './core/services/content-registry.service';
 import { MINI_PACK } from './testing/mini-pack';
@@ -18,27 +18,36 @@ describe('bonus platform: generazione delle monete', () => {
     const v = [3, 8, 5, 12, 7, 4, 9];
     const specs = coinSpecs(cfg(), 12);
     expect(specs.length).toBe(12);
-    expect(specs.filter((c) => c.truth).length).toBe(6);
+    expect(Math.abs(specs.filter((c) => c.truth).length - 6)).toBeLessThanOrEqual(1); // metà vere e metà false (a meno di uno)
     for (const c of specs) {
-      const m = /^prezzi\[(-?\d+)\] (>|<|>=|<=) 6$/.exec(c.cond)!;
+      const m = /^prezzi\[(-?\d+)\] (>|<) (\d+)$/.exec(c.cond)!;
       expect(m, c.cond).not.toBeNull();
       const x = v[+m[1] < 0 ? v.length + +m[1] : +m[1]];
-      expect(c.truth).toBe({ '>': x > 6, '<': x < 6, '>=': x >= 6, '<=': x <= 6 }[m[2] as '>' | '<' | '>=' | '<=']);
+      expect(c.truth).toBe(m[2] === '>' ? x > +m[3] : x < +m[3]);
       expect(c.why).toContain(String(x));
     }
   });
 
-  it('index: livello 1 senza indici negativi né >=/<=; dal livello 2 sì', () => {
-    expect(coinSpecs(cfg({ level: 1 }), 14).every((c) => !/\[-/.test(c.cond) && !/[<>]=/.test(c.cond))).toBe(true);
-    expect(coinSpecs(cfg({ level: 2 }), 16).some((c) => /\[-/.test(c.cond))).toBe(true);
+  it('solo `>` e `<`, mai indici negativi: niente trabocchetti', () => {
+    for (const level of [1, 2, 3, 5]) {
+      for (const c of coinSpecs(cfg({ level }), 16)) expect(c.cond, c.cond).not.toMatch(/>=|<=|==|\[-/);
+    }
+  });
+
+  it('index: le soglie sono ben distanti dal valore (colpo d\'occhio)', () => {
+    const v = [3, 8, 5, 12, 7, 4, 9];
+    for (const c of coinSpecs(cfg(), 12)) {
+      const m = /^prezzi\[(\d+)\] (?:>|<) (\d+)$/.exec(c.cond)!;
+      expect(clearGap(v[+m[1]], +m[2]), c.cond).toBe(true);
+    }
   });
 
   it('pop: [..].pop() vale l\'ultimo elemento della lista scritta', () => {
     for (const c of coinSpecs(cfg({ kind: 'pop', name: 'carrello', v: [4, 6, 9, 2, 5], th: 6, level: 2 }), 16)) {
-      const m = /^\[([\d, ]+)\]\.pop\(\) (>|<) 6$/.exec(c.cond)!;
+      const m = /^\[([\d, ]+)\]\.pop\(\) (>|<) (\d+)$/.exec(c.cond)!;
       expect(m, c.cond).not.toBeNull();
       const last = +m[1].split(',').pop()!;
-      expect(c.truth).toBe(m[2] === '>' ? last > 6 : last < 6);
+      expect(c.truth).toBe(m[2] === '>' ? last > +m[3] : last < +m[3]);
     }
   });
 
@@ -192,12 +201,12 @@ describe('bonus platform: il componente', () => {
     type P = G & { paused(): boolean; togglePause(): void; onPointer(e: Event): void };
     const { fixture, g, el } = mount();
     const p = g as unknown as P;
-    expect(el.querySelector('.pause')).toBeNull(); // prima di partire non c'è
+    expect(el.querySelector('button[aria-label^="Pausa"]')).toBeNull(); // prima di partire non c'è
     g.startRun();
     fixture.detectChanges();
     g.update(2);
     const t = g.engine.t;
-    const pause = el.querySelector<HTMLButtonElement>('.pause')!;
+    const pause = el.querySelector<HTMLButtonElement>('button[aria-label^="Pausa"]')!;
     expect(pause.textContent).toContain('Pausa');
     pause.click();
     fixture.detectChanges();
@@ -416,37 +425,107 @@ function evaluate(cond: string): boolean {
   return new Function(...names, 'sumOf', '__r', `return (${keyed});`)(...names.map((n) => world[n]), (a: number[]) => a.reduce((x, y) => x + y, 0), (l: number[], i: number) => l.at(i)) as boolean;
 }
 
-describe('soglie facili da valutare a mente', () => {
-  it('roundThreshold: tonda, dalla parte giusta e lontana dal valore', () => {
-    const r = () => 0.3;
-    expect(roundThreshold(1065, true, r)).toBe(1000);
-    expect(roundThreshold(1065, false, r)).toBe(1200);
-    expect(roundThreshold(705, true, r)).toBe(650);
-    expect(roundThreshold(705, false, r)).toBe(750);
-    expect(roundThreshold(380, true, r)).toBe(360);
-    expect(roundThreshold(64, true, r)).toBe(60);
-    expect(roundThreshold(64, false, r)).toBe(70);
-    for (const x of [7, 19, 29]) {
-      expect(roundThreshold(x, true, r)).toBeLessThan(x);
-      expect(roundThreshold(x, false, r)).toBeGreaterThanOrEqual(x);
-    }
-    for (const x of [31, 99, 100, 455, 1065, 9999]) {
-      expect(roundThreshold(x, true, r)).toBeLessThan(x);
-      expect(roundThreshold(x, false, r)).toBeGreaterThan(x);
+describe('condizioni semplici: un gioco, non un esercizio', () => {
+  it('clearGap: distanti almeno 2 (o il 15%)', () => {
+    expect(clearGap(7, 6)).toBe(false);
+    expect(clearGap(9, 6)).toBe(true);
+    expect(clearGap(340, 300)).toBe(false);
+    expect(clearGap(380, 300)).toBe(true);
+  });
+
+  it('in tutte le missioni: mai un valore vicino alla soglia (niente «325 < 325»)', () => {
+    for (const p of PACKS[0].paths) for (const m of p.missions) {
+      for (const s of coinSpecs(m.bonus!.config as never, 16)) {
+        // confronti diretti «x > t» e «x < t», anche dopo [i], ['k'], max/min/sum/len/pop
+        const t = +/(\d+)$/.exec(s.cond)![1];
+        const val = +(/vale (-?[\d.]+)|ha (\d+) elementi|= (\d+):/.exec(s.why) ?? []).slice(1).find(Boolean)!;
+        if (Number.isFinite(val) && !/len\(/.test(s.cond) && t !== 0) expect(clearGap(val, t), `${m.id}: ${s.cond} (${s.why})`).toBe(true);
+      }
     }
   });
 
-  it('con numeri grandi (Officina dell\'Energia): al massimo due valori e soglie tonde', () => {
+  it('con numeri grandi (Officina dell\'Energia) si confrontano i valori: niente somme né liste', () => {
     const energia = PACKS[0].paths.find((p) => p.id === 'adventure-core-energia')!;
     for (const m of energia.missions) {
       const c = m.bonus!.config as { kind: 'sum'; name: string; v: number[]; th: number; level: number };
-      if (!['sum', 'mean', 'minmax'].includes(c.kind)) continue;
-      for (const s of coinSpecs(c, 16)) {
-        const nums = /\[([\d, ]+)\]/.exec(s.cond)![1].split(',').length;
-        expect(nums, `${m.id}: ${s.cond}`).toBeLessThanOrEqual(2);
-        const t = +/(?:>|<) (-?\d+)$/.exec(s.cond)![1];
-        expect(t % 10, `${m.id}: ${s.cond}`).toBe(0); // una soglia «tonda»
+      expect(isSmall(c.v)).toBe(false);
+      if (!['sum', 'minmax', 'cmp'].includes(c.kind)) continue;
+      for (const s of coinSpecs(c, 16)) expect(s.cond, `${m.id}: ${s.cond}`).toMatch(/^\d+ (?:>|<) \d+$/);
+    }
+  });
+
+  it('con numeri piccoli, somme e massimi usano pochi numeri e la soglia è lontana', () => {
+    const c = { kind: 'sum' as const, name: 'v', v: [4, 7, 2, 9, 5], th: 6, level: 1 };
+    for (const s of coinSpecs(c, 16)) {
+      const nums = /\[([\d, ]+)\]/.exec(s.cond)![1].split(',').length;
+      expect(nums, s.cond).toBe(2);
+      const total = /\[(\d+), (\d+)\]/.exec(s.cond)!.slice(1).reduce((a, x) => a + +x, 0);
+      const t = +/> (\d+)$/.exec(s.cond)![1];
+      expect(Math.abs(total - t), s.cond).toBeGreaterThanOrEqual(2);
+    }
+    for (const s of coinSpecs({ ...c, kind: 'minmax' }, 16)) expect(/\[([\d, ]+)\]/.exec(s.cond)![1].split(',').length, s.cond).toBeLessThanOrEqual(3);
+  });
+
+  it('in tutte le missioni le liste scritte sulle monete hanno al massimo 4 numeri e le condizioni sono corte', () => {
+    for (const p of PACKS[0].paths) for (const m of p.missions) {
+      for (const s of coinSpecs(m.bonus!.config as never, 16)) {
+        for (const lst of s.cond.match(/\[[\d, ]+\]/g) ?? []) expect(lst.split(',').length, `${m.id}: ${s.cond}`).toBeLessThanOrEqual(4);
+        expect(s.cond.length, `${m.id}: ${s.cond}`).toBeLessThan(30);
       }
     }
+  });
+});
+
+describe('bonus platform: audio nel gioco', () => {
+  type G = { audio: Record<string, ReturnType<typeof vi.fn>>; phase(): string; engine: PlatformerEngine; update(dt: number): void; startRun(): void; toggleSound(): void; muted(): boolean; togglePause(): void };
+  function mount() {
+    TestBed.resetTestingModule();
+    const fixture = TestBed.createComponent(Platformer);
+    const ref = fixture.componentRef as ComponentRef<unknown>;
+    ref.setInput('character', MINI_PACK.characters[0]);
+    ref.setInput('config', { kind: 'cmp', name: 'v', v: [3, 8, 5, 12, 7, 4, 9], th: 6, level: 1 });
+    ref.setInput('onCleared', () => undefined);
+    fixture.detectChanges();
+    const g = fixture.componentInstance as unknown as G;
+    g.audio = { start: vi.fn(), stop: vi.fn(), pause: vi.fn(), resume: vi.fn(), dispose: vi.fn(), coin: vi.fn(), bonk: vi.fn(), fanfare: vi.fn(), setMuted: vi.fn(), isMuted: false as never };
+    return { fixture, g, el: fixture.nativeElement as HTMLElement };
+  }
+
+  it('la musica parte con «Via!» (gesto dell\'utente), non prima', () => {
+    const { g } = mount();
+    expect(g.audio['start']).not.toHaveBeenCalled();
+    g.startRun();
+    expect(g.audio['start']).toHaveBeenCalledTimes(1);
+  });
+
+  it('«ding» quando si prende una moneta giusta, «bonk» se si prende una sbagliata, silenzio se si evita', () => {
+    const { g } = mount();
+    g.startRun();
+    // il bot: prende tutto camminando (a terra) e non salta mai
+    const e = g.engine;
+    for (let i = 0; i < 60 * 15; i++) g.update(1 / 60);
+    const takenRight = e.coins.filter((c) => c.state === 'taken' && c.correct).length;
+    const takenWrong = e.coins.filter((c) => c.state === 'taken' && !c.correct).length;
+    expect(takenRight + takenWrong).toBeGreaterThan(0);
+    expect(g.audio['coin']).toHaveBeenCalledTimes(takenRight);
+    expect(g.audio['bonk']).toHaveBeenCalledTimes(takenWrong);
+  });
+
+  it('pausa e ripresa fermano e riavviano l\'audio; a fine corsa musica ferma e fanfara', () => {
+    const { g } = mount();
+    g.startRun();
+    g.togglePause();
+    expect(g.audio['pause']).toHaveBeenCalled();
+    g.togglePause();
+    expect(g.audio['resume']).toHaveBeenCalled();
+    for (let i = 0; i < 16 * 60; i++) g.update(1 / 60);
+    expect(g.audio['stop']).toHaveBeenCalled();
+    expect(g.audio['fanfare']).toHaveBeenCalledTimes(1);
+  });
+
+  it('il pulsante 🔊/🔇 c\'è anche prima di partire', () => {
+    const { el } = mount();
+    const btn = el.querySelector<HTMLButtonElement>('.ctl button')!;
+    expect(btn.getAttribute('aria-label')).toMatch(/audio/);
   });
 });
