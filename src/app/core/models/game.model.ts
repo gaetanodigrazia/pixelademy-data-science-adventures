@@ -6,6 +6,8 @@ export type GameConfig = Record<string, unknown>;
 /** Com'è andata la battaglia: gli errori commessi (contano nel calcolo degli XP della missione). */
 export interface GameResult {
   mistakes: number;
+  /** Solo per il bonus platform: bravura nella corsa, da 0 a 1 (premia fino al 15% degli XP della missione). */
+  bonusRatio?: number;
 }
 
 export interface GameComponentInputs {

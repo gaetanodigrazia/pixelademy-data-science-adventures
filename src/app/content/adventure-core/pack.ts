@@ -9,8 +9,9 @@ import { assembleProject } from './project';
 import { missionId, SOLUTIONS } from './solutions';
 
 /** Il bonus platform di una missione: le monete portano i numeri della serie `a` del progetto; la regola («maggiori di 6») si deduce dai dati. */
-function bonusFor(p: ProjectSpec, level: number): Mission['bonus'] {
-  return { type: BONUS_GAME, config: { name: p.a.name, v: p.a.values, unit: p.a.unit, level } };
+function bonusFor(p: ProjectSpec, level: number, xp: number): Mission['bonus'] {
+  // `xp`: gli XP della missione, per mostrare a fine corsa quanti XP extra (fino al 15%) si sono guadagnati
+  return { type: BONUS_GAME, config: { name: p.a.name, v: p.a.values, unit: p.a.unit, level, xp } };
 }
 
 const paths: LearningPath[] = PATH_SEEDS.map((p) => {
@@ -39,7 +40,7 @@ const paths: LearningPath[] = PATH_SEEDS.map((p) => {
       // Un gioco per concetto: riceve i dati del progetto e li usa per far imparare giocando.
       game: { type: step.exercise.game ?? GAME_IDS[step.exercise.stdIndex ?? i], config: { level: difficulty, ...step.exercise.gameConfig(p.project) } },
       viz: step.exercise.viz(p.project),
-      bonus: bonusFor(p.project, difficulty),
+      bonus: bonusFor(p.project, difficulty, xpForDifficulty(difficulty)),
       enemyId: `${PACK_ID}-${p.enemySlug}`,
     };
   });

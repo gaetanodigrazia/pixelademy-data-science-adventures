@@ -12,6 +12,8 @@ export const SCORING = {
   similarityBase: 0.7,
   /** Soluzione aperta prima di superare il task: gli XP della missione si azzerano (0). */
   viewedFactor: 0,
+  /** Bonus platform: XP extra al massimo il 15% degli XP della missione (in proporzione a quanto si è giocato bene). */
+  bonusMax: 0.15,
   /** Anti-incolla: troppo codice incollato, quasi identico alla soluzione, in pochi secondi. */
   paste: { minChars: 40, minSimilarity: 0.9, maxSeconds: 5, factor: 0.6 },
 } as const;

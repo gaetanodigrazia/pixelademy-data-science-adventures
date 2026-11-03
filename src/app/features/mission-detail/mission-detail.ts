@@ -28,6 +28,7 @@ const PHASE_KEY = 'pixelademy.phase.v1';
 /** Gli errori della battaglia di ogni missione (per la sessione): ricaricando al task contano ancora. */
 const BATTLE_KEY = 'pixelademy.battle.v1';
 const BONUS_KEY = 'pixelademy.bonus.v1';
+const BONUS_RATIO_KEY = 'pixelademy.bonusratio.v1';
 
 type Phase = 'teoria' | 'battaglia' | 'corsa' | 'task';
 
@@ -199,6 +200,7 @@ type Phase = 'teoria' | 'battaglia' | 'corsa' | 'task';
                     <tr><td>Vicinanza alla soluzione ({{ (sc.similarity * 100).toFixed(0) }}%)</td><td>×{{ sc.similarityFactor.toFixed(2) }}</td></tr>
                     @if (sc.pasteFactor < 1) { <tr><td>Codice incollato quasi identico alla soluzione</td><td>×{{ sc.pasteFactor.toFixed(2) }}</td></tr> }
                     @if (sc.viewedFactor < 1) { <tr><td>Soluzione aperta prima</td><td>×{{ sc.viewedFactor.toFixed(2) }}</td></tr> }
+                    @if (sc.bonusXp > 0) { <tr><td>🎁 Bonus platform ({{ (sc.bonusRatio * 100).toFixed(0) }}%, al massimo il 15%)</td><td>+{{ sc.bonusXp }}</td></tr> }
                     <tr class="total"><td>Totale</td><td>{{ sc.xp }} XP</td></tr>
                   </table>
                 }
@@ -334,8 +336,10 @@ export class MissionDetail {
   protected readonly sceneOpen = signal(typeof window === 'undefined' || typeof window.matchMedia !== 'function' || !window.matchMedia('(max-width: 600px)').matches);
   protected readonly slide = signal(0);
   protected readonly battleWon = signal(false);
-  /** La corsa bonus è stata completata (facoltativa: non cambia gli XP). */
+  /** La corsa bonus è stata completata (facoltativa: dà fino al 15% di XP extra, vedi `bonusRatio`). */
   protected readonly bonusDone = signal(false);
+  /** Bravura nel bonus platform, 0..1: premia fino al 15% degli XP della missione, riscossi al completamento del task. */
+  protected readonly bonusRatio = signal(0);
   /** Il bonus è comparso per questa missione (a sorpresa, e solo dopo una buona battaglia). */
   protected readonly bonusOffered = signal(false);
   protected get bonusEnabled(): boolean { return bonusSettings.enabled; }
@@ -428,7 +432,10 @@ export class MissionDetail {
       character: this.game.selectedCharacter(),
       enemy: this.registry.enemy(m?.enemyId),
       config: m?.bonus?.config ?? {},
-      onCleared: () => this.bonusDone.set(true), // gli errori della corsa non contano negli XP
+      onCleared: (r?: { mistakes: number; bonusRatio?: number }) => {
+        this.bonusDone.set(true);
+        this.setBonusRatio(r?.bonusRatio ?? 0); // gli errori della corsa non tolgono XP: il bonus può solo aggiungerne
+      },
     };
   });
   protected readonly gameInputs = computed(() => {
@@ -462,6 +469,7 @@ export class MissionDetail {
         this.slide.set(0);
         this.battleWon.set(saved === 'task' || saved === 'corsa');
         this.bonusDone.set(false);
+        this.bonusRatio.set(m ? this.savedBonusRatio(m.id) : 0);
         this.bonusOffered.set(!!m?.bonus && (saved === 'corsa' || this.savedBonus(m.id)));
         this.battleErrors.set((saved === 'task' || saved === 'corsa') && m ? this.savedBattleErrors(m.id) : 0);
         this.victoryOpen.set(false);
@@ -570,6 +578,30 @@ export class MissionDetail {
     }
   }
 
+  /** Ricorda la bravura nel bonus (riscossa quando si completa il task, anche dopo un ricaricamento). */
+  private setBonusRatio(v: number): void {
+    const ratio = Number.isFinite(v) ? Math.min(1, Math.max(0, v)) : 0;
+    this.bonusRatio.set(ratio);
+    const id = this.current;
+    if (!id) return;
+    try {
+      const all = JSON.parse(sessionStorage.getItem(BONUS_RATIO_KEY) ?? '{}') as Record<string, number>;
+      if (ratio > 0) all[id] = ratio; else delete all[id];
+      sessionStorage.setItem(BONUS_RATIO_KEY, JSON.stringify(all));
+    } catch {
+      /* senza storage il premio si perde ricaricando: non è un problema */
+    }
+  }
+
+  private savedBonusRatio(id: string): number {
+    try {
+      const n = (JSON.parse(sessionStorage.getItem(BONUS_RATIO_KEY) ?? '{}') as Record<string, unknown>)[id];
+      return typeof n === 'number' && Number.isFinite(n) ? Math.min(1, Math.max(0, n)) : 0;
+    } catch {
+      return 0;
+    }
+  }
+
   private savedBonus(id: string): boolean {
     try {
       return (JSON.parse(sessionStorage.getItem(BONUS_KEY) ?? '{}') as Record<string, unknown>)[id] === true;
@@ -612,7 +644,8 @@ export class MissionDetail {
 
   protected restart(): void {
     this.victoryOpen.set(false);
-    this.setBonusOffered(false); // si ricomincia: un nuovo sorteggio alla prossima battaglia
+    this.setBonusOffered(false); // si ricomincia: il bonus si sblocca di nuovo solo con una nuova battaglia
+    this.setBonusRatio(0);
     this.slide.set(0);
     this.go('teoria');
   }
@@ -655,6 +688,7 @@ export class MissionDetail {
           reference: stripBase(this.solution(), m.projectBase ?? ''),
           solutionViewed: this.solutionViewed(),
           pastedChars: this.pastedChars(),
+          bonusRatio: this.bonusRatio(),
         });
         this.score.set(score);
         if (m.challenge) {

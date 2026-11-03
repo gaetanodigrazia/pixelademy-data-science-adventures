@@ -145,6 +145,18 @@ export class PlatformerEngine {
 
   private gap(): number { return 280 * this.speedScale; }
 
+  /**
+   * Bravura nella corsa, da 0 a 1, per il premio in XP: le monete giuste prese meno quelle sbagliate prese, sulle monete giuste incontrate.
+   * Restare fermi dà 0 (non si prende nulla); servono almeno 3 monete giuste incontrate.
+   */
+  get bonusRatio(): number {
+    const seen = this.coins.filter((c) => c.state !== 'live' && c.truth).length;
+    if (seen < 3) return 0;
+    const right = this.coins.filter((c) => c.state === 'taken' && c.truth).length;
+    const wrong = this.coins.filter((c) => c.state === 'taken' && !c.truth).length;
+    return Math.min(1, Math.max(0, (right - wrong) / seen));
+  }
+
   /** Velocità di scorrimento (px/s): cresce poco con il tempo. */
   get speed(): number { return (150 + (this.t / RUN_SECONDS) * 50) * this.speedScale; }
   get onGround(): boolean { return this.y <= 0 && this.vy <= 0; }

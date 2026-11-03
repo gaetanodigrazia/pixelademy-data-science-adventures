@@ -10,7 +10,7 @@ const base = process.argv[2] ?? 'http://localhost:4300';
 const browser = await chromium.launch();
 const problems = [];
 
-async function play({ random, wrongClicks }) {
+async function play({ random, wrongClicks, playBonus = false }) {
   const ctx = await browser.newContext({ viewport: { width: 393, height: 852 }, isMobile: true, hasTouch: true });
   await ctx.addInitScript((r) => { Math.random = () => r; }, random);
   const page = await ctx.newPage();
@@ -44,14 +44,35 @@ async function play({ random, wrongClicks }) {
   const steps = (await page.locator('.steps').innerText()).replace(/\n/g, ' | ');
   const bonusButton = await page.locator('[role=dialog] button:has-text("Al bonus")').count();
   let platform = false;
-  if (bonusButton) { await page.locator('[role=dialog] button:has-text("Al bonus")').click(); platform = await page.waitForSelector('app-platformer canvas', { timeout: 5000 }).then(() => true).catch(() => false); }
+  let end = '';
+  if (bonusButton) {
+    await page.locator('[role=dialog] button:has-text("Al bonus")').click();
+    platform = await page.waitForSelector('app-platformer canvas', { timeout: 5000 }).then(() => true).catch(() => false);
+    if (playBonus && platform) {
+      // bot: salta ~1,4 s dopo l'annuncio di una moneta «Va presa» (la moneta arriva sull'eroe proprio allora)
+      await page.locator('button:has-text("Via!")').click();
+      let last = '';
+      const t0 = Date.now();
+      while (Date.now() - t0 < 18000 && !(await page.locator('app-platformer .end').count())) {
+        const t = (await page.locator('app-platformer .sr').innerText()).trim();
+        if (t && t !== last) { last = t; if (/Va presa/.test(t)) setTimeout(() => page.keyboard.press('ArrowUp').catch(() => undefined), 1400); }
+        await page.waitForTimeout(50);
+      }
+      end = (await page.locator('app-platformer .end').innerText().catch(() => '')).replace(/\n/g, ' ');
+    }
+  }
   await ctx.close();
-  return { dialog, steps, bonusButton, platform };
+  return { dialog, steps, bonusButton, platform, end };
 }
 
 const clean = await play({ random: 0.9, wrongClicks: 0 }); // il sorteggio non esiste più: Math.random non deve contare
 console.log('0 errori:', clean.bonusButton ? 'bonus sbloccato' : 'NIENTE bonus', '|', clean.steps, '| platform visibile:', clean.platform);
 if (!clean.bonusButton || !clean.platform || !/Bonus sbloccato/.test(clean.dialog)) problems.push('con 0 errori il bonus non si sblocca');
+
+const played = await play({ random: 0.5, wrongClicks: 0, playBonus: true });
+console.log('bonus giocato bene:', played.end);
+if (!/Tempo!/.test(played.end)) problems.push('il bonus non finisce');
+if (!/\+\d+ XP extra/.test(played.end)) problems.push('a fine bonus non si vedono gli XP extra guadagnati');
 
 const clean2 = await play({ random: 0.1, wrongClicks: 0 });
 if (!clean2.bonusButton) problems.push('con 0 errori il bonus dipende dal caso');
