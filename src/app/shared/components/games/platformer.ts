@@ -28,13 +28,22 @@ interface Pop { x: number; y: number; text: string; good: boolean; age: number }
           }
         </span>
       </header>
-      <p class="goal"><strong>🎯 Regola</strong> · Prendi i numeri <b>{{ rule.word }} di {{ th }}</b> ({{ name }}): <b>salta</b> per prenderli.
-        Con gli altri <b>non saltare</b>.</p>
+      <!-- prima del «Via!» l'obiettivo sta già nella schermata iniziale: la riga qui sopra serve durante la corsa -->
+      @if (phase() !== 'ready') {
+        <p class="goal"><strong>🎯 Regola</strong> · Prendi i numeri <b>{{ rule.word }} di {{ th }}</b> ({{ name }}): <b>salta</b> per prenderli.
+          Con gli altri <b>non saltare</b>.</p>
+      }
 
-      <div class="stage" role="group" aria-label="Area di gioco: tocca per saltare" (pointerdown)="onPointer($event)">
+      <div class="stage" [class.ready]="phase() === 'ready'" role="group" aria-label="Area di gioco: tocca per saltare" (pointerdown)="onPointer($event)">
         <canvas #cv class="cv" aria-hidden="true"></canvas>
         @if (phase() === 'ready') {
-          <div class="veil"><button type="button" class="btn primary" (click)="startRun()">Via! (tocca o Spazio)</button></div>
+          <div class="veil start">
+            <p class="ttl">🎯 Obiettivo</p>
+            <p class="rule">Prendi i numeri <b>{{ rule.word }} di {{ th }}</b> ({{ name }}).</p>
+            <p class="sm">Salta per prenderli. Con gli altri non saltare.</p>
+            <p class="sm">Si salta con un tocco, Spazio o ↑ · {{ runSeconds }} secondi</p>
+            <button type="button" class="btn primary" (click)="startRun()">Via!</button>
+          </div>
         } @else if (paused()) {
           <div class="veil"><p>⏸ In pausa</p><button type="button" class="btn primary" (click)="togglePause()">▶ Riprendi (P)</button></div>
         } @else if (phase() === 'done') {
@@ -56,10 +65,17 @@ interface Pop { x: number; y: number; text: string; good: boolean; age: number }
     .goal { margin: 0; padding: 6px 10px; font-size: .6rem; line-height: 1.6; background: #0b0b24; border-left: 4px solid var(--accent); }
     .goal strong { color: var(--accent-2); font-weight: normal; }
     .stage { position: relative; width: 100%; max-width: 760px; align-self: center; aspect-ratio: 360 / 188; border: 2px solid var(--line); background: #5c94fc; cursor: pointer; touch-action: manipulation; user-select: none; }
+    /* prima del «Via!» la schermata dell'obiettivo deve starci per intero anche su telefoni piccoli */
+    .stage.ready { min-height: 220px; }
     .cv { position: absolute; inset: 0; width: 100%; height: 100%; display: block; image-rendering: pixelated; }
     .veil { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px; background: rgba(2, 6, 23, .55); }
     .veil p { margin: 0; font-size: .8rem; color: #fff; text-shadow: 0 2px 0 #000; } .veil .sm { font-size: .55rem; }
     .veil b { color: var(--accent-2); }
+    .veil.start { gap: 4px; padding: 8px 12px; text-align: center; background: rgba(2, 6, 23, .78); }
+    .veil.start .ttl { font-size: .7rem; color: var(--accent-2); }
+    .veil.start .rule { font-size: .72rem; line-height: 1.5; }
+    .veil.start .sm { font-size: .55rem; line-height: 1.5; color: #e2e8f0; }
+    .veil.start .btn { margin-top: 4px; }
     .ctl { display: inline-flex; gap: 6px; }
     .pause { padding: 4px 10px; font-size: .55rem; }
     .hint { margin: 0; text-align: center; font-size: .5rem; color: var(--muted); }
@@ -72,6 +88,7 @@ export class Platformer extends BaseGame implements OnInit, AfterViewInit {
   private readonly zone = inject(NgZone);
   private readonly cv = viewChild.required<ElementRef<HTMLCanvasElement>>('cv');
   protected engine!: PlatformerEngine;
+  protected readonly runSeconds = RUN_SECONDS;
   protected rule: Rule = { op: '>', th: 0, word: 'maggiori' };
   protected th = '';
   protected name = '';
@@ -252,14 +269,17 @@ export class Platformer extends BaseGame implements OnInit, AfterViewInit {
     for (let x = -off; x < WORLD.w; x += 32) ctx.fillRect(x, WORLD.ground + 14, 2, WORLD.h - WORLD.ground);
     ctx.fillRect(0, WORLD.ground + 14, WORLD.w, 2);
 
-    // monete: tutte alla stessa quota, piccole, con il numero dentro (niente riquadri)
+    // monete: tutte alla stessa quota, piccole; il numero sta SOPRA la moneta (grande e leggibile, con un contorno scuro)
     for (const c of this.engine.coins) {
       if (c.state !== 'live' || c.x < -40 || c.x > WORLD.w + 40) continue;
       const cy = WORLD.ground - COIN_Y;
       ctx.fillStyle = '#7a5b00'; ctx.beginPath(); ctx.arc(c.x, cy, COIN_R, 0, Math.PI * 2); ctx.fill();
-      ctx.fillStyle = '#ffd23f'; ctx.beginPath(); ctx.arc(c.x, cy, COIN_R - 2, 0, Math.PI * 2); ctx.fill();
-      ctx.font = 'bold 10px monospace'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-      ctx.fillStyle = '#3b2a00'; ctx.fillText(fmt(c.value), c.x, cy + 1);
+      ctx.fillStyle = '#ffd23f'; ctx.beginPath(); ctx.arc(c.x, cy, COIN_R - 2.5, 0, Math.PI * 2); ctx.fill();
+      ctx.fillStyle = '#fff3b0'; ctx.fillRect(c.x - 3, cy - 5, 2.5, 8);
+      ctx.font = 'bold 15px monospace'; ctx.textAlign = 'center'; ctx.textBaseline = 'alphabetic';
+      ctx.lineWidth = 4; ctx.lineJoin = 'round'; ctx.strokeStyle = '#0b1020';
+      ctx.strokeText(fmt(c.value), c.x, cy - COIN_R - 6);
+      ctx.fillStyle = '#ffffff'; ctx.fillText(fmt(c.value), c.x, cy - COIN_R - 6);
     }
 
     // eroe
