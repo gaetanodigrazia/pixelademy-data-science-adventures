@@ -1,3 +1,5 @@
+<p align="center"><img src="public/brand/logo-badge.svg" width="420" alt="Pixelademy"></p>
+
 # Pixelademy — Data Science Adventures
 
 [![CI](https://github.com/gaetanodigrazia/pixelademy-data-science-adventures/actions/workflows/ci.yml/badge.svg)](https://github.com/gaetanodigrazia/pixelademy-data-science-adventures/actions/workflows/ci.yml)
@@ -17,6 +19,9 @@ npm run build -- --configuration development
 npm start
 ```
 `.npmrc` abilita `legacy-peer-deps` (workaround a un bug di npm 10 con i peer di jsdom).
+
+## Logo
+Il logo (marchio, logotipo, versioni SVG e PNG) sta in `public/brand/` ed è generato da `node scripts/generate-logo.mjs`: pixel-art, senza font, a partire dalle stesse celle. Il marchio è un blocco «?» giallo con un grafico a barre (gioco + dati).
 
 ## Content pack
 Un pack è una cartella `src/app/content/<id>/pack.ts` che esporta (default) un `ContentPack`. `npm run packs` li scopre e genera
