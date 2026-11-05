@@ -121,3 +121,4 @@
 | E04 | UX-04.17 Bonus platform: numero sopra la moneta e obiettivo nella schermata iniziale | #247 | #248 | `docs/issues/UX-04.17.md` | fatto |
 | E03 | US-04.18 Il bonus platform dà fino al 15% di XP extra | #249 | #250 | `docs/issues/US-04.18.md` | fatto |
 | E05 | UX-06.8 Logo di Pixelademy (marchio, logotipo e versioni PNG) | #251 | #252 | `docs/issues/UX-06.8.md` | fatto |
+| E11 | BUG-11.14 Statistica: il quiz di mediana e moda non mostra il vettore `onde` | #253 | #256 | `docs/issues/BUG-11.14.md` | fatto |
