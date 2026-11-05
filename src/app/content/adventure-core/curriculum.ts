@@ -187,7 +187,8 @@ export const PATH_SEEDS: PathSeed[] = [
     characterSlug: 'cora',
     enemySlug: 'onda',
     // esercizi propri di statistica descrittiva: niente Dashboard (i riquadri seguono le 10 sezioni standard)
-    exercises: ['media', 'mediana', 'moda', 'campo', 'varianza', 'deviazione'],
+    // si parte dagli estremi (massimo e minimo), più facili di media, mediana e moda
+    exercises: ['campo', 'media', 'mediana', 'moda', 'varianza', 'deviazione'],
     dashboard: false,
     project: {
       heading: 'RAPPORTO STATISTICO DELLE BOE',
@@ -215,10 +216,10 @@ export const PATH_SEEDS: PathSeed[] = [
       },
     },
     missions: [
-      { title: 'L\'altezza media', story: 'Cora ascolta le boe: prima di tutto serve un numero che riassuma l\'altezza delle onde, la media.' },
+      { title: 'L\'onda più bassa e la più alta', story: 'Cora ascolta le boe: per cominciare guarda gli estremi, l\'onda più bassa e la più alta, e misura quanto distano: il campo di variazione.' },
+      { title: 'L\'altezza media', story: 'Ora serve un numero che riassuma l\'altezza delle onde: Cora calcola la media.' },
       { title: 'Il valore di mezzo', story: 'Una grossa onda sposta la media: Cora cerca la mediana, che non si lascia ingannare.' },
       { title: 'L\'onda più frequente', story: 'Qual è l\'altezza che si ripete più spesso? Cora cerca la moda.' },
-      { title: 'Quanto sono sparsi i dati', story: 'Tra l\'onda più bassa e la più alta quanta distanza c\'è? Cora misura il campo di variazione.' },
       { title: 'La varianza', story: 'Per misurare la dispersione attorno alla media Cora somma i quadrati degli scarti.' },
       { title: 'La deviazione standard', story: 'Ultima sezione: la radice della varianza riporta tutto all\'unità dei dati. Il rapporto statistico è completo!' },
     ],

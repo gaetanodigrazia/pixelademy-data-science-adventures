@@ -123,9 +123,9 @@ describe('percorso «energia»', () => {
 });
 
 describe('percorso di statistica', () => {
-  it('bollettino: media, mediana, moda, campo, varianza e deviazione standard', () => {
+  it('bollettino: campo (massimo e minimo), media, mediana, moda, varianza e deviazione standard', () => {
     expect(lines('statistica').slice(1)).toEqual([
-      'Altezza media: 5.0', 'Altezza mediana: 4.5', 'Altezza più frequente: 4', 'Campo di variazione: 7', 'Varianza: 4.0', 'Deviazione standard: 2.0',
+      'Campo di variazione: 7', 'Altezza media: 5.0', 'Altezza mediana: 4.5', 'Altezza più frequente: 4', 'Varianza: 4.0', 'Deviazione standard: 2.0',
     ]);
   });
 
@@ -232,5 +232,51 @@ describe('percorsi base: la teoria spiega ogni concetto usato nel quiz', () => {
     const quiz = quizFor(m.game.config as never);
     const used = JSON.stringify(quiz).includes('len(');
     expect(used).toBe(true);
+  });
+});
+
+describe('percorso di statistica: si parte dagli estremi (massimo e minimo)', () => {
+  const p = path('statistica');
+
+  it('ordine: campo, media, mediana, moda, varianza, deviazione', () => {
+    expect(p.missions.map((m) => m.topic)).toEqual(['Il campo di variazione', 'La media', 'La mediana', 'La moda', 'La varianza', 'La deviazione standard']);
+    expect(p.missions[0].title).toContain('più bassa e la più alta');
+  });
+
+  it('la prima missione apre il progetto (dati e titolo); le altre usano la lista già definita', () => {
+    expect(p.missions[0].starterCode).toContain('onde = [');
+    expect(p.missions[0].starterCode).toContain('=== RAPPORTO STATISTICO DELLE BOE ===');
+    for (const m of p.missions.slice(1)) {
+      expect(m.projectSection, m.id).not.toContain('onde = [');
+      expect(m.projectBase, m.id).toContain('onde = [');
+    }
+  });
+
+  it('i testi non dipendono dalla posizione: niente «missione 1», «Sezione N» né numeri nei commenti', () => {
+    for (const m of p.missions) {
+      const text = [m.briefing, m.hint, ...m.theory.map((t) => t.body), m.projectSection].join('\n');
+      expect(text, m.id).not.toMatch(/missione \d|Sezione \d/);
+      expect(m.projectSection, m.id).not.toMatch(/^# \d\./m);
+    }
+  });
+
+  it('«media» apre il progetto se è il primo (Outlier) e non se è dopo (Statistica)', () => {
+    const outlier = path('outlier');
+    expect(outlier.missions[0].topic).toBe('La media');
+    expect(outlier.missions[0].starterCode).toContain('consegne = [');
+    expect(p.missions[1].starterCode.startsWith(p.missions[1].projectBase!)).toBe(true);
+  });
+
+  it('un esercizio che apre il progetto sta solo al primo posto; «media» invece può stare ovunque', () => {
+    expect(() => exercisesFor({ slug: 'x', missions: [1, 2], exercises: ['campo', 'media'] })).not.toThrow();
+    expect(() => exercisesFor({ slug: 'x', missions: [1, 2], exercises: ['media', 'mediana'] })).not.toThrow();
+    expect(() => exercisesFor({ slug: 'x', missions: [1, 2], exercises: ['media', 'campo'] })).toThrow('solo al primo posto');
+    expect(() => exercisesFor({ slug: 'x', missions: [1, 2], exercises: ['mediana', 'media'] })).toThrow('deve aprire');
+  });
+
+  it('il bollettino cresce nell\'ordine: ogni missione aggiunge la sua riga', () => {
+    const lastLines = (p.missions.at(-1)!.validation as { expected: string[] }).expected;
+    expect(lastLines[1]).toMatch(/^Campo di variazione/);
+    expect(lastLines[2]).toMatch(/^Altezza media/);
   });
 });

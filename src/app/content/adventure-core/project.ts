@@ -23,8 +23,8 @@ export function assembleProject(path: PathSeed): ProjectStep[] {
   const exercises = exercisesFor(path);
   let base = '';
   let expected: string[] = [];
-  return exercises.map((exercise) => {
-    const concept = exercise.concept(path.project);
+  return exercises.map((exercise, i) => {
+    const concept = exercise.concept(path.project, { first: i === 0 });
     const solution = base + concept.solution;
     expected = [...expected, ...concept.lines];
     const step: ProjectStep = { exercise, concept, base, solution, expected };
