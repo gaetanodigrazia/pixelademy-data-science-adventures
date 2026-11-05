@@ -392,7 +392,7 @@ function moda(c: QuizConfig): Quiz {
   const second = others.reduce((a, b) => (count(b) > count(a) ? b : a), others[0]);
   const rare = others.reduce((a, b) => (count(b) < count(a) ? b : a), others[0]);
   const step = (x: number, why: string): QuizStep => ({
-    prompt: `${n}.count(${fmt(x)}) → ?`, correct: String(count(x)), line: 3,
+    prompt: `${n}.count(${fmt(x)}) → ?`, correct: String(count(x)), line: 2, // la riga dell'if, dove si usa count()
     traps: str([
       { label: String(count(x) + 1), why: `Conta di nuovo: ${fmt(x)} compare ${count(x)} ${count(x) === 1 ? 'volta' : 'volte'}.` },
       { label: fmt(x), why: 'Quello è il valore: count() restituisce quante volte compare.' },
@@ -914,8 +914,25 @@ function listeModifica(c: QuizConfig): Quiz {
   };
 }
 
+/**
+ * Se il quiz parla della serie (`onde`, `prezzi`…) ma il pannello del codice non ne mostra la definizione, la aggiunge in cima:
+ * senza i valori non si possono eseguire i passi a mano. Le righe evidenziate dei passi scalano di una.
+ */
+function withVector(c: QuizConfig, quiz: Quiz): Quiz {
+  const name = c.name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  const uses = (t: string): boolean => new RegExp(`\\b${name}\\b`).test(t);
+  const mentioned = quiz.code.some(uses) || quiz.steps.some((st) => uses(st.prompt) || uses(st.vars ?? ''));
+  const defined = quiz.code.some((l) => new RegExp(`^\\s*${name}\\s*=`).test(l));
+  if (!mentioned || defined) return quiz;
+  return { ...quiz, code: [`${c.name} = ${list(c.v)}`, ...quiz.code], steps: quiz.steps.map((st) => ({ ...st, line: st.line + 1 })) };
+}
+
 /** Il quiz di un esercizio: codice mostrato e passi (domanda, risposta giusta, sviste spiegate). */
 export function quizFor(c: QuizConfig): Quiz {
+  return withVector(c, buildQuiz(c));
+}
+
+function buildQuiz(c: QuizConfig): Quiz {
   switch (c.exercise) {
     case 'delta': return delta(c);
     case 'ordina': return ordina(c);
