@@ -57,6 +57,12 @@ I test «per percorso» (`games`, `viz`, `content`, `validator`, `python-solutio
 ## Bonus platform (automatico)
 Ogni missione ha il bonus platform, facoltativo e da sbloccare con al massimo 1 errore in battaglia: **nessuna operazione**, la regola è una sola («prendi i numeri maggiori di 6») e le monete mostrano solo un numero della serie `a` del progetto (vedi `core/utils/platformer-engine.ts`). Per una missione nuova non serve fare nulla: si costruisce dai dati del progetto. Dà fino al 15% di XP extra (calcolati sugli XP della missione).
 
+## Il suggerimento (`hint`) non scrive la soluzione
+Il suggerimento **orienta** (quale strumento usare, a cosa pensare, l'ordine dei passi) ma non deve contenere il codice della soluzione: né le righe nuove né la parte a destra di un'assegnazione (`media = totale / len(onde)`). Dillo a parole («serve la somma divisa per quanti sono»). Un test (`hints.spec.ts`) confronta il suggerimento con le righe nuove della soluzione di ogni missione e fallisce se la rivela.
+
+## Il quiz mostra la serie
+Un quiz che usa una serie (`onde`, `prezzi`…) ne mostra la definizione nel pannello del codice (la aggiunge `quizFor` da sola se manca; un test lo verifica).
+
 ## Effetti da dire sempre all'utente
 - **Aggiungi in fondo**: gli id delle missioni sono per posizione (`adventure-core-<slug>-NN`). Inserire una missione **in mezzo** sposta le successive e i progressi già salvati puntano alla missione sbagliata: lo si fa solo se l'utente accetta di perdere quei progressi.
 - Chi aveva **completato** il percorso ora ha una missione in più da fare: il percorso torna «da completare». **I percorsi che lo richiedono (`requires`) si richiudono per chi non li ha ancora iniziati**: vale soprattutto per «Le Variabili» e «Le Liste», che bloccano tutti gli altri (chi ha già progressi in un percorso non lo perde). Se aggiungi a un percorso base, avvisa l'utente di questo prima di procedere.

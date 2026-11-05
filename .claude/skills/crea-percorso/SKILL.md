@@ -33,6 +33,9 @@ Ogni missione ha il «Bonus platform» stile Super Mario: si **sblocca** con al 
 
 **Un percorso nuovo non richiede nulla** (il bonus si costruisce dai suoi dati: servono almeno due gruppi di valori, sotto e sopra la soglia, quindi la serie `a` non deve avere tutti i valori uguali). Se la serie ha valori molto vicini fra loro la regola resta chiara perché la soglia cade nel punto di maggiore distanza.
 
+## Il suggerimento (`hint`) non scrive la soluzione
+Ogni esercizio ha un suggerimento che **orienta** senza dare il codice (né le righe nuove della soluzione né la parte a destra di un'assegnazione): lo verifica `hints.spec.ts`. Per un esercizio nuovo scrivilo a parole.
+
 ## Percorsi brevi (da 1 a 9 missioni)
 Il numero di missioni è la lunghezza di `missions`: un percorso di **N missioni usa i primi N concetti**, con difficoltà 1..N (la scala resta «su 10»: una missione di difficoltà 3 si vede come 3/10). Esempio con i concetti standard: i primi N dei 10. `mobilita` ed `energia` invece hanno **esercizi propri** (vedi sotto).
 - **Si compilano comunque tutti i campi di `project`** (serie `a`, `b`, `c`, `k`, `cut`, `alert`, `registry`, `extreme` e le 10 `labels`): le sezioni che il percorso non raggiunge non compaiono né nel codice né nel bollettino, ma i tipi li richiedono. Usa valori plausibili.
