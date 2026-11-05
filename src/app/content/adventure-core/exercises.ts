@@ -11,7 +11,9 @@ export interface Exercise {
   id: string;
   /** Apre il progetto: definisce i dati e stampa il titolo del bollettino. Solo il primo esercizio di un percorso. */
   opening: boolean;
-  concept(p: ProjectSpec): Concept;
+  /** Può stare in qualunque posizione, e se è il primo apre il progetto (la `concept` lo sa da `ctx.first`). */
+  canOpen?: boolean;
+  concept(p: ProjectSpec, ctx?: ConceptContext): Concept;
   gameConfig(p: ProjectSpec): Record<string, unknown>;
   viz(p: ProjectSpec): MissionViz;
   /** Esercizi che devono comparire prima nello stesso percorso (ne riusano le variabili). */
@@ -23,6 +25,11 @@ export interface Exercise {
 }
 
 /** Gli esercizi che hanno un minigioco a scelta multipla dedicato (`adventure-quiz`). */
+/** Dove sta l'esercizio nel percorso: se è il primo apre il progetto (dati e titolo del bollettino). */
+export interface ConceptContext {
+  first: boolean;
+}
+
 export const QUIZ_GAME = 'adventure-quiz';
 
 const STANDARD: Exercise[] = BUILDERS.map((build, i) => ({
@@ -253,25 +260,28 @@ const EXTRA: Exercise[] = [
   // ───────────── Statistica descrittiva (percorso «statistica»): media, mediana, moda, campo, varianza, deviazione standard
   {
     id: 'media',
-    opening: true,
+    opening: false,
+    canOpen: true,
     game: QUIZ_GAME,
     gameConfig: (p) => quiz('media', p),
-    concept: (p) => {
+    concept: (p, ctx) => {
       const n = p.a.name;
-      const body = (tot: string, med: string) => `# 1. La media\ntotale = ${tot}\nmedia = ${med}\nprint("${p.labels.first}:", media)\n`;
+      const first = ctx?.first ?? true;
+      // se è il primo esercizio apre il progetto (dati e titolo), altrimenti usa la lista già definita
+      const body = (tot: string, med: string) => `${first ? '' : '\n'}# La media\ntotale = ${tot}\nmedia = ${med}\nprint("${p.labels.first}:", media)\n`;
       const v = p.a.values;
       return {
         topic: 'La media',
         theory: [
           { title: 'Un numero che riassume', body: 'La media aritmetica è il valore «tipico» di una serie: si sommano tutti i valori e si divide per quanti sono.' },
           { title: 'sum() e len()', body: `In Python sum(${n}) somma gli elementi della lista e len(${n}) li conta: media = sum(${n}) / len(${n}).` },
-          { title: 'Attenzione agli estremi', body: 'La media è sensibile ai valori molto alti o molto bassi: un solo valore anomalo la sposta. Per questo servono anche altri indicatori.' },
+          { title: 'Attenzione agli estremi', body: 'La media è sensibile ai valori molto alti o molto bassi: un solo valore anomalo la sposta. Per questo servono anche altri indicatori, come la mediana.' },
         ],
-        briefing: `Inizia il rapporto statistico. Calcola in \`totale\` la somma dei valori di \`${n}\` e in \`media\` il totale diviso per quanti sono: ${p.labels.first.toLowerCase()}.`,
+        briefing: `${first ? 'Inizia il rapporto statistico. ' : ''}Calcola in \`totale\` la somma dei valori di \`${n}\` e in \`media\` il totale diviso per quanti sono: ${p.labels.first.toLowerCase()}.`,
         hint: 'La media è la somma dei valori divisa per quanti sono. Python ha una funzione che somma e una che conta gli elementi di una lista. Il risultato è un numero con la virgola (es. 5.0).',
-        starter: opening(p) + body('0   # somma dei valori', '0   # totale / quanti sono'),
-        solution: opening(p) + body(`sum(${n})`, `totale / len(${n})`),
-        lines: [header(p), `${p.labels.first}: ${pyFloat(stat(v).mean)}`],
+        starter: (first ? opening(p) : '') + body('0   # somma dei valori', '0   # totale / quanti sono'),
+        solution: (first ? opening(p) : '') + body(`sum(${n})`, `totale / len(${n})`),
+        lines: [...(first ? [header(p)] : []), `${p.labels.first}: ${pyFloat(stat(v).mean)}`],
       };
     },
     viz: (p) => ({
@@ -289,7 +299,7 @@ const EXTRA: Exercise[] = [
       const n = p.a.name;
       if (p.a.values.length % 2 !== 0) throw new Error('L\'esercizio «mediana» usa un numero pari di valori (media dei due centrali).');
       const body = (ord: string, meta: string, med: string) =>
-        `\n# 2. La mediana\nordinati = ${ord}\nmeta = ${meta}\nmediana = ${med}\nprint("${p.labels.count}:", mediana)\n`;
+        `\n# La mediana\nordinati = ${ord}\nmeta = ${meta}\nmediana = ${med}\nprint("${p.labels.count}:", mediana)\n`;
       return {
         topic: 'La mediana',
         theory: [
@@ -297,7 +307,7 @@ const EXTRA: Exercise[] = [
           { title: 'Numero pari di valori', body: 'Con un numero pari di valori non c\'è un solo elemento al centro: la mediana è la media dei due centrali. Con len(ordinati) // 2 trovi la posizione del secondo dei due.' },
           { title: 'Perché serve', body: 'La mediana non si lascia spostare dai valori anomali: se un valore enorme entra nella serie, la media cambia molto, la mediana quasi niente.' },
         ],
-        briefing: `Sezione 2. Usa la lista \`${n}\` della missione 1. Metti in \`ordinati\` i suoi valori in ordine crescente, in \`meta\` la posizione centrale (len // 2) e calcola in \`mediana\` la media dei due valori centrali: quello in posizione meta - 1 e quello in posizione meta.`,
+        briefing: `Usa la lista \`${n}\`, già definita all'inizio del programma. Metti in \`ordinati\` i suoi valori in ordine crescente, in \`meta\` la posizione centrale (len // 2) e calcola in \`mediana\` la media dei due valori centrali: quello in posizione meta - 1 e quello in posizione meta.`,
         hint: 'Ordina i valori. Con un numero pari di dati la mediana è la media dei due valori centrali: la posizione di mezzo si trova con la divisione intera (//) e ricorda che le posizioni partono da 0.',
         starter: body(`[]   # i valori di ${n} in ordine crescente`, '0   # posizione centrale: len(ordinati) // 2', '0   # media dei due valori centrali'),
         solution: body(`sorted(${n})`, 'len(ordinati) // 2', '(ordinati[meta - 1] + ordinati[meta]) / 2'),
@@ -317,7 +327,7 @@ const EXTRA: Exercise[] = [
     gameConfig: (p) => quiz('moda', p),
     concept: (p) => {
       const n = p.a.name;
-      const body = (loop: string) => `\n# 3. La moda\nmoda = ${n}[0]\nfor m in ${n}:\n${loop}\nprint("${p.labels.filtered}:", moda)\n`;
+      const body = (loop: string) => `\n# La moda\nmoda = ${n}[0]\nfor m in ${n}:\n${loop}\nprint("${p.labels.filtered}:", moda)\n`;
       return {
         topic: 'La moda',
         theory: [
@@ -325,7 +335,7 @@ const EXTRA: Exercise[] = [
           { title: 'Contare le occorrenze', body: `${n}.count(x) dice quante volte x compare nella lista: ${n}.count(${p.a.values[0]}) conta quante volte c'è il valore ${p.a.values[0]}.` },
           { title: 'Tenere il migliore', body: 'Si scorre la lista tenendo in moda il valore visto più spesso finora: se m compare più volte della moda attuale, diventa lui la nuova moda.' },
         ],
-        briefing: `Sezione 3. Trova in \`moda\` il valore che compare più volte in \`${n}\`: scorri la lista e, se m compare più volte della moda attuale (usa .count), aggiorna moda.`,
+        briefing: `Trova in \`moda\` il valore che compare più volte in \`${n}\`: scorri la lista e, se m compare più volte della moda attuale (usa .count), aggiorna moda.`,
         hint: 'Per ogni valore chiediti: compare più volte di quello che hai tenuto finora? Se sì, diventa lui il nuovo valore da tenere. Per contare quante volte compare un valore esiste un metodo delle liste.',
         starter: body('    # se m compare più volte di moda, diventa la nuova moda\n    pass'),
         solution: body(`    if ${n}.count(m) > ${n}.count(moda):\n        moda = m`),
@@ -340,24 +350,24 @@ const EXTRA: Exercise[] = [
   },
   {
     id: 'campo',
-    opening: false,
+    opening: true,
     game: QUIZ_GAME,
     gameConfig: (p) => quiz('campo', p),
     concept: (p) => {
       const n = p.a.name;
-      const body = (mx: string, mn: string, c: string) => `\n# 4. Il campo di variazione\nmassimo = ${mx}\nminimo = ${mn}\ncampo = ${c}\nprint("${p.labels.total}:", campo)\n`;
+      const body = (mx: string, mn: string, c: string) => `# Il campo di variazione\nmassimo = ${mx}\nminimo = ${mn}\ncampo = ${c}\nprint("${p.labels.total}:", campo)\n`;
       return {
         topic: 'Il campo di variazione',
         theory: [
-          { title: 'Quanto sono sparsi i dati', body: 'Media, mediana e moda dicono dov\'è il centro dei dati; ora serve sapere quanto sono sparsi attorno ad esso.' },
-          { title: 'Il campo di variazione', body: 'È la distanza tra il valore più alto e il più basso: campo = massimo - minimo. È il modo più semplice di misurare la dispersione.' },
+          { title: 'Gli estremi', body: 'Il primo sguardo a una serie sono i due estremi: il valore più alto, con max(), e il più basso, con min(). Sono i numeri più facili da trovare.' },
+          { title: 'Il campo di variazione', body: 'È la distanza tra il valore più alto e il più basso: campo = massimo - minimo. È il modo più semplice di misurare quanto sono sparsi i dati.' },
           { title: 'Limite', body: 'Dipende solo dai due estremi: un valore anomalo lo allarga molto, anche se tutti gli altri sono vicini.' },
         ],
-        briefing: `Sezione 4. Sui valori di \`${n}\` (missione 1) calcola in \`massimo\` e \`minimo\` gli estremi (con max e min) e in \`campo\` la loro differenza.`,
+        briefing: `Inizia il rapporto statistico. Sui valori di \`${n}\` calcola in \`massimo\` e \`minimo\` gli estremi (con max e min) e in \`campo\` la loro differenza.`,
         hint: 'Servono due funzioni, una per il valore più alto e una per il più basso della lista. Il campo di variazione è la distanza tra i due: il più alto meno il più basso.',
-        starter: body(`0   # il valore più alto di ${n}`, `0   # il valore più basso di ${n}`, '0   # massimo - minimo'),
-        solution: body(`max(${n})`, `min(${n})`, 'massimo - minimo'),
-        lines: [`${p.labels.total}: ${num(stat(p.a.values).range)}`],
+        starter: opening(p) + body(`0   # il valore più alto di ${n}`, `0   # il valore più basso di ${n}`, '0   # massimo - minimo'),
+        solution: opening(p) + body(`max(${n})`, `min(${n})`, 'massimo - minimo'),
+        lines: [header(p), `${p.labels.total}: ${num(stat(p.a.values).range)}`],
       };
     },
     viz: (p) => ({
@@ -375,7 +385,7 @@ const EXTRA: Exercise[] = [
     concept: (p) => {
       const n = p.a.name;
       const body = (loop: string, tot: string) =>
-        `\n# 5. La varianza\nscarti_quadrati = []\nfor m in ${n}:\n${loop}\nvarianza = ${tot}\nprint("${p.labels.mean}:", varianza)\n`;
+        `\n# La varianza\nscarti_quadrati = []\nfor m in ${n}:\n${loop}\nvarianza = ${tot}\nprint("${p.labels.mean}:", varianza)\n`;
       return {
         topic: 'La varianza',
         theory: [
@@ -383,7 +393,7 @@ const EXTRA: Exercise[] = [
           { title: 'Il quadrato', body: 'Elevando lo scarto al quadrato, (m - media) ** 2, i segni spariscono e gli scarti grandi pesano di più.' },
           { title: 'La varianza', body: 'È la media degli scarti al quadrato: sum(scarti_quadrati) / len(lista). Più è alta, più i dati sono sparsi attorno alla media.' },
         ],
-        briefing: `Sezione 5. Per ogni valore di \`${n}\` aggiungi a \`scarti_quadrati\` il quadrato dello scarto dalla \`media\` calcolata nella missione 1; poi \`varianza\` è la media di questi quadrati.`,
+        briefing: `Per ogni valore di \`${n}\` aggiungi a \`scarti_quadrati\` il quadrato dello scarto dalla \`media\` calcolata prima; poi \`varianza\` è la media di questi quadrati.`,
         hint: 'Nel ciclo calcola lo scarto di ogni valore dalla media, elevalo al quadrato (operatore **) e aggiungilo alla lista. La varianza è la media di questi quadrati: la loro somma divisa per quanti sono.',
         starter: body('    # aggiungi (m - media) ** 2 a scarti_quadrati\n    pass', '0   # somma degli scarti al quadrato / quanti sono'),
         solution: body('    scarti_quadrati.append((m - media) ** 2)', 'sum(scarti_quadrati) / len(scarti_quadrati)'),
@@ -403,7 +413,7 @@ const EXTRA: Exercise[] = [
     game: QUIZ_GAME,
     gameConfig: (p) => quiz('deviazione', p),
     concept: (p) => {
-      const body = (d: string) => `\n# 6. La deviazione standard\ndeviazione = ${d}\nprint("${p.labels.final}:", deviazione)\n`;
+      const body = (d: string) => `\n# La deviazione standard\ndeviazione = ${d}\nprint("${p.labels.final}:", deviazione)\n`;
       return {
         topic: 'La deviazione standard',
         theory: [
@@ -411,7 +421,7 @@ const EXTRA: Exercise[] = [
           { title: 'La radice quadrata', body: 'In Python la radice quadrata di x è x ** 0.5 (elevare a un mezzo). Attenzione: x ** 2 è il quadrato, un\'altra cosa.' },
           { title: 'Come si legge', body: 'La deviazione standard è lo scarto «tipico» dalla media: la maggior parte dei dati sta tra media - deviazione e media + deviazione.' },
         ],
-        briefing: `Sezione 6, l'ultima. Calcola in \`deviazione\` la deviazione standard: la radice quadrata della \`varianza\` calcolata prima (elevata a 0.5).`,
+        briefing: `Calcola in \`deviazione\` la deviazione standard: la radice quadrata della \`varianza\` calcolata prima (elevata a 0.5).`,
         hint: 'Per tornare all\'unità di misura dei dati serve la radice quadrata della varianza. In Python si ottiene elevando a una potenza: quale esponente corrisponde alla radice?',
         starter: body('0   # radice quadrata della varianza'),
         solution: body('varianza ** 0.5'),
@@ -704,7 +714,8 @@ export function exercisesFor(path: { slug: string; missions: unknown[]; exercise
   });
   list.forEach((e, i) => {
     for (const r of e.requires ?? []) if (!list.slice(0, i).some((x) => x.id === r)) throw new Error(`L'esercizio «${e.id}» richiede «${r}» prima di sé («${path.slug}»).`);
-    if (e.opening !== (i === 0)) throw new Error(i === 0 ? `Il primo esercizio di «${path.slug}» deve aprire il progetto (non «${e.id}»).` : `L'esercizio «${e.id}» apre il progetto: può stare solo al primo posto («${path.slug}»).`);
+    // il primo deve poter aprire il progetto (apre per natura, oppure `canOpen`); gli altri no (se `opening`: solo al primo posto)
+    if (i === 0 ? !(e.opening || e.canOpen) : e.opening) throw new Error(i === 0 ? `Il primo esercizio di «${path.slug}» deve aprire il progetto (non «${e.id}»).` : `L'esercizio «${e.id}» apre il progetto: può stare solo al primo posto («${path.slug}»).`);
   });
   return list;
 }
