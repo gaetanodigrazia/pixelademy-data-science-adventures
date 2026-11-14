@@ -48,7 +48,7 @@ export function shareText(input: Pick<ShareImageInput, 'pathTitle' | 'heading' |
 
 /** Il testo per condividere il proprio livello e i propri XP: il link a Pixelademy va aggiunto dopo (i due punti finali lo introducono). */
 export function levelShareText(level: number, xp: number): string {
-  return `Sono al livello ${level} su Pixelademy, con ${xp} XP! 🎮🐍\nImpara la data science giocando anche tu:`;
+  return `Sono al livello ${level} su Pixelademy (${xp} XP) 🏆\nChi arriva più in alto? Python e data science a missioni:`;
 }
 
 /**

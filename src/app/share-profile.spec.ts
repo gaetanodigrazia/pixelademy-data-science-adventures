@@ -12,9 +12,12 @@ describe('condividere livello ed XP', () => {
 
   it('il testo riporta livello ed XP e il link del profilo punta alla pagina di anteprima', () => {
     const t = levelShareText(3, 250);
+    expect(t).toBe('Sono al livello 3 su Pixelademy (250 XP) 🏆\nChi arriva più in alto? Python e data science a missioni:');
     expect(t).toContain('livello 3');
     expect(t).toContain('250 XP');
-    expect(t.endsWith(':')).toBe(true);
+    expect(t.endsWith(':')).toBe(true); // il link al sito viene aggiunto dopo
+    expect(levelShareText(12, 1234)).toContain('livello 12');
+    expect(levelShareText(12, 1234)).toContain('(1234 XP)');
     expect(profileLink('https://p.test', 250)).toBe('https://p.test/condividi/profilo/250');
     expect(profileLink('https://p.test', -5.7)).toBe('https://p.test/condividi/profilo/0');
   });
