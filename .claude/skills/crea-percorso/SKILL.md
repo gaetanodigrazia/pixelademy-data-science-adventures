@@ -35,6 +35,7 @@ Ogni missione ha il «Bonus platform» stile Super Mario: si **sblocca** con al 
 
 ## Il suggerimento (`hint`) non scrive la soluzione
 Ogni esercizio ha un suggerimento che **orienta** senza dare il codice (né le righe nuove della soluzione né la parte a destra di un'assegnazione): lo verifica `hints.spec.ts`. Per un esercizio nuovo scrivilo a parole.
+**Anche la nota della scena (`viz.note`) e il «Cosa fare» (`briefing`) non rivelano la soluzione**: la nota dice **cosa stampare** («Stampa la deviazione standard: lo scarto "tipico" dei valori dalla media»), mai come calcolarlo; il «Cosa fare» dice cosa calcolare e come si chiamano le variabili, senza operatori né espressioni (`**`, `//`, `[:3]`, `.count`, formule). `hints.spec.ts` lo verifica per ogni missione.
 
 ## Percorsi brevi (da 1 a 9 missioni)
 Il numero di missioni è la lunghezza di `missions`: un percorso di **N missioni usa i primi N concetti**, con difficoltà 1..N (la scala resta «su 10»: una missione di difficoltà 3 si vede come 3/10). Esempio con i concetti standard: i primi N dei 10. `mobilita` ed `energia` invece hanno **esercizi propri** (vedi sotto).

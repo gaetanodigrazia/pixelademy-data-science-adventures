@@ -103,7 +103,7 @@ const EXTRA: Exercise[] = [
       return {
         kind: 'value', label: p.labels.first, name: p.a.name, unit: p.a.unit, values: v, marks: [0, v.length - 1],
         expected: [r2(v[v.length - 1] - v[0])],
-        note: 'Leggi il primo e l\'ultimo valore (le barre gialle) e stampa la differenza ultimo − primo.',
+        note: 'Le barre gialle sono il primo e l\'ultimo valore: stampa di quanto è cambiato il valore.',
       };
     },
   },
@@ -123,7 +123,7 @@ const EXTRA: Exercise[] = [
           { title: 'Le fette', body: `Una fetta (slice) prende una parte della lista: ${n}[:3] sono i primi tre elementi, ${n}[-3:] gli ultimi tre.` },
           { title: 'Insieme', body: `Le due cose si combinano: sorted(${n})[:3] sono i tre valori più bassi della serie.` },
         ],
-        briefing: `Sezione 2. Metti in \`migliori\` i 3 valori più bassi di \`${n}\`: ordina la lista con sorted() e prendi i primi tre con [:3]. Il bollettino li stampa come lista.`,
+        briefing: `Sezione 2. Metti in \`migliori\` i 3 valori più bassi di \`${n}\`. Il bollettino li stampa come lista.`,
         hint: 'Servono due idee insieme: ordinare la lista dal più piccolo al più grande (c\'è una funzione che restituisce la lista ordinata) e poi prenderne solo i primi tre elementi con una fetta (slice).',
         starter: body('[]'),
         solution: body(`sorted(${n})[:3]`),
@@ -133,7 +133,7 @@ const EXTRA: Exercise[] = [
     viz: (p) => ({
       kind: 'pick', label: p.labels.count, name: p.a.name, unit: p.a.unit, values: p.a.values,
       expected: [...p.a.values].sort((x, y) => x - y).slice(0, 3),
-      note: 'Ordina la serie e stampa i 3 valori più bassi: le loro barre si illumineranno nel grafico.',
+      note: 'Stampa i 3 valori più bassi della serie: le loro barre si illumineranno nel grafico.',
     }),
   },
   // ───────────── Contatore con condizione e percentuale (difficoltà 3)
@@ -163,7 +163,7 @@ const EXTRA: Exercise[] = [
     viz: (p) => ({
       kind: 'value', label: p.labels.filtered, name: p.a.name, unit: p.a.unit, values: p.a.values, th: p.cut,
       expected: [pyRound((above(p).length / p.a.values.length) * 100)],
-      note: `Conta i valori sopra la soglia ${num(p.cut)} e stampa la percentuale sul totale, arrotondata a intero.`,
+      note: `Stampa la percentuale di valori sopra la soglia ${num(p.cut)}, arrotondata a intero.`,
     }),
   },
   // ───────────── Variabili e moltiplicazione (apertura, difficoltà 1)
@@ -193,7 +193,7 @@ const EXTRA: Exercise[] = [
     viz: (p) => ({
       kind: 'value', label: p.labels.first, name: p.a.name, unit: p.a.unit, values: p.a.values, marks: [p.k],
       expected: [r2(p.a.values[p.k] * 0.25)],
-      note: 'Leggi la lettura evidenziata (barra gialla), moltiplicala per la tariffa 0.25 e stampa il costo.',
+      note: 'La barra gialla è la lettura da usare: stampa il costo con la tariffa di 0.25 per unità.',
     }),
   },
   // ───────────── Posizione del massimo (difficoltà 2)
@@ -223,7 +223,7 @@ const EXTRA: Exercise[] = [
     viz: (p) => ({
       kind: 'value', label: p.labels.count, name: p.a.name, unit: p.a.unit, values: p.a.values, asIndex: true,
       expected: [p.a.values.indexOf(Math.max(...p.a.values))],
-      note: 'Trova la posizione (indice, da 0) del valore più alto e stampala: si illuminerà la sua barra.',
+      note: 'Stampa la posizione (l\'indice, da 0) del valore più alto: si illuminerà la sua barra.',
     }),
   },
   // ───────────── Somma condizionata (difficoltà 3)
@@ -253,7 +253,7 @@ const EXTRA: Exercise[] = [
     viz: (p) => ({
       kind: 'value', label: p.labels.filtered, name: p.a.name, unit: p.a.unit, values: p.a.values, th: p.cut,
       expected: [r2(above(p).reduce((a, b) => a + b, 0))],
-      note: `Somma solo i valori sopra la soglia ${num(p.cut)} e stampa il totale.`,
+      note: `Stampa il totale dei valori sopra la soglia ${num(p.cut)}.`,
     }),
   },
 
@@ -287,7 +287,7 @@ const EXTRA: Exercise[] = [
     viz: (p) => ({
       kind: 'value', label: p.labels.first, name: p.a.name, unit: p.a.unit, values: p.a.values,
       expected: [stat(p.a.values).mean],
-      note: 'Somma tutti i valori e dividi per quanti sono: stampa la media.',
+      note: 'Stampa la media dei valori della serie.',
     }),
   },
   {
@@ -307,7 +307,7 @@ const EXTRA: Exercise[] = [
           { title: 'Numero pari di valori', body: 'Con un numero pari di valori non c\'è un solo elemento al centro: la mediana è la media dei due centrali. Con len(ordinati) // 2 trovi la posizione del secondo dei due.' },
           { title: 'Perché serve', body: 'La mediana non si lascia spostare dai valori anomali: se un valore enorme entra nella serie, la media cambia molto, la mediana quasi niente.' },
         ],
-        briefing: `Usa la lista \`${n}\`, già definita all'inizio del programma. Metti in \`ordinati\` i suoi valori in ordine crescente, in \`meta\` la posizione centrale (len // 2) e calcola in \`mediana\` la media dei due valori centrali: quello in posizione meta - 1 e quello in posizione meta.`,
+        briefing: `Usa la lista \`${n}\`, già definita all'inizio del programma. Metti in \`ordinati\` i suoi valori in ordine crescente, in \`meta\` la posizione centrale e calcola in \`mediana\` la media dei due valori centrali.`,
         hint: 'Ordina i valori. Con un numero pari di dati la mediana è la media dei due valori centrali: la posizione di mezzo si trova con la divisione intera (//) e ricorda che le posizioni partono da 0.',
         starter: body(`[]   # i valori di ${n} in ordine crescente`, '0   # posizione centrale: len(ordinati) // 2', '0   # media dei due valori centrali'),
         solution: body(`sorted(${n})`, 'len(ordinati) // 2', '(ordinati[meta - 1] + ordinati[meta]) / 2'),
@@ -317,7 +317,7 @@ const EXTRA: Exercise[] = [
     viz: (p) => ({
       kind: 'value', label: p.labels.count, name: p.a.name, unit: p.a.unit, values: p.a.values,
       expected: [stat(p.a.values).median],
-      note: 'Ordina i valori e stampa la mediana: la media dei due valori centrali.',
+      note: 'Stampa la mediana: il valore di mezzo della serie.',
     }),
   },
   {
@@ -335,7 +335,7 @@ const EXTRA: Exercise[] = [
           { title: 'Contare le occorrenze', body: `${n}.count(x) dice quante volte x compare nella lista: ${n}.count(${p.a.values[0]}) conta quante volte c'è il valore ${p.a.values[0]}.` },
           { title: 'Tenere il migliore', body: 'Si scorre la lista tenendo in moda il valore visto più spesso finora: se m compare più volte della moda attuale, diventa lui la nuova moda.' },
         ],
-        briefing: `Trova in \`moda\` il valore che compare più volte in \`${n}\`: scorri la lista e, se m compare più volte della moda attuale (usa .count), aggiorna moda.`,
+        briefing: `Trova in \`moda\` il valore che compare più volte in \`${n}\`: scorri la lista e tieni in \`moda\` il valore visto più spesso finora.`,
         hint: 'Per ogni valore chiediti: compare più volte di quello che hai tenuto finora? Se sì, diventa lui il nuovo valore da tenere. Per contare quante volte compare un valore esiste un metodo delle liste.',
         starter: body('    # se m compare più volte di moda, diventa la nuova moda\n    pass'),
         solution: body(`    if ${n}.count(m) > ${n}.count(moda):\n        moda = m`),
@@ -345,7 +345,7 @@ const EXTRA: Exercise[] = [
     viz: (p) => ({
       kind: 'value', label: p.labels.filtered, name: p.a.name, unit: p.a.unit, values: p.a.values,
       expected: [stat(p.a.values).mode],
-      note: 'Trova il valore che compare più volte nella serie e stampalo: è la moda.',
+      note: 'Stampa la moda: il valore che compare più spesso nella serie.',
     }),
   },
   {
@@ -373,7 +373,7 @@ const EXTRA: Exercise[] = [
     viz: (p) => ({
       kind: 'value', label: p.labels.total, name: p.a.name, unit: p.a.unit, values: p.a.values,
       expected: [stat(p.a.values).range],
-      note: 'Stampa la distanza tra il valore più alto e il più basso: il campo di variazione.',
+      note: 'Stampa il campo di variazione: quanto sono distanti gli estremi della serie.',
     }),
   },
   {
@@ -403,7 +403,7 @@ const EXTRA: Exercise[] = [
     viz: (p) => ({
       kind: 'value', label: p.labels.mean, name: p.a.name, unit: p.a.unit, values: p.a.values, th: stat(p.a.values).mean,
       expected: [stat(p.a.values).variance],
-      note: 'La linea gialla è la media. Elevane al quadrato gli scarti, fanne la media e stampa la varianza.',
+      note: 'La linea gialla è la media. Stampa la varianza: quanto i valori si disperdono attorno ad essa.',
     }),
   },
   {
@@ -421,7 +421,7 @@ const EXTRA: Exercise[] = [
           { title: 'La radice quadrata', body: 'In Python la radice quadrata di x è x ** 0.5 (elevare a un mezzo). Attenzione: x ** 2 è il quadrato, un\'altra cosa.' },
           { title: 'Come si legge', body: 'La deviazione standard è lo scarto «tipico» dalla media: la maggior parte dei dati sta tra media - deviazione e media + deviazione.' },
         ],
-        briefing: `Calcola in \`deviazione\` la deviazione standard: la radice quadrata della \`varianza\` calcolata prima (elevata a 0.5).`,
+        briefing: `Calcola in \`deviazione\` la deviazione standard, a partire dalla \`varianza\` calcolata prima.`,
         hint: 'Per tornare all\'unità di misura dei dati serve la radice quadrata della varianza. In Python si ottiene elevando a una potenza: quale esponente corrisponde alla radice?',
         starter: body('0   # radice quadrata della varianza'),
         solution: body('varianza ** 0.5'),
@@ -431,7 +431,7 @@ const EXTRA: Exercise[] = [
     viz: (p) => ({
       kind: 'value', label: p.labels.final, name: p.a.name, unit: p.a.unit, values: p.a.values, th: stat(p.a.values).mean,
       expected: [stat(p.a.values).std],
-      note: 'Fai la radice quadrata della varianza (** 0.5) e stampa la deviazione standard.',
+      note: 'La linea gialla è la media. Stampa la deviazione standard: lo scarto "tipico" dei valori da essa.',
     }),
   },
 
@@ -452,7 +452,7 @@ const EXTRA: Exercise[] = [
           { title: 'La formula', body: 'z = (valore - media) / deviazione. Uno z di 0 vuol dire «esattamente nella media», +2 «due deviazioni sopra», -1 «una sotto».' },
           { title: 'Perché è utile', body: 'Lo z-score è lo stesso per qualsiasi unità di misura: serve a confrontare serie diverse e a riconoscere i valori insolitamente lontani dalla norma.' },
         ],
-        briefing: `Sezione 4. Calcola in \`z_massimo\` lo z-score del valore più alto di \`${n}\`: (massimo - media) / deviazione, usando la \`media\` e la \`deviazione\` calcolate nelle missioni precedenti.`,
+        briefing: `Sezione 4. Calcola in \`z_massimo\` lo z-score del valore più alto di \`${n}\`, usando la \`media\` e la \`deviazione\` calcolate prima.`,
         hint: 'Lo z-score dice a quante deviazioni standard dalla media sta un valore: togli la media e dividi per la deviazione. Qui serve quello del valore più alto della lista.',
         starter: body('0   # (massimo - media) / deviazione'),
         solution: body(`(max(${n}) - media) / deviazione`),
@@ -462,7 +462,7 @@ const EXTRA: Exercise[] = [
     viz: (p) => ({
       kind: 'value', label: p.labels.alert, name: p.a.name, unit: p.a.unit, values: p.a.values, th: stat(p.a.values).mean,
       expected: [zOf(p, Math.max(...p.a.values))],
-      note: 'La linea gialla è la media. Calcola quante deviazioni standard dista il valore più alto e stampa lo z-score.',
+      note: 'La linea gialla è la media. Stampa lo z-score del valore più alto: a quante deviazioni standard dista dalla media.',
     }),
   },
   {
@@ -482,7 +482,7 @@ const EXTRA: Exercise[] = [
           { title: 'La regola dello z-score', body: 'Una regola comune: un valore è anomalo se il suo z-score, in valore assoluto, supera 2 (o 3). abs(z) è il valore assoluto, cioè la distanza senza il segno.' },
           { title: 'Attenzione', body: 'Gli outlier gonfiano la deviazione standard: con dati pochi e molto sparsi la regola può non scattare. È uno strumento, non una verità assoluta.' },
         ],
-        briefing: `Sezione 5. Scorri \`${n}\`, calcola lo z-score di ogni valore e conta in \`anomali\` quelli con abs(z) maggiore di \`soglia_z\`, usando \`media\` e \`deviazione\`.`,
+        briefing: `Sezione 5. Scorri \`${n}\`, calcola lo z-score di ogni valore e conta in \`anomali\` quelli con z-score oltre \`soglia_z\` in valore assoluto, usando \`media\` e \`deviazione\`.`,
         hint: 'Nel ciclo calcola lo z-score di ogni valore. Se il suo valore assoluto (abs) supera la soglia, il valore è anomalo: contalo.',
         starter: sec('    # calcola z e conta il valore se abs(z) supera la soglia\n    pass'),
         solution: sec('    z = (m - media) / deviazione\n    if abs(z) > soglia_z:\n        anomali += 1'),
@@ -492,7 +492,7 @@ const EXTRA: Exercise[] = [
     viz: (p) => ({
       kind: 'value', label: p.labels.extreme, name: p.a.name, unit: p.a.unit, values: p.a.values, th: stat(p.a.values).mean,
       expected: [p.a.values.filter((m) => Math.abs(zOf(p, m)) > 2).length],
-      note: 'Conta i valori con z-score oltre 2 in valore assoluto (le barre più lontane dalla media) e stampa quanti sono.',
+      note: 'Stampa quanti valori sono anomali: le barre più lontane dalla media (z-score oltre 2 in valore assoluto).',
     }),
   },
 
@@ -551,7 +551,7 @@ const EXTRA: Exercise[] = [
     viz: (p) => ({
       kind: 'value', label: p.labels.count, name: p.a.name, unit: p.a.unit, values: p.a.values,
       expected: [3.5],
-      note: 'Questa volta conta la teoria: stampa il valore atteso di un dado a sei facce (la media di 1, 2, 3, 4, 5, 6).',
+      note: 'Questa volta serve la teoria: stampa il valore atteso di un dado a sei facce.',
     }),
   },
   {
@@ -581,7 +581,7 @@ const EXTRA: Exercise[] = [
     viz: (p) => ({
       kind: 'value', label: p.labels.filtered, name: p.a.name, unit: p.a.unit, values: p.a.values, th: 3.5,
       expected: [Math.round(Math.abs(stat(p.a.values).mean - 3.5) * 100) / 100],
-      note: 'La linea gialla è il valore atteso (3.5). Stampa la distanza tra la media dei lanci e quella linea, arrotondata a 2 decimali.',
+      note: 'La linea gialla è il valore atteso (3.5). Stampa quanto la media dei lanci si discosta da quella linea, con 2 decimali.',
     }),
   },
   {
@@ -610,7 +610,7 @@ const EXTRA: Exercise[] = [
     viz: (p) => ({
       kind: 'value', label: p.labels.total, name: p.a.name, unit: p.a.unit, values: p.a.values,
       expected: [Math.round((6 / 36) * 10000) / 10000],
-      note: 'Conta in quanti modi due dadi sommano 7 su 36 coppie possibili e stampa la probabilità, arrotondata a 4 decimali.',
+      note: 'Stampa la probabilità di fare 7 lanciando due dadi, con 4 decimali.',
     }),
   },
   // ───────────── Percorsi base: «Le Variabili» (var-*) e «Le Liste» (liste-modifica, dopo std-1 e std-2)
@@ -639,7 +639,7 @@ const EXTRA: Exercise[] = [
     },
     viz: (p) => ({
       kind: 'value', label: p.labels.first, name: 'misura', unit: p.a.unit, values: [p.a.values[p.k]], expected: [p.a.values[p.k]],
-      note: `Crea la variabile misura con il valore ${num(p.a.values[p.k])} e stampala: la barra si illumina.`,
+      note: `La barra gialla è il valore ${num(p.a.values[p.k])} da ricordare in una variabile: stampa la variabile misura.`,
     }),
   },
   {
@@ -667,7 +667,7 @@ const EXTRA: Exercise[] = [
     },
     viz: (p) => ({
       kind: 'value', label: p.labels.count, name: 'differenza', unit: p.a.unit, values: [p.a.values[p.k], p.alert], expected: [r2(p.a.values[p.k] - p.alert)],
-      note: 'Calcola misura − soglia (le due barre) e stampa la differenza.',
+      note: 'Le due barre sono misura e soglia: stampa quanto misura supera soglia.',
     }),
   },
   {
@@ -696,7 +696,7 @@ const EXTRA: Exercise[] = [
     },
     viz: (p) => ({
       kind: 'pick', label: p.labels.filtered, name: p.b.name, unit: p.b.unit, values: [...p.b.values, p.cut], expected: [...p.b.values.slice(0, -1), p.cut],
-      note: `Togli l'ultimo elemento, aggiungi ${num(p.cut)} e stampa la lista: si illuminano le barre rimaste e quella nuova.`,
+      note: `Stampa la lista aggiornata: si illuminano le barre rimaste e quella nuova.`,
     }),
   },
 ];

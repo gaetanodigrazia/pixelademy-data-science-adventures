@@ -59,6 +59,7 @@ Ogni missione ha il bonus platform, facoltativo e da sbloccare con al massimo 1 
 
 ## Il suggerimento (`hint`) non scrive la soluzione
 Il suggerimento **orienta** (quale strumento usare, a cosa pensare, l'ordine dei passi) ma non deve contenere il codice della soluzione: né le righe nuove né la parte a destra di un'assegnazione (`media = totale / len(onde)`). Dillo a parole («serve la somma divisa per quanti sono»). Un test (`hints.spec.ts`) confronta il suggerimento con le righe nuove della soluzione di ogni missione e fallisce se la rivela.
+**Anche la nota della scena (`viz.note`) e il «Cosa fare» (`briefing`) non rivelano la soluzione**: la nota dice **cosa stampare** («Stampa la deviazione standard: lo scarto "tipico" dei valori dalla media»), mai come calcolarlo; il «Cosa fare» dice cosa calcolare e come si chiamano le variabili, senza operatori né espressioni (`**`, `//`, `[:3]`, `.count`, formule). `hints.spec.ts` lo verifica per ogni missione.
 
 ## Il quiz mostra la serie
 Un quiz che usa una serie (`onde`, `prezzi`…) ne mostra la definizione nel pannello del codice (la aggiunge `quizFor` da sola se manca; un test lo verifica).
