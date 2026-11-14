@@ -124,3 +124,4 @@
 | E11 | BUG-11.14 Statistica: il quiz di mediana e moda non mostra il vettore `onde` | #253 | #256 | `docs/issues/BUG-11.14.md` | fatto |
 | E11 | BUG-11.15 I suggerimenti rivelano la soluzione | #254 | #257 | `docs/issues/BUG-11.15.md` | fatto |
 | E11 | US-11.16 Statistica: partire dagli estremi (massimo e minimo), più facili di media, mediana e moda | #255 | #258 | `docs/issues/US-11.16.md` | fatto |
+| E11 | BUG-11.17 Statistica (missione 6) e altre: la nota della scena e il «Cosa fare» rivelano la soluzione | #259 | #260 | `docs/issues/BUG-11.17.md` | fatto |
