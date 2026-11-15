@@ -1,6 +1,6 @@
 # DOC-13.4 — Scheda GDPR classifica: «il sito» ripetuto nella frase sugli orfani (#277)
 
-- Milestone: `v2.0-Optimizations` · PR: #278
+- Milestone: `v2.0-Optimizations` · PR: #279
 
 ## File creati o modificati
 - (nessun file fuori da docs/)
