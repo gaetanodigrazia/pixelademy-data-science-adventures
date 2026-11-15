@@ -33,8 +33,8 @@ In Italia il consenso digitale è valido dai **14 anni** (art. 2-quinquies Codic
 ## Conservazione
 
 - Fino all'uscita volontaria dalla classifica (cancellazione immediata).
-- Altrimenti **12 mesi dall'ultimo aggiornamento**: la cancellazione automatica avviene al massimo una volta al giorno, alla prima lettura della classifica.
-- Se il giocatore cancella i dati dal browser senza uscire, il suo record resta orfano e sparisce da solo dopo 12 mesi (il sito, prima di «Cancella i dati» o «Non salvare», esce dalla classifica; se non riesce, blocca l'azione e lo dice).
+- Altrimenti **30 giorni dall'ultimo aggiornamento** (ogni apertura del sito da parte di un iscritto invia un aggiornamento, quindi chi gioca non viene toccato): la cancellazione automatica avviene al massimo una volta al giorno, alla prima lettura della classifica.
+- Se il giocatore cancella i dati dal browser senza uscire, il suo record resta orfano e sparisce da solo dopo 30 giorni: il server non può accorgersi che il browser ha perso i dati, e senza il codice segreto non si può cancellare prima (chi torna dopo più di 30 giorni scopre che l'iscrizione non c'è più e può rientrare, con un nuovo numero). Il sito, prima di «Cancella dati salvati» o «Usa senza salvare»,, prima di «Cancella i dati» o «Non salvare», esce dalla classifica; se non riesce, blocca l'azione e lo dice).
 
 ## Diritti
 
