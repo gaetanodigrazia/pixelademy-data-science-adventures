@@ -1,4 +1,5 @@
-import { Injectable, signal } from '@angular/core';
+import { Injectable, effect, inject, signal, untracked } from '@angular/core';
+import { GameStateService } from './game-state.service';
 
 const API = '/api/visite';
 
@@ -9,12 +10,24 @@ const API = '/api/visite';
  *
  * Non conta (legge soltanto il totale) chi ha chiesto di non essere tracciato (Do Not Track o Global Privacy Control), i browser
  * automatici (`navigator.webdriver`: controlli e test) e l'esecuzione in locale.
+ *
+ * Con il consenso al salvataggio, dopo il conteggio si ricorda nello stato del giocatore il giorno (`countedDay`): lo stesso giorno non si
+ * conta di nuovo (si legge soltanto). Senza consenso non si salva nulla e si conta a ogni apertura.
  */
 @Injectable({ providedIn: 'root' })
 export class VisitService {
   /** Totale delle visite; `null` finché non si conosce (o se il servizio non risponde). */
   readonly count = signal<number | null>(null);
   private registered = false;
+  private readonly game = inject(GameStateService);
+  /** La visita di questa apertura è stata contata: se il consenso arriva dopo, la data si salva subito. */
+  private counted = false;
+
+  constructor() {
+    effect(() => {
+      if (this.game.consent() === 'granted' && this.counted) untracked(() => { if (!this.game.countedToday()) this.game.markCounted(); });
+    });
+  }
 
   /** Il visitatore va contato? */
   static shouldCount(): boolean {
@@ -30,7 +43,15 @@ export class VisitService {
   async register(): Promise<void> {
     if (this.registered) return;
     this.registered = true;
-    await this.call(VisitService.shouldCount() ? 'POST' : 'GET');
+    // già contata oggi (con il consenso al salvataggio): si legge soltanto
+    if (!VisitService.shouldCount() || this.game.countedToday()) {
+      await this.call('GET');
+      return;
+    }
+    if (await this.call('POST')) {
+      this.counted = true;
+      this.game.markCounted(); // no-op senza consenso
+    }
   }
 
   /** Legge il totale senza contare (pagina «Il progetto»). */
@@ -39,15 +60,18 @@ export class VisitService {
     await this.call('GET');
   }
 
-  private async call(method: 'GET' | 'POST'): Promise<void> {
-    if (typeof fetch !== 'function') return;
+  /** `true` se la richiesta è andata a buon fine e il totale è noto. */
+  private async call(method: 'GET' | 'POST'): Promise<boolean> {
+    if (typeof fetch !== 'function') return false;
     try {
       const r = await fetch(API, { method, cache: 'no-store', credentials: 'omit', referrerPolicy: 'no-referrer' });
-      if (!r.ok) return;
+      if (!r.ok) return false;
       const { count } = (await r.json()) as { count: unknown };
-      if (typeof count === 'number') this.count.set(count);
+      if (typeof count !== 'number') return false;
+      this.count.set(count);
+      return true;
     } catch {
-      /* offline, o in locale senza la funzione: il sito funziona lo stesso */
+      return false; // offline, o in locale senza la funzione: il sito funziona lo stesso
     }
   }
 }

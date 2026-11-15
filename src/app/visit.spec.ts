@@ -3,6 +3,7 @@ import { provideRouter } from '@angular/router';
 import { App } from './app';
 import { routes } from './app.routes';
 import { Info } from './features/info/info';
+import { GameStateService } from './core/services/game-state.service';
 import { VisitService } from './core/services/visit.service';
 import { CounterStore } from './core/utils/counter';
 import { handleLike } from './core/utils/like-counter';
@@ -81,7 +82,8 @@ describe('contatore di visite anonimo: il servizio', () => {
     const cookie = vi.spyOn(document, 'cookie', 'set');
     await TestBed.inject(VisitService).register();
     expect(set).not.toHaveBeenCalled();
-    expect(get).not.toHaveBeenCalled();
+    // l'unica lettura è quella, già esistente, del consenso al salvataggio: il contatore non legge né scrive nulla di suo
+    expect(get.mock.calls.every((c) => c[0] === 'pixelademy.consent.v1')).toBe(true);
     expect(cookie).not.toHaveBeenCalled();
     expect(document.cookie).toBe('');
   });
@@ -161,6 +163,7 @@ describe('pagina «Il progetto»: il totale delle visite', () => {
     expect(text).toContain('aperture di Pixelademy');
     expect(text).toContain('senza cookie');
     expect(text).toContain('Conta aperture, non persone');
+    expect(text).toContain('al massimo una volta al giorno');
     expect(text).not.toContain('se ricarichi');
     expect(text).toContain('Do Not Track');
   });
@@ -168,5 +171,127 @@ describe('pagina «Il progetto»: il totale delle visite', () => {
   it('zero visite e servizio non disponibile hanno un messaggio chiaro', async () => {
     expect((await open(vi.fn().mockResolvedValue({ ok: true, json: async () => ({ count: 0 }) }))).querySelector('.visits')!.textContent).toContain('Nessuna apertura registrata');
     expect((await open(vi.fn().mockRejectedValue(new Error('x')))).querySelector('.visits')!.textContent).toContain('non è disponibile');
+  });
+});
+
+describe('aperture del sito: con il salvataggio dei dati, una volta al giorno', () => {
+  const STATE_KEY = 'pixelademy.player.v1';
+  const CONSENT_KEY = 'pixelademy.consent.v1';
+  let fetchMock: ReturnType<typeof vi.fn>;
+  const methods = () => fetchMock.mock.calls.map((c) => c[1].method as string);
+  const stored = () => JSON.parse(localStorage.getItem(STATE_KEY) ?? 'null') as { countedDay?: string } | null;
+  /** Una nuova apertura del sito: un servizio nuovo (come dopo un ricaricamento) sullo stesso localStorage. */
+  async function open(): Promise<VisitService> {
+    TestBed.resetTestingModule();
+    const v = TestBed.inject(VisitService);
+    await v.register();
+    return v;
+  }
+
+  beforeEach(() => {
+    localStorage.clear();
+    vi.useFakeTimers({ toFake: ['Date'] });
+    vi.setSystemTime(new Date('2026-11-15T10:00:00Z'));
+    vi.stubGlobal('location', { hostname: 'pixelademy.test' });
+    vi.stubGlobal('navigator', { doNotTrack: null, webdriver: false });
+    fetchMock = vi.fn().mockResolvedValue({ ok: true, json: async () => ({ count: 100 }) });
+    vi.stubGlobal('fetch', fetchMock);
+  });
+  afterEach(() => { vi.useRealTimers(); vi.unstubAllGlobals(); });
+
+  it('con il consenso: la prima apertura conta e salva solo la data; le altre dello stesso giorno leggono soltanto', async () => {
+    localStorage.setItem(CONSENT_KEY, 'granted');
+    await open();
+    expect(methods()).toEqual(['POST']);
+    expect(stored()!.countedDay).toBe('2026-11-15'); // solo AAAA-MM-GG: nessun orario, nessun identificativo
+    await open();
+    await open();
+    expect(methods()).toEqual(['POST', 'GET', 'GET']); // ricaricando non si conta più
+  });
+
+  it('il giorno dopo conta di nuovo (una volta al giorno)', async () => {
+    localStorage.setItem(CONSENT_KEY, 'granted');
+    await open();
+    vi.setSystemTime(new Date('2026-11-16T08:00:00Z'));
+    await open();
+    await open();
+    expect(methods()).toEqual(['POST', 'POST', 'GET']);
+    expect(stored()!.countedDay).toBe('2026-11-16');
+  });
+
+  it('senza consenso non si salva nulla e si conta a ogni apertura (come prima)', async () => {
+    await open(); await open();
+    expect(methods()).toEqual(['POST', 'POST']);
+    expect(localStorage.length).toBe(0);
+    localStorage.setItem(CONSENT_KEY, 'denied');
+    await open(); await open();
+    expect(methods()).toEqual(['POST', 'POST', 'POST', 'POST']);
+    expect(localStorage.getItem(STATE_KEY)).toBeNull();
+  });
+
+  it('se il consenso arriva dopo il conteggio, la data si salva subito (e la riapertura non conta)', async () => {
+    const v = await open(); // consenso ancora da dare: conta
+    expect(methods()).toEqual(['POST']);
+    expect(localStorage.getItem(STATE_KEY)).toBeNull();
+    TestBed.inject(GameStateService).acceptSaving();
+    TestBed.tick(); // gli effetti girano
+    expect(v.count()).toBe(100);
+    expect(stored()!.countedDay).toBe('2026-11-15');
+    await open();
+    expect(methods()).toEqual(['POST', 'GET']);
+  });
+
+  it('se il conteggio non va a buon fine non si segna nulla: si riprova alla prossima apertura', async () => {
+    localStorage.setItem(CONSENT_KEY, 'granted');
+    fetchMock.mockRejectedValueOnce(new Error('offline'));
+    await open();
+    expect(stored()!.countedDay).toBeUndefined();
+    await open();
+    expect(methods()).toEqual(['POST', 'POST']);
+    expect(stored()!.countedDay).toBe('2026-11-15');
+  });
+
+  it('Do Not Track: non conta e non salva nulla, anche con il consenso', async () => {
+    localStorage.setItem(CONSENT_KEY, 'granted');
+    vi.stubGlobal('navigator', { doNotTrack: '1', webdriver: false });
+    await open();
+    expect(methods()).toEqual(['GET']);
+    expect(stored()!.countedDay).toBeUndefined();
+  });
+
+  it('«Cancella i dati» la elimina (e si viene contati di nuovo); «Ricomincia da zero» la conserva', async () => {
+    localStorage.setItem(CONSENT_KEY, 'granted');
+    await open();
+    const g = TestBed.inject(GameStateService);
+    g.resetProgress();
+    expect(stored()!.countedDay).toBe('2026-11-15'); // ricominciare i progressi non fa ricontare
+    g.clearStoredData();
+    expect(localStorage.getItem(STATE_KEY)).toBeNull();
+    await open();
+    expect(methods()).toEqual(['POST', 'POST']);
+  });
+
+  it('una data salvata non valida o nel futuro viene scartata', async () => {
+    for (const bad of ['ieri', '2026-13-45x', '2026-11-16', '2999-01-01', 5, null]) {
+      localStorage.setItem(CONSENT_KEY, 'granted');
+      localStorage.setItem(STATE_KEY, JSON.stringify({ schemaVersion: 6, xp: 0, level: 1, completedMissionIds: [], solvedCode: {}, liked: false, records: {}, countedDay: bad }));
+      TestBed.resetTestingModule();
+      expect(TestBed.inject(GameStateService).countedToday(), String(bad)).toBe(false);
+    }
+    localStorage.setItem(STATE_KEY, JSON.stringify({ schemaVersion: 6, xp: 0, level: 1, completedMissionIds: [], solvedCode: {}, liked: false, records: {}, countedDay: '2026-11-15' }));
+    TestBed.resetTestingModule();
+    expect(TestBed.inject(GameStateService).countedToday()).toBe(true);
+  });
+
+  it('i progressi esportati e reimportati mantengono la data', () => {
+    localStorage.setItem(CONSENT_KEY, 'granted');
+    TestBed.resetTestingModule();
+    const g = TestBed.inject(GameStateService);
+    g.markCounted();
+    const file = g.exportProgress();
+    g.clearStoredData();
+    g.acceptSaving();
+    expect(g.importProgress(file)).toBe(true);
+    expect(g.countedToday()).toBe(true);
   });
 });
