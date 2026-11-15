@@ -156,6 +156,8 @@ describe('pagina «Il progetto»: il totale delle visite', () => {
     const el = await open(vi.fn().mockResolvedValue({ ok: true, json: async () => ({ count: 12430 }) }));
     const text = el.querySelector('.visits')!.textContent!;
     expect(text).toContain('12.430');
+    expect(el.querySelector('#visite')!.textContent).toBe('Aperture del sito'); // non «Visite»: non sono persone
+    expect(text).not.toMatch(/\bvisit/i);
     expect(text).toContain('aperture di Pixelademy');
     expect(text).toContain('senza cookie');
     expect(text).toContain('Conta aperture, non persone');

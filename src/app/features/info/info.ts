@@ -39,7 +39,7 @@ export const REPO_URL = 'https://github.com/gaetanodigrazia/pixelademy-2';
         </section>
 
         <section class="panel visits" aria-labelledby="visite">
-          <h2 id="visite">Visite</h2>
+          <h2 id="visite">Aperture del sito</h2>
           @if (visits.count(); as n) {
             <p class="count"><strong>👀 {{ n.toLocaleString('it-IT') }}</strong></p>
             <p>aperture di Pixelademy finora.</p>
