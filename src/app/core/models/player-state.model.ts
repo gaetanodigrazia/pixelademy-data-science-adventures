@@ -23,6 +23,11 @@ export interface PlayerState {
   locale?: 'it' | 'en';
   /** Classifica locale: il miglior risultato di ogni sfida, per id di missione. */
   records: Record<string, ChallengeRecord>;
+  /**
+   * Il giorno (UTC, `AAAA-MM-GG`) in cui questa apertura del sito è già stata contata dal contatore anonimo, per non contarla di nuovo
+   * lo stesso giorno. Si salva solo con il consenso al salvataggio, come il resto, e non identifica nessuno.
+   */
+  countedDay?: string;
 }
 
 export type ConsentStatus = 'unknown' | 'granted' | 'denied';

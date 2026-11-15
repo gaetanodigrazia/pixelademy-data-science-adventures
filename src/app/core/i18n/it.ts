@@ -24,7 +24,7 @@ export const IT = {
   'privacy.title': 'Privacy e dati',
   'privacy.close': 'Chiudi',
   'privacy.p1': 'Pixelademy non ha server né account. Se lo consenti, XP, livello, missioni e scelte vengono salvati solo in questo browser (localStorage). Non raccogliamo dati personali.',
-  'privacy.p2': 'Il pulsante «Mi piace» è anonimo: invia una richiesta vuota che aumenta di 1 un contatore e non salva nulla di te (nessun nome, cookie o identificativo). Anche il contatore delle aperture del sito è anonimo: all\'apertura del sito invia una richiesta vuota che aumenta di 1 un numero, senza cookie né dati salvati nel browser; se il tuo browser chiede di non essere tracciato (Do Not Track o Global Privacy Control) non ti conta. Come per ogni sito, il servizio di hosting vede l\'indirizzo IP della richiesta ma noi non lo leggiamo né lo salviamo.',
+  'privacy.p2': 'Il pulsante «Mi piace» è anonimo: invia una richiesta vuota che aumenta di 1 un contatore e non salva nulla di te (nessun nome, cookie o identificativo). Anche il contatore delle aperture del sito è anonimo: all\'apertura del sito invia una richiesta vuota che aumenta di 1 un numero, senza cookie. Se acconsenti al salvataggio, insieme ai progressi si salva anche il giorno dell\'ultimo conteggio (solo la data), così non ti conta di nuovo lo stesso giorno; se non acconsenti non salva nulla. Se il tuo browser chiede di non essere tracciato (Do Not Track o Global Privacy Control) non ti conta. Come per ogni sito, il servizio di hosting vede l\'indirizzo IP della richiesta ma noi non lo leggiamo né lo salviamo.',
   'privacy.state': 'Stato:',
   'privacy.granted': 'salvataggio attivo',
   'privacy.denied': 'uso senza salvataggio',

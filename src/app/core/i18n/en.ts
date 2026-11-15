@@ -24,7 +24,7 @@ export const EN: Record<I18nKey, string> = {
   'privacy.title': 'Privacy and data',
   'privacy.close': 'Close',
   'privacy.p1': "Pixelademy has no servers or accounts. If you allow it, XP, level, missions and choices are saved only in this browser (localStorage). We do not collect personal data.",
-  'privacy.p2': "The “Like” button is anonymous: it sends an empty request that adds 1 to a counter and saves nothing about you (no name, cookie or identifier). The site-opens counter is anonymous too: when the site opens it sends an empty request that adds 1 to a number, with no cookies or data saved in the browser; if your browser asks not to be tracked (Do Not Track or Global Privacy Control) it does not count you. As with any site, the hosting service sees the IP address of the request, but we neither read nor store it.",
+  'privacy.p2': "The “Like” button is anonymous: it sends an empty request that adds 1 to a counter and saves nothing about you (no name, cookie or identifier). The site-opens counter is anonymous too: when the site opens it sends an empty request that adds 1 to a number, with no cookies. If you allow saving, the day of the last count (just the date) is saved with your progress so you are not counted again the same day; if you do not allow it, nothing is saved. If your browser asks not to be tracked (Do Not Track or Global Privacy Control) it does not count you. As with any site, the hosting service sees the IP address of the request, but we neither read nor store it.",
   'privacy.state': 'Status:',
   'privacy.granted': 'saving on',
   'privacy.denied': 'using without saving',

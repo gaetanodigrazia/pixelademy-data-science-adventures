@@ -63,6 +63,22 @@ export class GameStateService {
     this.state.set(this.initialState());
   }
 
+  /** Il giorno di oggi (UTC, `AAAA-MM-GG`): la data minima che serve al contatore anonimo delle aperture. */
+  private today(): string {
+    return new Date().toISOString().slice(0, 10);
+  }
+
+  /** Questa apertura è già stata contata oggi? (solo se il giocatore ha acconsentito al salvataggio: senza, non si ricorda nulla) */
+  countedToday(): boolean {
+    return this.consent() === 'granted' && this.state().countedDay === this.today();
+  }
+
+  /** Ricorda che oggi la visita è stata contata. Senza il consenso al salvataggio non fa nulla (e non scrive nulla). */
+  markCounted(): void {
+    if (this.consent() !== 'granted') return;
+    this.update({ countedDay: this.today() });
+  }
+
   markLiked(): void {
     this.state.update((s) => ({ ...s, liked: true }));
     this.persist();
@@ -96,7 +112,9 @@ export class GameStateService {
   }
 
   resetProgress(): void {
-    this.state.set(this.initialState());
+    // si ricomincia da zero, ma non si viene contati di nuovo dal contatore delle aperture lo stesso giorno
+    const countedDay = this.state().countedDay;
+    this.state.set({ ...this.initialState(), ...(countedDay ? { countedDay } : {}) });
     this.persist();
   }
 
@@ -193,6 +211,8 @@ export class GameStateService {
       liked: raw.liked === true,
       records: this.validRecords(raw.records, ids),
       ...(raw.locale === 'it' || raw.locale === 'en' ? { locale: raw.locale } : {}),
+      // una data valida e non nel futuro (un valore rovinato o inventato non deve spegnere il contatore per giorni)
+      ...(typeof raw.countedDay === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(raw.countedDay) && raw.countedDay <= this.today() ? { countedDay: raw.countedDay } : {}),
       selectedPathId: path?.id ?? base.selectedPathId,
       selectedCharacterId: this.registry.character(raw.selectedCharacterId ?? '')?.id ?? base.selectedCharacterId,
     };
