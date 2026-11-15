@@ -49,7 +49,7 @@ export const REPO_URL = 'https://github.com/gaetanodigrazia/pixelademy-2';
           } @else {
             <p>Il conteggio non è disponibile al momento.</p>
           }
-          <p class="status">Il contatore è anonimo: a ogni apertura del sito aumenta di 1 un numero, senza cookie, senza identificativi e senza salvare nulla nel tuo browser. Conta aperture, non persone (se ricarichi, conti ancora) e non conta chi ha attivato «Do Not Track».</p>
+          <p class="status">Il contatore è anonimo: a ogni apertura del sito aumenta di 1 un numero, senza cookie, senza identificativi e senza salvare nulla nel tuo browser. Conta aperture, non persone, e non conta chi ha attivato «Do Not Track».</p>
         </section>
 
         <section class="panel" aria-labelledby="contribuire">

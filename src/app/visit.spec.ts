@@ -159,6 +159,7 @@ describe('pagina «Il progetto»: il totale delle visite', () => {
     expect(text).toContain('aperture di Pixelademy');
     expect(text).toContain('senza cookie');
     expect(text).toContain('Conta aperture, non persone');
+    expect(text).not.toContain('se ricarichi');
     expect(text).toContain('Do Not Track');
   });
 
