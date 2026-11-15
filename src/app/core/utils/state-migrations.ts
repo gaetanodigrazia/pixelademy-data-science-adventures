@@ -46,6 +46,9 @@ export interface StateExport {
 }
 
 export function exportState(state: PlayerState): string {
+  // il codice della classifica globale è una chiave: non va in un file che si può condividere
+  const { board: _board, ...shareable } = state;
+  state = shareable as PlayerState;
   const out: StateExport = { app: 'pixelademy', schemaVersion: STATE_VERSION, state: { ...state, schemaVersion: STATE_VERSION } };
   return JSON.stringify(out, null, 2);
 }

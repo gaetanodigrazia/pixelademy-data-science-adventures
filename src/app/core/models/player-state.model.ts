@@ -28,6 +28,12 @@ export interface PlayerState {
    * lo stesso giorno. Si salva solo con il consenso al salvataggio, come il resto, e non identifica nessuno.
    */
   countedDay?: string;
+  /**
+   * Iscrizione alla classifica globale (facoltativa): il numero del giocatore («Giocatore N») e il suo codice segreto, che serve a
+   * aggiornare o cancellare i propri dati. Si salva solo con il consenso al salvataggio, **non** si esporta e **non** si importa
+   * (è una chiave: non deve finire in un file che si condivide).
+   */
+  board?: { n: number; token: string };
 }
 
 export type ConsentStatus = 'unknown' | 'granted' | 'denied';

@@ -28,7 +28,7 @@ describe('PrivacyModal', () => {
     expect(el.textContent).toContain('scelta da fare');
   });
 
-  it('accetta il salvataggio, rifiuta, cancella i dati e azzera i progressi, con messaggio e stato aggiornato', () => {
+  it('accetta il salvataggio, rifiuta, cancella i dati e azzera i progressi, con messaggio e stato aggiornato', async () => {
     const { f, el, game } = mount();
     btn(el, 'Accetta il salvataggio').click();
     f.detectChanges();
@@ -38,11 +38,13 @@ describe('PrivacyModal', () => {
     expect(btn(el, 'Accetta il salvataggio').disabled).toBe(true);
 
     btn(el, 'Usa senza salvare').click();
+    await f.whenStable(); // prima si esce dalla classifica globale (qui non si è iscritti: subito)
     f.detectChanges();
     expect(game.consent()).toBe('denied');
     expect(localStorage.getItem('pixelademy.player.v1')).toBeNull();
 
     btn(el, 'Cancella dati salvati').click();
+    await f.whenStable();
     f.detectChanges();
     expect(game.consent()).toBe('unknown');
     expect(localStorage.getItem('pixelademy.consent.v1')).toBeNull();

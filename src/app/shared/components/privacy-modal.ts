@@ -2,6 +2,7 @@ import { ChangeDetectionStrategy, Component, ElementRef, effect, inject, input, 
 import { I18nKey } from '../../core/i18n/it';
 import { I18nService } from '../../core/i18n/i18n.service';
 import { TranslatePipe } from '../../core/i18n/translate.pipe';
+import { BoardService } from '../../core/services/board.service';
 import { GameStateService } from '../../core/services/game-state.service';
 
 /** Modale «Privacy e dati»: consenso al salvataggio locale, cancellazione e ripristino. */
@@ -20,11 +21,12 @@ import { GameStateService } from '../../core/services/game-state.service';
           </header>
           <p>{{ 'privacy.p1' | t }}</p>
           <p>{{ 'privacy.p2' | t }}</p>
+          <p>{{ 'privacy.p3' | t }}</p>
           <p class="status">{{ 'privacy.state' | t }} <strong>{{ consentLabel() }}</strong></p>
           <div class="actions">
             <button type="button" class="btn primary" [disabled]="game.consent() === 'granted'" (click)="run(() => game.acceptSaving(), 'privacy.msgAccepted')">{{ 'privacy.accept' | t }}</button>
-            <button type="button" class="btn" [disabled]="game.consent() === 'denied'" (click)="run(() => game.declineSaving(), 'privacy.msgDeclined')">{{ 'privacy.decline' | t }}</button>
-            <button type="button" class="btn danger" (click)="run(() => game.clearStoredData(), 'privacy.msgCleared')">{{ 'privacy.clear' | t }}</button>
+            <button type="button" class="btn" [disabled]="game.consent() === 'denied'" (click)="runLeavingBoard(() => game.declineSaving(), 'privacy.msgDeclined')">{{ 'privacy.decline' | t }}</button>
+            <button type="button" class="btn danger" (click)="runLeavingBoard(() => game.clearStoredData(), 'privacy.msgCleared')">{{ 'privacy.clear' | t }}</button>
             <button type="button" class="btn" (click)="run(() => game.resetProgress(), 'privacy.msgReset')">{{ 'privacy.reset' | t }}</button>
             <button type="button" class="btn" (click)="exportProgress()">{{ 'privacy.export' | t }}</button>
             <button type="button" class="btn" (click)="fileInput.click()">{{ 'privacy.import' | t }}</button>
@@ -48,6 +50,7 @@ import { GameStateService } from '../../core/services/game-state.service';
 export class PrivacyModal {
   protected readonly game = inject(GameStateService);
   private readonly i18n = inject(I18nService);
+  private readonly board = inject(BoardService);
   readonly open = input(false);
   readonly closed = output<void>();
   protected readonly message = signal('');
@@ -77,6 +80,18 @@ export class PrivacyModal {
   protected run(action: () => void, msg: I18nKey): void {
     action();
     this.message.set(this.i18n.t(msg));
+  }
+
+  /**
+   * Azioni che cancellano anche il codice della classifica globale (che vive nei dati salvati): prima si esce dalla classifica, così
+   * i dati sul server non restano orfani. Se non si riesce (offline) l'azione non parte e lo si dice.
+   */
+  protected async runLeavingBoard(action: () => void, msg: I18nKey): Promise<void> {
+    if (!(await this.board.leave())) {
+      this.message.set(this.i18n.t('privacy.errBoardLeave'));
+      return;
+    }
+    this.run(action, msg);
   }
 
   protected exportProgress(): void {

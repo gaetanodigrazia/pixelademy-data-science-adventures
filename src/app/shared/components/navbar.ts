@@ -7,12 +7,13 @@ import { SHARE_TEXT_COPIED, ShareService } from '../../core/services/share.servi
 import { levelShareText } from '../../core/utils/share-image';
 import { I18nService, LOCALES } from '../../core/i18n/i18n.service';
 import { TranslatePipe } from '../../core/i18n/translate.pipe';
+import { BoardModal } from './board-modal';
 import { PrivacyModal } from './privacy-modal';
 import { SpriteView } from './sprite-view';
 
 @Component({
   selector: 'app-navbar',
-  imports: [RouterLink, SpriteView, PrivacyModal, TranslatePipe],
+  imports: [RouterLink, SpriteView, PrivacyModal, BoardModal, TranslatePipe],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <nav class="nav" [attr.aria-label]="'nav.label' | t">
@@ -44,6 +45,7 @@ import { SpriteView } from './sprite-view';
               <div class="bar" role="progressbar" [attr.aria-valuenow]="game.xpInto()" aria-valuemin="0" [attr.aria-valuemax]="game.xpSpan()"
                 [attr.aria-label]="'nav.xpBar' | t: { into: game.xpInto(), span: game.xpSpan() }"><span [style.width.%]="game.levelProgress()"></span></div>
               <p class="status">{{ 'nav.xpTotal' | t: { xp: game.xp() } }}</p>
+              <button type="button" class="btn board-btn" aria-haspopup="dialog" (click)="openBoard()">{{ 'nav.board' | t }}</button>
               <button type="button" class="btn share" (click)="shareProfile()">🔗 Condividi livello e XP</button>
               <p class="status" role="status">{{ shareMessage() }}</p>
             </div>
@@ -72,6 +74,7 @@ import { SpriteView } from './sprite-view';
       </section>
     }
 
+    @if (boardOpen()) { <app-board-modal (closed)="boardOpen.set(false)" /> }
     <app-privacy-modal [open]="privacyOpen()" (closed)="privacyOpen.set(false)" />
   `,
   styles: `
@@ -106,7 +109,7 @@ import { SpriteView } from './sprite-view';
     .lv { background: #1b1b2f; color: var(--accent); padding: 0 6px; font-size: .55rem; }
     .menu { margin: 6px 0 0; background: #0b0b24; }
     .menu p { margin: 4px 0; }
-    .menu .share { width: 100%; margin-top: 4px; }
+    .menu .share, .menu .board-btn { width: 100%; margin-top: 4px; }
     .lang { display: flex; gap: 4px; }
     .lang .btn { min-width: 44px; padding: 6px 8px; }
     .consent { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; padding: 10px 12px; background: var(--panel); border-bottom: 3px solid var(--accent); font-size: .55rem; }
@@ -142,6 +145,7 @@ export class Navbar {
   protected readonly shareMessage = signal('');
   private readonly sharing = inject(ShareService);
   protected readonly privacyOpen = signal(false);
+  protected readonly boardOpen = signal(false);
 
   /**
    * Condivide livello ed XP: il foglio di condivisione riceve il link al sito; il testo completo va negli appunti,
@@ -165,6 +169,10 @@ export class Navbar {
   protected closeMenu(): void {
     this.menuOpen.set(false);
     this.profileOpen.set(false);
+  }
+  protected openBoard(): void {
+    this.closeMenu();
+    this.boardOpen.set(true);
   }
   protected openPrivacy(): void {
     this.closeMenu();

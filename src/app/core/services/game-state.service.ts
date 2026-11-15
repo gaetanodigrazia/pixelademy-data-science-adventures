@@ -19,6 +19,8 @@ export class GameStateService {
   readonly lastCompletedId = signal<string | null>(null);
 
   readonly liked = computed(() => this.state().liked);
+  /** Iscrizione alla classifica globale, se c'è. */
+  readonly board = computed(() => this.state().board ?? null);
   readonly xp = computed(() => this.state().xp);
   /** XP guadagnati nel livello attuale e XP che servono per completarlo (gli stessi numeri ovunque). */
   readonly xpInto = computed(() => this.state().xp - xpForLevel(this.state().level));
@@ -79,6 +81,13 @@ export class GameStateService {
     this.update({ countedDay: this.today() });
   }
 
+  /** Ricorda (o dimentica, con `null`) l'iscrizione alla classifica globale. Senza il consenso al salvataggio non si ricorda nulla. */
+  setBoard(board: { n: number; token: string } | null): void {
+    if (board && this.consent() !== 'granted') return;
+    this.state.update(({ board: _old, ...rest }) => (board ? { ...rest, board } : rest));
+    this.persist();
+  }
+
   markLiked(): void {
     this.state.update((s) => ({ ...s, liked: true }));
     this.persist();
@@ -113,8 +122,9 @@ export class GameStateService {
 
   resetProgress(): void {
     // si ricomincia da zero, ma non si viene contati di nuovo dal contatore delle aperture lo stesso giorno
-    const countedDay = this.state().countedDay;
-    this.state.set({ ...this.initialState(), ...(countedDay ? { countedDay } : {}) });
+    // (e non si perde l'iscrizione alla classifica globale: si esce da lì con «Esci e cancella i miei dati»)
+    const { countedDay, board } = this.state();
+    this.state.set({ ...this.initialState(), ...(countedDay ? { countedDay } : {}), ...(board ? { board } : {}) });
     this.persist();
   }
 
@@ -127,7 +137,8 @@ export class GameStateService {
   importProgress(text: string): boolean {
     const parsed = parseExport(text);
     if (!parsed) return false;
-    this.state.set(this.normalize(parsed));
+    // l'iscrizione alla classifica non viaggia nei file: resta quella di questo browser
+    this.state.set(this.normalize({ ...parsed, board: this.state().board }));
     this.persist();
     return true;
   }
@@ -213,9 +224,15 @@ export class GameStateService {
       ...(raw.locale === 'it' || raw.locale === 'en' ? { locale: raw.locale } : {}),
       // una data valida e non nel futuro (un valore rovinato o inventato non deve spegnere il contatore per giorni)
       ...(typeof raw.countedDay === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(raw.countedDay) && raw.countedDay <= this.today() ? { countedDay: raw.countedDay } : {}),
+      ...(this.consent() === 'granted' && this.validBoard(raw.board) ? { board: { n: raw.board.n, token: raw.board.token } } : {}),
       selectedPathId: path?.id ?? base.selectedPathId,
       selectedCharacterId: this.registry.character(raw.selectedCharacterId ?? '')?.id ?? base.selectedCharacterId,
     };
+  }
+
+  private validBoard(b: unknown): b is { n: number; token: string } {
+    const x = b as { n?: unknown; token?: unknown } | null;
+    return !!x && typeof x === 'object' && Number.isInteger(x.n) && (x.n as number) >= 1 && typeof x.token === 'string' && /^[0-9a-f]{64}$/.test(x.token);
   }
 
   private persist(): void {
