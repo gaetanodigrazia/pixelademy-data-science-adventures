@@ -2,6 +2,7 @@ import { ChangeDetectionStrategy, Component, inject } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { GameStateService } from '../../core/services/game-state.service';
 import { LikeService } from '../../core/services/like.service';
+import { VisitService } from '../../core/services/visit.service';
 
 export const REPO_URL = 'https://github.com/gaetanodigrazia/pixelademy-2';
 
@@ -37,6 +38,20 @@ export const REPO_URL = 'https://github.com/gaetanodigrazia/pixelademy-2';
           <p class="status">Il «Mi piace» è anonimo: aumenta solo un contatore e non salva nulla di te.</p>
         </section>
 
+        <section class="panel visits" aria-labelledby="visite">
+          <h2 id="visite">Visite</h2>
+          @if (visits.count(); as n) {
+            <p class="count"><strong>👀 {{ n.toLocaleString('it-IT') }}</strong></p>
+            <p>aperture di Pixelademy finora.</p>
+          } @else if (visits.count() === 0) {
+            <p class="count"><strong>👀 0</strong></p>
+            <p>Nessuna apertura registrata finora.</p>
+          } @else {
+            <p>Il conteggio non è disponibile al momento.</p>
+          }
+          <p class="status">Il contatore è anonimo: a ogni apertura del sito aumenta di 1 un numero, senza cookie, senza identificativi e senza salvare nulla nel tuo browser. Conta aperture, non persone (se ricarichi, conti ancora) e non conta chi ha attivato «Do Not Track».</p>
+        </section>
+
         <section class="panel" aria-labelledby="contribuire">
           <h2 id="contribuire">Come contribuire</h2>
           <p>Pixelademy cresce grazie a chi lo usa. Ti invitiamo a dare una mano, anche in piccolo:</p>
@@ -70,10 +85,12 @@ export const REPO_URL = 'https://github.com/gaetanodigrazia/pixelademy-2';
 })
 export class Info {
   protected readonly likes = inject(LikeService);
+  protected readonly visits = inject(VisitService);
   protected readonly game = inject(GameStateService);
   protected readonly repo = REPO_URL;
 
   constructor() {
     void this.likes.load();
+    void this.visits.load();
   }
 }

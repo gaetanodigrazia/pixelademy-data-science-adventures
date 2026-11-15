@@ -1,5 +1,6 @@
-import { Component } from '@angular/core';
+import { Component, inject } from '@angular/core';
 import { RouterOutlet } from '@angular/router';
+import { VisitService } from './core/services/visit.service';
 import { Navbar } from './shared/components/navbar';
 
 @Component({
@@ -10,4 +11,9 @@ import { Navbar } from './shared/components/navbar';
   styles: `:host { display: flex; flex-direction: column; height: 100vh; height: 100dvh; min-height: 0; overflow: hidden; }
     router-outlet { display: none; }`,
 })
-export class App {}
+export class App {
+  constructor() {
+    // una visita per apertura del sito, in modo anonimo (vedi `VisitService`)
+    void inject(VisitService).register();
+  }
+}
