@@ -20,6 +20,9 @@ npm start
 ```
 `.npmrc` abilita `legacy-peer-deps` (workaround a un bug di npm 10 con i peer di jsdom).
 
+## Contatore di visite (anonimo)
+`/api/visite` (`netlify/functions/visite.ts`) è un solo numero, come i «Mi piace»: GET lo legge, POST lo aumenta di 1, e non legge né salva nulla della richiesta. L'app (`VisitService`) invia **una richiesta vuota** quando si apre il sito: niente cookie, niente `localStorage`/`sessionStorage`, niente corpo, `credentials: 'omit'` e `no-referrer`. Conta **aperture, non persone** (chi ricarica conta ancora). **Non conta** (legge soltanto) chi ha attivato Do Not Track o Global Privacy Control, i browser automatici (`navigator.webdriver`) e l'esecuzione in locale. Il totale si vede nella pagina «Il progetto». Come ogni hosting, Netlify registra comunque gli accessi nei propri log: noi non li leggiamo. `scripts/check-visits.mjs` lo verifica nel browser sulla build di produzione.
+
 ## Logo
 Il logo (marchio, logotipo, versioni SVG e PNG) sta in `public/brand/` ed è generato da `node scripts/generate-logo.mjs`: pixel-art, senza font, a partire dalle stesse celle. Il marchio è un blocco «?» giallo con un grafico a barre (gioco + dati).
 
