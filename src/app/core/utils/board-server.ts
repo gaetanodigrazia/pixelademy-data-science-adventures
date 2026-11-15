@@ -7,7 +7,7 @@ import { levelFromXp } from './progress';
  *   l'hash del codice segreto e la prova del consenso (data e versione). **Mai** IP, nome, email o altro;
  * - il codice segreto lo genera il server, si restituisce una sola volta e si conserva solo il suo hash;
  * - l'iscrizione richiede il consenso esplicito e la dichiarazione di avere almeno 14 anni;
- * - chi esce viene cancellato; i giocatori inattivi da più di 12 mesi vengono cancellati.
+ * - chi esce viene cancellato; i giocatori inattivi da più di 30 giorni vengono cancellati.
  */
 
 export const BOARD = {
@@ -18,7 +18,7 @@ export const BOARD = {
   /** Intervallo minimo tra due aggiornamenti dello stesso giocatore (ms). */
   minUpdateMs: 5000,
   /** Dopo quanto tempo senza aggiornamenti un giocatore viene cancellato (giorni). */
-  staleDays: 365,
+  staleDays: 30,
   /** XP massimi plausibili (il totale delle missioni, bonus compreso, sta sotto: lo verifica un test). */
   maxXp: 6000,
   /** Versione del testo del consenso: si registra con il consenso. */
@@ -41,7 +41,7 @@ export interface BoardEntry {
   h: string;
   xp: number;
   level: number;
-  /** Ultimo aggiornamento (ms dal 1970): serve al limite di frequenza e alla cancellazione dopo 12 mesi. */
+  /** Ultimo aggiornamento (ms dal 1970): serve al limite di frequenza e alla cancellazione dopo 30 giorni. */
   at: number;
   /** Prova del consenso: quando e con quale versione del testo. */
   consent: { at: string; v: number };

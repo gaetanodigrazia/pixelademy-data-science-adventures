@@ -120,7 +120,7 @@ describe('classifica globale (server)', () => {
     expect(((await handleBoard({ method: 'GET' }, deps)).body as { top: unknown[] }).top).toEqual([]);
   });
 
-  it('cancella chi è inattivo da più di 12 mesi, al massimo una volta al giorno', async () => {
+  it('cancella chi è inattivo da più di 30 giorni, al massimo una volta al giorno', async () => {
     const { join, store, deps, advance } = setup();
     await join(100);
     advance((BOARD.staleDays - 1) * 86_400_000);
