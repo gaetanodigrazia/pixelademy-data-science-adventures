@@ -130,3 +130,4 @@
 | E08 | UX-08.2 Visite: togliere «(se ricarichi, conti ancora)» dal testo | #265 | #266 | `docs/issues/UX-08.2.md` | fatto |
 | E08 | UX-08.3 «Visite» diventa «Aperture del sito» (titolo e privacy) | #267 | #268 | `docs/issues/UX-08.3.md` | fatto |
 | E08 | US-08.2 Aperture del sito: con il salvataggio dei dati, la stessa persona conta una volta al giorno | #269 | #270 | `docs/issues/US-08.2.md` | fatto |
+| E13 | US-13.1 Classifica globale facoltativa (consenso, 14 anni, nickname «Giocatore N») | #271 | #272 | `docs/issues/US-13.1.md` | fatto |
