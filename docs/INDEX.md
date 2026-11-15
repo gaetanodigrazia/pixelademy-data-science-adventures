@@ -132,3 +132,4 @@
 | E08 | US-08.2 Aperture del sito: con il salvataggio dei dati, la stessa persona conta una volta al giorno | #269 | #270 | `docs/issues/US-08.2.md` | fatto |
 | E13 | US-13.1 Classifica globale facoltativa (consenso, 14 anni, nickname «Giocatore N») | #271 | #272 | `docs/issues/US-13.1.md` | fatto |
 | E13 | UX-13.2 Classifica: record orfani cancellati dopo 30 giorni di inattività (non 12 mesi) | #273 | #274 | `docs/issues/UX-13.2.md` | fatto |
+| E13 | DOC-13.3 Scheda GDPR classifica: frase rovinata sugli orfani | #275 | #276 | `docs/issues/DOC-13.3.md` | fatto |
