@@ -133,3 +133,4 @@
 | E13 | US-13.1 Classifica globale facoltativa (consenso, 14 anni, nickname «Giocatore N») | #271 | #272 | `docs/issues/US-13.1.md` | fatto |
 | E13 | UX-13.2 Classifica: record orfani cancellati dopo 30 giorni di inattività (non 12 mesi) | #273 | #274 | `docs/issues/UX-13.2.md` | fatto |
 | E13 | DOC-13.3 Scheda GDPR classifica: frase rovinata sugli orfani | #275 | #276 | `docs/issues/DOC-13.3.md` | fatto |
+| E13 | DOC-13.4 Scheda GDPR classifica: «il sito» ripetuto nella frase sugli orfani | #277 | #278 | `docs/issues/DOC-13.4.md` | fatto |
